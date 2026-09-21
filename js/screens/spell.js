@@ -25,6 +25,7 @@ import { navigate, render as rerender } from '../ui/router.js';
 import * as speech from '../core/speech.js';
 import * as words from '../core/words.js';
 import * as rewards from '../core/rewards.js';
+import { byId as itemById } from '../core/items.js';
 import * as pet from '../core/pet.js';
 import { getState, update, settings } from '../core/state.js';
 
@@ -497,7 +498,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       el('div', { style: { fontSize: '2rem' }, text: m.emoji }),
       el('h3', { text: m.title }),
       el('p', { class: 'muted tiny', text: m.blurb }),
-      m.item ? el('p', { class: 'tiny', text: `You earned: ${m.item.emoji} ${m.item.name}` }) : null
+      m.item ? el('p', { class: 'tiny', text: `You earned: ${itemById(m.item)?.name || ''}` }) : null
     )));
 
     if (missed.length) {

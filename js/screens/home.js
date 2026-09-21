@@ -6,6 +6,8 @@ import { navigate } from '../ui/router.js';
 import { petSVG } from '../ui/art.js';
 import * as pet from '../core/pet.js';
 import * as words from '../core/words.js';
+import * as items from '../core/items.js';
+import { decorSVG } from '../ui/item-art.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 
 export default function homeScreen(container) {
@@ -18,10 +20,21 @@ export default function homeScreen(container) {
   const leftToday = words.wordsLeftToday().length;
   const dailyDone = words.dailyPracticeDone();
 
+  /* Her scene: the pet, whatever it is wearing, and up to three things she
+     has chosen to put out. */
+  const scene = el('div', { class: 'hero-scene' },
+    ...items.sceneItems().map(item =>
+      el('div', { class: 'scene-item', html: decorSVG(item.id, { size: 92 }) })),
+    el('div', { class: 'scene-pet', html: petSVG({
+      coat: info.coat, stage: info.stage, happy: true,
+      hat: items.equipped().hat, accessory: items.equipped().accessory,
+    }) })
+  );
+
   const hero = el('div', { class: 'hub-hero' },
     el('div', { class: 'hero-season-chip', text: `${season.emoji} ${season.name}` }),
     el('div', { class: 'pet-speech', text: pet.greeting() }),
-    el('div', { html: petSVG({ coat: info.coat, stage: info.stage, happy: true }) })
+    scene
   );
 
   const tile = (label, sub, emoji, cls, to) =>
@@ -92,8 +105,9 @@ export default function homeScreen(container) {
   ));
 
   body.append(el('div', { class: 'hub-grid hub-grid-3' },
+    smallTile('Shop', '\u{1F6CD}\uFE0F', 't-pink', '/shop'),
     smallTile('Progress', '\u{1F4CA}', 't-gold', '/progress'),
-    smallTile('Collection', '\u{1F4D6}', 't-pink', '/progress?tab=collection'),
+    smallTile('Collection', '\u{1F4D6}', 't-purple', '/progress?tab=collection'),
     smallTile('Grown-ups', '\u{1F510}', 't-blue', '/parent')
   ));
 

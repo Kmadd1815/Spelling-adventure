@@ -4,11 +4,13 @@
    behind". Counts of things she has actually done, and the next nice thing
    coming up. */
 
-import { el, mount, button, stat, bar, segmented } from '../ui/dom.js';
+import { el, mount, button, stat, bar, segmented, modal } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
 import * as words from '../core/words.js';
 import * as pet from '../core/pet.js';
 import * as rewards from '../core/rewards.js';
+import * as items from '../core/items.js';
+import { itemSVG } from '../ui/item-art.js';
 import { getState } from '../core/state.js';
 
 export default function progressScreen(container, params) {
@@ -88,47 +90,67 @@ export default function progressScreen(container, params) {
     return body;
   }
 
-  /* The Collection Book. Owned things are shown in full; everything still
-     out there shows as a silhouette, so there is always something to find. */
+  /* The Collection Book. Everything she owns shown in full, everything
+     still out there as a silhouette — so there is always something to find
+     without ever spoiling what it is. */
   function collectionTab() {
-    const owned = rewards.ownedSpecials();
-    const ownedIds = new Set(owned.map(i => i.itemId));
-    const locked = rewards.MILESTONES
-      .filter(m => m.item && !ownedIds.has(m.item.itemId));
-
+    const stats = items.collectionStats();
     const body = el('div', { class: 'stack' });
 
     body.append(el('div', { class: 'card center' },
-      el('h3', { text: `${owned.length} of ${owned.length + locked.length} treasures found` }),
-      bar(owned.length / Math.max(1, owned.length + locked.length), { gold: true }),
+      el('h3', { text: `${stats.owned} of ${stats.total} things collected` }),
+      bar(stats.pct, { gold: true }),
       el('p', { class: 'tiny muted', style: { marginTop: '8px' },
-        text: 'Special treasures are earned, never bought.' })
+        text: 'Some are bought in the shop. Some can only be earned.' })
     ));
 
-    if (owned.length) {
-      body.append(el('div', { class: 'stack-sm' }, owned.slice().reverse().map(item =>
-        el('div', { class: 'word-row' },
-          el('div', { style: { fontSize: '1.8rem' }, text: item.emoji }),
-          el('div', { class: 'grow' },
-            el('div', { class: 'w-text', text: item.name }),
-            el('div', { class: 'w-meta', text: `How you got it: ${item.source}` })
-          )
-        ))));
-    }
-
-    if (locked.length) {
-      body.append(el('div', { class: 'section-title', text: 'Still out there' }));
-      body.append(el('div', { class: 'stack-sm' }, locked.map(m =>
-        el('div', { class: 'word-row', style: { opacity: '.62' } },
-          el('div', { style: { fontSize: '1.8rem' }, text: '❓' }),
-          el('div', { class: 'grow' },
-            el('div', { class: 'w-text', text: '? ? ?' }),
-            el('div', { class: 'w-meta', text: m.title })
-          )
-        ))));
+    for (const cat of Object.values(items.CATEGORY)) {
+      const all = items.CATALOG.filter(i => i.category === cat.key);
+      const mine = all.filter(i => items.owns(i.id));
+      body.append(el('div', { class: 'section-title',
+        text: `${cat.emoji} ${cat.label} \u2014 ${mine.length} of ${all.length}` }));
+      body.append(el('div', { class: 'book-grid' }, all.map(bookEntry)));
     }
 
     return body;
+  }
+
+  function bookEntry(item) {
+    const owned = items.owns(item.id);
+    const special = item.price == null;
+
+    if (!owned) {
+      return el('div', { class: 'book-cell locked' },
+        el('div', { class: 'book-art', text: '?' }),
+        el('div', { class: 'book-name', text: special ? 'Earn it' : `\u2605 ${item.price}` })
+      );
+    }
+    return el('button', {
+      class: `book-cell${special ? ' special' : ''}`, type: 'button',
+      onClick: () => showItem(item),
+    },
+      el('div', { class: 'book-art', html: itemSVG(item, { size: 62 }) }),
+      el('div', { class: 'book-name', text: item.name }),
+      items.isEquipped(item.id) ? el('div', { class: 'wardrobe-on', text: '\u2713' }) : null
+    );
+  }
+
+  /* Every item records how she came by it — the whole point of the book. */
+  function showItem(item) {
+    const close = modal(item.name, [
+      el('div', { class: 'center', html: itemSVG(item, { size: 140 }) }),
+      el('p', { class: 'center muted tiny', text: item.blurb }),
+      el('div', { class: 'card card-tight center', style: { background: '#fdf2e3', marginTop: '12px' } },
+        el('div', { class: 'tiny', style: { fontWeight: '800' }, text: 'How you got it' }),
+        el('div', { class: 'tiny', text: items.sourceOf(item.id) || 'Unknown' })
+      ),
+      item.price == null
+        ? el('p', { class: 'center tiny muted', style: { marginTop: '10px' },
+            text: '\u2728 This one cannot be bought \u2014 only earned.' })
+        : null,
+      button('Close', { cls: 'btn btn-primary btn-block', style: { marginTop: '16px' },
+        onClick: () => close() }),
+    ]);
   }
 
   render();

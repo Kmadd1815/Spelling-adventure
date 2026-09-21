@@ -8,6 +8,7 @@
    that every growth stage and every coat comes out of the same code. */
 
 import { COATS, coatByKey, STAGES } from '../core/pet.js';
+import { wearableSVG, BEHIND_BODY } from './item-art.js';
 
 const n = v => Math.round(v * 100) / 100;
 
@@ -75,9 +76,12 @@ function gill(hx, hy, rx, ry, c, side, i, g, pass) {
  * @param {object} opts.coat   a COATS entry
  * @param {object} opts.stage  a STAGES entry
  * @param {boolean} [opts.happy] a wider grin
+ * @param {string} [opts.hat]       a worn hat's item id
+ * @param {string} [opts.accessory] a worn accessory's item id
  * @returns {string} an <svg> string
  */
-export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false } = {}) {
+export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
+                         hat = null, accessory = null } = {}) {
   const c = coat;
   const h = stage.headScale;
   const b = stage.bodyScale;
@@ -91,6 +95,14 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false } = {
   const headCy = bodyCy - bodyRy - headRy + 22 * h;
 
   const groundY = bodyCy + bodyRy * 0.88 + 11;
+
+  /* Everything she is wearing is measured as a fraction of the head and
+     body, so one drawing per item fits every growth stage. */
+  const geom = { hx: headCx, hy: headCy, hrx: headRx, hry: headRy,
+                 bx: bodyCx, by: bodyCy, brx: bodyRx, bry: bodyRy, coat: c };
+  const hatArt = hat ? wearableSVG(hat, geom) : '';
+  const accArt = accessory ? wearableSVG(accessory, geom) : '';
+  const accBehind = accessory && BEHIND_BODY.has(accessory);
 
   let gillsUnder = '', gillsOver = '';
   for (const side of [-1, 1]) {
@@ -164,6 +176,7 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false } = {
      aria-label="An axolotl">
   <ellipse cx="100" cy="${n(groundY)}" rx="${n(bodyRx * 0.82)}" ry="7" fill="#000" opacity=".10"/>
   ${sparkles}
+  ${accBehind ? accArt : ''}
   ${tail}
 
   <!-- body -->
@@ -190,6 +203,9 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false } = {
   ${eye(-1)}${eye(1)}
   ${nostril(-1)}${nostril(1)}
   ${grin}
+
+  ${accBehind ? '' : accArt}
+  ${hatArt}
 </svg>`;
 }
 

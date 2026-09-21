@@ -153,6 +153,43 @@ Once every active word has had its turn today, **Today's Practice goes quiet
 until tomorrow**. Extra practice stays open, and is deliberately worth much
 less — it is for when she wants more, not a way to farm stars.
 
+## The shop and her collection
+
+Stars buy things. There are 21 items in the shop across hats, accessories
+and decorations, priced against roughly 200 stars in a good week:
+
+| | Price | Roughly |
+|---|---|---|
+| Little Bow, Bouncy Ball, Pretty Pebbles | 35–55 | a few days |
+| Cozy Scarf, Party Hat, Toadstool Lamp | 65–120 | most weeks |
+| Wizard Hat, Hero Cape, Book Nook | 160–300 | a week of saving |
+| Golden Crown, Fish Tank, Castle Playset | 550–900 | something to work towards |
+
+Eleven more items exist that the shop cannot sell at any price. Those are
+**earned** — milestones, streaks, lists completed — and the Collection Book
+records how she came by each one.
+
+That rule is structural rather than a check someone could forget: an earned
+item has no price field at all, and the shop is defined as "items that have
+a price". There is nowhere to put a number on a milestone reward. Trying to
+award a purchasable item as a prize is refused outright.
+
+### Owning, wearing and displaying
+
+Three separate layers, deliberately never merged:
+
+- **Stars** — the currency
+- **Collection** — everything she owns, permanently
+- **Equipped** — the few things on show right now
+
+She can own thirty decorations and display three. The pet wears one hat and
+one accessory; the scene holds three decorations. Everything else waits in
+the wardrobe on the **My Pet** screen, where she can swap things any time.
+
+Hats and accessories are drawn onto the pet from its live measurements, so
+one drawing fits every growth stage — a hat that fits the baby fits the
+grown axolotl.
+
 ## Keyboards
 
 The app draws its own letters and never opens the system keyboard, because

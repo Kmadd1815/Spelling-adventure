@@ -10,7 +10,8 @@
 
 import { getState, update } from './state.js';
 import { emit } from './bus.js';
-import { masteredWords, wordsInList, activeLists, isMastered, uid } from './words.js';
+import { masteredWords, wordsInList, activeLists, isMastered } from './words.js';
+import { grant as grantItem, byId as itemById, owns } from './items.js';
 
 /* ---------- Stars ---------- */
 
@@ -36,30 +37,24 @@ export function spendStars(amount, reason = '') {
 }
 
 /* ---------- Special items ----------
-   Deliberately has no price field. A special item cannot be bought
-   because there is nowhere to put a price on one. */
+   Awarded, never sold. They are catalogue entries with no price field at
+   all, so there is nowhere for the shop to find a number to charge. */
 
-export function grantSpecial({ itemId, name, category = 'special', source, emoji = '✨' }) {
-  return update(state => {
-    const entry = {
-      id: uid('own'),
-      itemId,
-      name,
-      category,
-      emoji,
-      source,                    // human-readable: how she earned it
-      earnedAt: Date.now(),
-      special: true,
-      equipped: false,
-    };
-    state.collection.items.push(entry);
-    emit('special:granted', entry);
-    return entry;
-  });
+export function grantSpecial(itemId, source) {
+  const item = itemById(itemId);
+  if (!item || item.price != null) {
+    console.warn('[rewards] refusing to award a purchasable item as a prize:', itemId);
+    return null;
+  }
+  const record = grantItem(itemId, source);
+  if (record) emit('special:granted', { item, record });
+  return record;
 }
 
 export function ownedSpecials() {
-  return getState().collection.items.filter(i => i.special);
+  return getState().collection.items
+    .map(r => ({ ...itemById(r.itemId), record: r }))
+    .filter(i => i.id && i.price == null);
 }
 
 /* ---------- Streaks ----------
@@ -104,57 +99,57 @@ export function touchStreak() {
 export const MILESTONES = [
   { id: 'first_word',  title: 'First Word Mastered',  emoji: '\u{1F331}',
     blurb: 'You mastered your very first word!', stars: 10,
-    item: { itemId: 'sprout_charm', name: 'Little Sprout Charm', emoji: '\u{1F331}' },
+    item: 'sprout_charm',
     test: s => s.mastered >= 1 },
 
   { id: 'master_10',   title: '10 Words Mastered',    emoji: '\u{1F338}',
     blurb: 'Ten words, all yours.', stars: 25,
-    item: { itemId: 'blossom_lamp', name: 'Blossom Lamp', emoji: '\u{1F3EE}' },
+    item: 'blossom_lamp',
     test: s => s.mastered >= 10 },
 
   { id: 'master_25',   title: '25 Words Mastered',    emoji: '\u{1F31F}',
     blurb: 'Twenty-five words! That is a lot of practice.', stars: 50,
-    item: { itemId: 'star_rug', name: 'Starlight Rug', emoji: '\u{1FA90}' },
+    item: 'star_rug',
     test: s => s.mastered >= 25 },
 
   { id: 'master_50',   title: '50 Words Mastered',    emoji: '\u{1F396}️',
     blurb: 'Fifty words mastered. Incredible.', stars: 100,
-    item: { itemId: 'golden_quill', name: 'Golden Quill', emoji: '\u{1FAB6}' },
+    item: 'golden_quill',
     test: s => s.mastered >= 50 },
 
   { id: 'master_100',  title: '100 Words Mastered',   emoji: '\u{1F451}',
     blurb: 'One hundred words. You are a word champion.', stars: 200,
-    item: { itemId: 'champion_crown', name: 'Word Champion Crown', emoji: '\u{1F451}' },
+    item: 'champion_crown',
     test: s => s.mastered >= 100 },
 
   { id: 'master_200',  title: '200 Words Mastered',   emoji: '\u{1F3F0}',
     blurb: 'Two hundred words! Your whole world grew.', stars: 400,
-    item: { itemId: 'word_castle', name: 'Tiny Word Castle', emoji: '\u{1F3F0}' },
+    item: 'word_castle',
     test: s => s.mastered >= 200 },
 
   { id: 'streak_3',    title: '3 Days in a Row',      emoji: '\u{1F525}',
     blurb: 'Three days of practice in a row!', stars: 20,
-    item: { itemId: 'cozy_candle', name: 'Cozy Candle', emoji: '\u{1F56F}️' },
+    item: 'cozy_candle',
     test: s => s.streak >= 3 },
 
   { id: 'streak_7',    title: 'A Whole Week',         emoji: '\u{1F525}',
     blurb: 'Seven days in a row. Wow.', stars: 60,
-    item: { itemId: 'week_banner', name: 'Seven-Day Banner', emoji: '\u{1F3F5}️' },
+    item: 'week_banner',
     test: s => s.streak >= 7 },
 
   { id: 'streak_30',   title: 'Thirty Days',          emoji: '\u{1F31E}',
     blurb: 'A whole month of practice!', stars: 250,
-    item: { itemId: 'sun_mobile', name: 'Sunbeam Mobile', emoji: '\u{1F31E}' },
+    item: 'sun_mobile',
     test: s => s.streak >= 30 },
 
   { id: 'first_list',  title: 'A List Completed',     emoji: '\u{1F4DA}',
     blurb: 'You mastered every word on a list!', stars: 75,
-    item: { itemId: 'ribbon_shelf', name: 'Ribbon Shelf', emoji: '\u{1F380}' },
+    item: 'ribbon_shelf',
     test: s => s.completedLists >= 1 },
 
   { id: 'lists_5',     title: 'Five Lists Completed', emoji: '\u{1F3C6}',
     blurb: 'Five whole lists finished.', stars: 150,
-    item: { itemId: 'trophy_shelf', name: 'Trophy Shelf', emoji: '\u{1F3C6}' },
+    item: 'trophy_shelf',
     test: s => s.completedLists >= 5 },
 ];
 
@@ -189,9 +184,7 @@ export function checkMilestones() {
 
     update(state => { state.progress.milestonesEarned.push(m.id); });
     awardStars(m.stars, `milestone:${m.id}`);
-    if (m.item) {
-      grantSpecial({ ...m.item, category: 'milestone', source: m.title });
-    }
+    if (m.item) grantSpecial(m.item, m.title);
     freshlyEarned.push(m);
     emit('milestone:earned', m);
   }

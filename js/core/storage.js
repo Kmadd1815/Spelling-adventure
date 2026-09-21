@@ -70,10 +70,19 @@ export function defaultState() {
     /* Rolling history, trimmed to the most recent sessions. */
     sessions: [],
 
-    /* Reserved for the collection / shop layer. Special items land here
-       with the record of how they were earned. */
+    /* Everything she owns. Each record is just which catalogue item it is
+       and how she came by it — the name, art and price all live in the
+       catalogue, so an item can never disagree with itself. */
     collection: {
-      items: [],   // { id, itemId, name, category, source, earnedAt, special }
+      items: [],   // { id, itemId, source, earnedAt }
+    },
+
+    /* The few things on show right now. Owning is permanent; this is a
+       choice she can change whenever she likes. */
+    equipped: {
+      hat: null,
+      accessory: null,
+      scene: [],   // itemIds, up to items.SCENE_SLOTS
     },
   };
 }
@@ -100,6 +109,7 @@ function migrate(state) {
     settings:   { ...base.settings,   ...(state.settings || {}) },
     progress:   { ...base.progress,   ...(state.progress || {}) },
     collection: { ...base.collection, ...(state.collection || {}) },
+    equipped:   { ...base.equipped,   ...(state.equipped   || {}) },
   };
   merged.schemaVersion = SCHEMA_VERSION;
   return merged;
