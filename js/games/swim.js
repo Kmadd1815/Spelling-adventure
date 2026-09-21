@@ -5,10 +5,16 @@
    the rocks.
 
    Softer than the game it borrows from: hitting a rock costs one bubble out
-   of three and gives her a moment of safety afterwards rather than ending
-   the run, the rocks leave a generous gap, and a wrong letter costs nothing
-   at all. Every word she finishes is banked the moment she finishes it, so
-   the last rock can never take her whole run away.
+   of five and gives her a moment of safety afterwards rather than ending the
+   run, the rocks leave a generous gap, and a wrong letter costs nothing at
+   all. Every word she finishes is banked the moment she finishes it, so the
+   last rock can never take her whole run away.
+
+   Only the letter she needs is ever placed in a gap between rocks. Wrong
+   letters drift along in open water, halfway between one pair of rocks and
+   the next, where there is room to swim over or under them — a letter she
+   has no way to avoid is not a choice, and a game made of unavoidable
+   choices is just a game you lose.
 
    The letters come to her in order, so this never touches a mastery streak.
 */
@@ -20,7 +26,7 @@ import * as speech from '../core/speech.js';
 import { gameWords } from '../core/games.js';
 
 const WORDS_PER_ROUND = 3;
-const START_BUBBLES = 3;
+const START_BUBBLES = 5;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
 /* Everything below is in pixels-per-frame at 60fps, scaled by real elapsed
@@ -30,9 +36,9 @@ const LIFT      = -0.62;
 const MAX_FALL  = 6.5;
 const MAX_RISE  = -6.0;
 const SPEED     = 2.5;
-const GAP_H     = 0.42;      // gap height as a fraction of the pond
+const GAP_H     = 0.52;      // gap height as a fraction of the pond
 const ROCK_W    = 46;
-const SPAWN_MS  = 1700;
+const SPAWN_MS  = 2100;     // between pairs of rocks
 const SAFE_MS   = 1400;      // grace after a bump
 const PET_SIZE  = 62;
 
@@ -83,6 +89,7 @@ export default function swim(ctx) {
   let rocks = [];      // { x, gapTop, node, top, bottom, passed }
   let tokens = [];     // { x, y, ch, good, node }
   let spawnAt = 0;
+  let decoyAt = 0;
   let raf = null;
   let last = 0;
   let running = false;
@@ -121,7 +128,7 @@ export default function swim(ctx) {
 
   function spawnRock() {
     const { w, h } = size();
-    const gapH = Math.max(110, h * GAP_H);
+    const gapH = Math.max(140, h * GAP_H);
     const gapTop = 18 + Math.random() * Math.max(10, h - gapH - 36);
 
     const top = el('div', { class: 'swim-rock swim-rock-top' });
@@ -131,17 +138,31 @@ export default function swim(ctx) {
     place(top, x, 0, ROCK_W, gapTop);
     place(bottom, x, gapTop + gapH, ROCK_W, Math.max(0, h - gapTop - gapH));
     pond.append(top, bottom);
-    rocks.push({ x, gapTop, gapH, top, bottom, passed: false });
+    rocks.push({ x, gapTop, gapH, top, bottom });
 
-    /* A letter rides in the gap. Most of the time it is the one she needs;
-       the rest of the time it is a decoy she can simply swim past. */
-    const wantIt = Math.random() < 0.65 && needed();
-    const ch = wantIt ? needed() : randomOther();
-    const node = el('div', { class: `swim-token${wantIt ? ' swim-token-good' : ''}`, text: ch });
-    const ty = gapTop + gapH / 2 - 18;
-    place(node, x + 4, ty, 36, 36);
+    /* Only ever the letter she needs, riding in the middle of the gap she
+       has to fly through anyway — so getting through cleanly IS collecting
+       it. Sometimes the gap is empty and the passage is simply free. */
+    if (needed() && Math.random() < 0.72) {
+      addToken(needed(), x + 4, gapTop + gapH / 2 - 18, true);
+    }
+  }
+
+  /* Wrong letters live in open water, well clear of any gap, so she can
+     always swim over or under them. */
+  function spawnDecoy() {
+    const { w, h } = size();
+    const ch = randomOther();
+    if (!ch) return;
+    const y = 24 + Math.random() * Math.max(10, h - 84);
+    addToken(ch, w + 40, y, false);
+  }
+
+  function addToken(ch, x, y2, good) {
+    const node = el('div', { class: `swim-token${good ? ' swim-token-good' : ''}`, text: ch });
+    place(node, x, y2, 36, 36);
     pond.append(node);
-    tokens.push({ x: x + 4, y: ty, ch, good: !!wantIt, node });
+    tokens.push({ x, y: y2, ch, good, node });
   }
 
   function randomOther() {
@@ -191,6 +212,10 @@ export default function swim(ctx) {
 
     spawnAt -= dt * 16.67;
     if (spawnAt <= 0) { spawnRock(); spawnAt = SPAWN_MS - wordIndex * 120; }
+
+    // Half a beat behind the rocks, so a decoy never arrives alongside one.
+    decoyAt -= dt * 16.67;
+    if (decoyAt <= 0) { spawnDecoy(); decoyAt = SPAWN_MS - wordIndex * 120; }
 
     const step = SPEED * dt * (1 + wordIndex * 0.12);
 
@@ -281,6 +306,7 @@ export default function swim(ctx) {
       got = 0;
       clearWorld();
       spawnAt = 600;
+      decoyAt = 600 + SPAWN_MS / 2;
       drawWord();
       start();
     }, 1800);
@@ -353,6 +379,7 @@ export default function swim(ctx) {
   drawBubbles();
   petNode.style.top = `${y}px`;
   spawnAt = 900;
+  decoyAt = 900 + SPAWN_MS / 2;
   // One beat to let the pond get its size before anything starts moving.
   wait(start, 260);
 }

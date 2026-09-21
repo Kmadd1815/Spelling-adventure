@@ -13,6 +13,7 @@
 import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy, petSprite } from '../ui/buddy.js';
+import { watchPhysicalKeyboard } from '../ui/keyboard.js';
 import * as speech from '../core/speech.js';
 import { gameWords } from '../core/games.js';
 
@@ -64,7 +65,7 @@ export default function towerBuilder(ctx) {
     /* The axolotl in this game is the builder standing beside the tower, so
        the panel is its voice only — two of the same creature on one screen
        reads as a bug, not a friend. */
-    el('div', { class: 'tower-left' }, towerNode, buddy.node),
+    el('div', { class: 'tower-left' }, buddy.node, towerNode),
     el('div', { class: 'tower-right' }, slotsNode, sparesNode, clueNode, padNode)
   );
 
@@ -140,6 +141,8 @@ export default function towerBuilder(ctx) {
   /* ---------- Guessing ---------- */
 
   function guess(ch) {
+    // A real keyboard can send an apostrophe, which is not a guess.
+    if (!ALPHABET.includes(ch)) return;
     if (busy || guessed.has(ch)) return;
     guessed.add(ch);
 
@@ -211,6 +214,18 @@ export default function towerBuilder(ctx) {
     done();
   }
 
+  /* ---------- Input ----------
+     The letter pad is there to be tapped, but she is learning to type, so a
+     Bluetooth keyboard guesses letters too. The pad still greys out what she
+     has already tried either way, which is the whole point of the pad. */
+
+  ctx.onCleanup(watchPhysicalKeyboard({
+    onLetter: guess,
+    onBackspace: () => {},
+    onEnter: () => {},
+    isLocked: () => busy,
+  }));
+
   /* ---------- Go ---------- */
 
   drawAll();
@@ -226,13 +241,19 @@ export default function towerBuilder(ctx) {
 function towerSVG(blocks, flags) {
   const PER_ROW = 4;
   const BW = 40, BH = 22, GAP = 2;
-  const baseY = 236;
-  const left = 16;
+  const left = 6;
+  const width = left * 2 + PER_ROW * BW + (PER_ROW - 1) * GAP;
+
+  /* The drawing is only ever as tall as the tower actually is. A fixed-size
+     canvas meant an empty tower reserved a screen's worth of blank sky and
+     pushed the axolotl away from everything else. */
+  const rows = Math.ceil(blocks / PER_ROW);
+  const flagRoom = flags ? 36 : 0;
+  const height = Math.max(26, rows * (BH + GAP) + flagRoom + 6);
+  const baseY = height - 2;
 
   const shades = ['#e8b98a', '#dfa876', '#efc79c', '#d99e6c'];
   const parts = [];
-
-  parts.push(`<rect x="8" y="${baseY}" width="184" height="14" rx="5" fill="#b9d8c6"/>`);
 
   for (let i = 0; i < blocks; i++) {
     const row = Math.floor(i / PER_ROW);
@@ -245,15 +266,16 @@ function towerSVG(blocks, flags) {
     );
   }
 
-  const topRow = Math.ceil(blocks / PER_ROW);
   for (let f = 0; f < flags; f++) {
-    const x = left + 12 + f * 30;
-    const y = baseY - topRow * (BH + GAP) - 6;
+    const x = left + 14 + f * 30;
+    const y = baseY - rows * (BH + GAP) - 4;
     parts.push(
       `<line x1="${x}" y1="${y}" x2="${x}" y2="${y - 26}" stroke="#8d6748" stroke-width="3" stroke-linecap="round"/>` +
       `<path d="M${x} ${y - 26} L${x + 22} ${y - 20} L${x} ${y - 14} Z" fill="#ff8fab"/>`
     );
   }
 
-  return `<svg viewBox="0 0 200 260" width="100%" height="100%" aria-hidden="true">${parts.join('')}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" ` +
+         `aria-hidden="true">${parts.join('')}</svg>`;
 }
+

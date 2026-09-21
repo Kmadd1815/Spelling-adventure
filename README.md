@@ -163,9 +163,14 @@ is in every one of them.
 | **Word Search** | Her words hidden in a 10×10 grid, forwards only | Cheers from the side | no |
 | **Crossword** | Built from the definitions on her list | Reads the clues | **yes** |
 | **Tic Tac Toe** | Spell a word right to claim a square | Plays against her | **yes** |
-| **Word Snake** | Swim around collecting letters in order | She plays as it | no |
+| **Word Snake** | Hears the word, then collects its letters in order | She plays as it | no |
 | **Tower Builder** | Guess letters; every right one lays a block | Builds the tower | no |
 | **Axolotl Swim** | Hold to swim up, dodge rocks, catch letters | She plays as it | no |
+
+Each game sits on its own painted backdrop — paper for the puzzles, a
+meadow for the tower, open water for the two she swims — built from stacked
+CSS gradients like the room's wallpapers, so there is nothing to download
+and nothing to go stale in the cache.
 
 ### What games can and cannot do to her progress
 
@@ -181,7 +186,15 @@ to the spelling engine:
   her the letters in order; Tower is letter-guessing against blanks.
 * Crossword's speaker button reads the **clue**, never the answer. Reading a
   clue out loud is help with reading; reading the answer out loud would make
-  the credit meaningless.
+  the credit meaningless. The next clue is read out automatically as soon as
+  she finishes one — unless she has already picked a different clue herself,
+  in which case hers wins.
+* Word Snake reads the word out and then hides it: every letter floating in
+  the water looks **exactly the same**, so finding the next one means knowing
+  how the word is spelled. It still does not count for mastery, because she
+  can find a letter by swimming into one and seeing what happens.
+* Tower Builder takes guesses from a Bluetooth keyboard as well as from the
+  letter pad, and the pad greys out what she has already tried either way.
 * The one-credit-a-day cap still applies, so a game cannot be used to rush a
   word to mastery in an afternoon.
 
@@ -367,6 +380,9 @@ These are deliberate and should survive future changes:
    a game where she spells the whole word from memory can add to one at all.
 12. Mini-games pay less than practice, and their earnings are capped per day,
    so the shop can never be funded by games instead of spelling.
+13. A game never puts something she has to avoid somewhere she cannot avoid
+   it. In Axolotl Swim only the letter she needs is ever placed in a gap
+   between rocks; wrong letters drift in open water with room to swim past.
 
 ---
 

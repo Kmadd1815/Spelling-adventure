@@ -36,12 +36,14 @@ const REPEAT_PAY = 1;
  * The catalogue.
  *
  * canMaster  true only where she spells the whole word from memory with
- *            nothing to copy from. Word Search shows her the spelling;
- *            Snake and Swim hand her the letters in order. Those are
- *            recorded in her history but never move the mastery streak.
+ *            nothing to copy from and no way to stumble onto the answer.
+ *            Word Search shows her the spelling; Snake and Swim can be
+ *            brute-forced by swimming into letters to see what happens.
+ *            Those are recorded in her history but never move the streak.
  * minWords   how many words the game needs before it makes any sense.
  * pay        base for finishing, perWord for each word she got, and a
  *            bonus for a clean run.
+ * scene      which painted backdrop the game sits on — see css/app.css.
  */
 export const GAMES = [
   {
@@ -50,6 +52,7 @@ export const GAMES = [
     buddyRole: 'Cheers you on from the side',
     minWords: 4, canMaster: false,
     pay: { base: 3, perWord: 1, perfect: 2 },
+    scene: 'paper',
     load: () => import('../games/wordsearch.js'),
   },
   {
@@ -58,6 +61,7 @@ export const GAMES = [
     buddyRole: 'Reads the clues with you',
     minWords: 4, canMaster: true,
     pay: { base: 4, perWord: 1, perfect: 4 },
+    scene: 'paper',
     load: () => import('../games/crossword.js'),
   },
   {
@@ -66,14 +70,16 @@ export const GAMES = [
     buddyRole: 'Plays against you',
     minWords: 3, canMaster: true,
     pay: { base: 4, perWord: 1, perfect: 3 },
+    scene: 'party',
     load: () => import('../games/tictactoe.js'),
   },
   {
     id: 'snake', name: 'Word Snake', emoji: '\u{1F40D}', tint: 't-purple',
-    blurb: 'Swim around collecting the letters in the right order.',
+    blurb: 'Hear the word, then swim around collecting its letters in order.',
     buddyRole: 'You play as the axolotl',
     minWords: 1, canMaster: false,
     pay: { base: 3, perWord: 2, perfect: 2 },
+    scene: 'pond',
     load: () => import('../games/snake.js'),
   },
   {
@@ -82,6 +88,7 @@ export const GAMES = [
     buddyRole: 'Builds the tower for you',
     minWords: 1, canMaster: false,
     pay: { base: 3, perWord: 2, perfect: 3 },
+    scene: 'meadow',
     load: () => import('../games/tower.js'),
   },
   {
@@ -90,6 +97,7 @@ export const GAMES = [
     buddyRole: 'You play as the axolotl',
     minWords: 1, canMaster: false,
     pay: { base: 3, perWord: 2, perfect: 2 },
+    scene: 'shore',
     load: () => import('../games/swim.js'),
   },
 ];

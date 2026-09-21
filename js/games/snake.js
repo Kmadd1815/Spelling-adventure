@@ -1,16 +1,19 @@
 /* Word Snake.
 
-   She swims the axolotl around a pond picking up the letters of a word in
-   order. The letter she needs next is out there somewhere along with a few
-   decoys, and the word builds up along the top as she collects it.
+   She hears the word, then swims the axolotl around the pond picking up its
+   letters in order. Nothing on the board marks which letter is the right
+   one: every letter in the water looks exactly the same, so finding the
+   next one means knowing how the word is spelled. The word fills in along
+   the top as she collects it.
 
    Deliberately gentle for an arcade game: the walls wrap instead of ending
    the round, the tail cannot be crashed into, and a wrong letter costs one
-   bubble out of three rather than the whole game. Running out of bubbles
+   bubble out of five rather than the whole game. Running out of bubbles
    still pays for every word she finished.
 
-   The letters are handed to her in order, so this is not spelling from
-   memory and it never touches a mastery streak.
+   It still does not touch a mastery streak. She can find a letter by
+   swimming into one and seeing what happens, and a game she can brute-force
+   is not evidence that she knows the word.
 */
 
 import { el, mount, clear, button } from '../ui/dom.js';
@@ -22,8 +25,8 @@ import { gameWords } from '../core/games.js';
 const COLS = 15;
 const ROWS = 11;
 const WORDS_PER_ROUND = 3;
-const START_BUBBLES = 3;
-const DECOYS = 4;
+const START_BUBBLES = 5;
+const DECOYS = 3;
 const BASE_TICK = 430;          // ms between moves, eases up as she goes
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -40,7 +43,7 @@ export default function wordSnake(ctx) {
     ));
   }
 
-  const buddy = createBuddy({ layout: 'voice', greeting: 'Grab the letters in order!' });
+  const buddy = createBuddy({ layout: 'voice', greeting: 'Listen \u2014 then go and find the letters!' });
   ctx.onCleanup(() => buddy.stop());
 
   /* ---------- State ---------- */
@@ -56,6 +59,10 @@ export default function wordSnake(ctx) {
   let timer = null;
   let over = false;
   let wordsWon = 0;
+
+  const timers = [];
+  const wait = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
+  ctx.onCleanup(() => timers.forEach(clearTimeout));
 
   /* ---------- Layout ---------- */
 
@@ -235,6 +242,12 @@ export default function wordSnake(ctx) {
     if (bubbles <= 0) endRound(false);
   }
 
+  /* Hearing the word is the whole prompt — the letters on the board give
+     nothing away. */
+  function sayWord() {
+    speech.speakWord(queue[wordIndex]);
+  }
+
   function finishWord() {
     const word = queue[wordIndex];
     ctx.record(word, true);
@@ -244,7 +257,7 @@ export default function wordSnake(ctx) {
     stop();
     paint();
 
-    setTimeout(() => {
+    wait(() => {
       if (over) return;
       wordIndex += 1;
       if (wordIndex >= queue.length) return endRound(true);
@@ -255,6 +268,7 @@ export default function wordSnake(ctx) {
       nextDir = dir;
       spawnAll();
       paint();
+      sayWord();
       start();
     }, 1600);
   }
@@ -265,7 +279,7 @@ export default function wordSnake(ctx) {
     stop();
     const left = queue.slice(wordsWon);
 
-    setTimeout(() => ctx.finish({
+    wait(() => ctx.finish({
       wordsWon,
       bonus: allDone, bonusLabel: 'Every word collected!',
       headline: allDone ? 'All the words!' : 'Good swimming!',
@@ -336,5 +350,6 @@ export default function wordSnake(ctx) {
   buildBoard();
   spawnAll();
   paint();
+  wait(sayWord, 400);
   start();
 }

@@ -1204,11 +1204,93 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 
 .speak-btn-sm { width: 62px; height: 62px; font-size: 1.6rem; box-shadow: 0 4px 0 #4f93ba; }
 
+/* ---------- Painted backdrops ----------
+
+   Each game sits on a scene rather than on the app's plain cream, which is
+   what turns a grid of squares into somewhere. They are built from stacked
+   gradients like the room's wallpapers are: no images to load, nothing to
+   cache, and they redraw at any size. core/games.js says which game wears
+   which one. */
+
+.game-scene {
+  border-radius: var(--r-lg);
+  padding: 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* Warm paper, faintly ruled — the puzzle games. */
+.scene-paper {
+  background-color: #fbf1df;
+  background-image:
+    radial-gradient(circle, rgba(196,163,122,.22) 0 1.5px, transparent 2px),
+    radial-gradient(140% 90% at 50% -25%, rgba(255,255,255,.95) 0 45%, rgba(255,255,255,0) 75%);
+  background-size: 24px 24px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+}
+
+/* Scattered confetti — the game she plays against the axolotl. */
+.scene-party {
+  background-color: #ffeed8;
+  background-image:
+    radial-gradient(circle at  8% 14%, rgba(239,154,154,.75) 0 13px, transparent 14px),
+    radial-gradient(circle at 17% 38%, rgba(246,196,83,.6)   0  8px, transparent  9px),
+    radial-gradient(circle at  6% 66%, rgba(111,179,217,.6)  0 10px, transparent 11px),
+    radial-gradient(circle at 19% 88%, rgba(167,139,201,.6)  0 14px, transparent 15px),
+    radial-gradient(circle at 37% 96%, rgba(100,189,128,.55) 0  9px, transparent 10px),
+    radial-gradient(circle at 34%  7%, rgba(246,196,83,.55)  0  7px, transparent  8px),
+    radial-gradient(circle at 62% 94%, rgba(111,179,217,.5)  0 12px, transparent 13px),
+    radial-gradient(circle at 78% 89%, rgba(239,154,154,.6)  0  8px, transparent  9px),
+    radial-gradient(circle at 94% 72%, rgba(246,196,83,.7)   0 13px, transparent 14px),
+    radial-gradient(circle at 88% 34%, rgba(167,139,201,.55) 0  9px, transparent 10px),
+    radial-gradient(circle at 96% 12%, rgba(100,189,128,.5)  0 11px, transparent 12px),
+    radial-gradient(circle at 72%  9%, rgba(111,179,217,.55) 0  7px, transparent  8px),
+    linear-gradient(180deg, #fff8ef, #fce3c6);
+}
+
+/* Under the water, with bubbles rising and light coming down. */
+.scene-pond {
+  background-color: #b6e0f1;
+  background-image:
+    radial-gradient(circle at 13% 76%, rgba(255,255,255,.5) 0 10px, transparent 11px),
+    radial-gradient(circle at 31% 91%, rgba(255,255,255,.4) 0 6px, transparent 7px),
+    radial-gradient(circle at 77% 64%, rgba(255,255,255,.42) 0 8px, transparent 9px),
+    radial-gradient(circle at 90% 88%, rgba(255,255,255,.34) 0 12px, transparent 13px),
+    linear-gradient(112deg,
+      rgba(255,255,255,.26) 0 5%, rgba(255,255,255,0) 6% 17%,
+      rgba(255,255,255,.2) 18% 23%, rgba(255,255,255,0) 24%),
+    linear-gradient(180deg, #ddf2fc, #a4d5eb);
+}
+
+/* Green hills under a cloudy sky — where the tower gets built. */
+.scene-meadow {
+  background-color: #eef7e8;
+  background-image:
+    radial-gradient(62% 30% at 20% 106%, #9ed087 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(72% 32% at 84% 110%, #8bc675 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 12%  9%, rgba(255,255,255,.95) 0 26px, transparent 27px),
+    radial-gradient(circle at 20% 12%, rgba(255,255,255,.95) 0 18px, transparent 19px),
+    radial-gradient(circle at 34%  7%, rgba(255,255,255,.8)  0 15px, transparent 16px),
+    radial-gradient(circle at 46% 46%, rgba(255,255,255,.7)  0 13px, transparent 14px),
+    linear-gradient(180deg, #ddeffa 0%, #f0f8ea 72%);
+}
+
+/* A sandy bank under an open sky — the pond she swims through. */
+.scene-shore {
+  background-color: #e9f4fa;
+  background-image:
+    radial-gradient(96% 20% at 50% 106%, #f1ddb8 0 100%, rgba(0,0,0,0) 100%),
+    linear-gradient(180deg, #d9eefb, #f4fafd);
+}
+
 /* ---------- Word Search ---------- */
 
 .ws-wrap { flex-direction: column; }
-.ws-board-col { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
-.ws-side { display: flex; flex-direction: column; gap: 8px; }
+/* Stacked (portrait), a column must keep its natural height and let the
+   page scroll. Left to shrink, the board spills over whatever is below it. */
+.ws-board-col { flex: 0 0 auto; display: flex; justify-content: center; }
+.ws-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
 
 .ws-grid {
   display: grid;
@@ -1216,6 +1298,12 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   gap: 3px;
   width: min(100%, 62vh);
   align-self: center;
+  /* A frame, so the grid reads as a puzzle sitting on the desk rather than
+     as letters loose on the page. */
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 253, 249, .94);
+  box-shadow: 0 0 0 5px #e4c79f, 0 0 0 7px #cfa877, var(--shadow-soft);
 }
 .ws-cell {
   aspect-ratio: 1;
@@ -1251,14 +1339,20 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 /* ---------- Crossword ---------- */
 
 .cw-wrap { flex-direction: column; }
-.cw-board-col { display: flex; flex-direction: column; gap: 8px; align-items: center; min-height: 0; }
-.cw-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.cw-board-col { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.cw-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
 
 .cw-grid {
   display: grid;
   grid-template-columns: repeat(var(--cw-cols), 1fr);
   gap: 2px;
-  width: min(100%, 54vh);
+  /* Sized from the height it may have, not from the column width: a tall
+     puzzle squeezed into a wide column runs off the bottom of the screen. */
+  width: min(100%, calc(42vh * var(--cw-cols) / var(--cw-rows)));
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 253, 249, .94);
+  box-shadow: 0 0 0 5px #e4c79f, 0 0 0 7px #cfa877, var(--shadow-soft);
 }
 .cw-cell {
   position: relative;
@@ -1290,7 +1384,8 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .cw-cell.cw-solved .cw-letter { color: var(--green-dark); }
 .cw-cell.shake { animation: shake .4s ease; }
 
-.cw-clues { overflow: auto; display: flex; flex-direction: column; gap: 3px; }
+.cw-clues { overflow: auto; display: flex; flex-direction: column; gap: 3px;
+  flex: 1 1 auto; min-height: 0; padding-bottom: 2px; }
 .cw-clue-head { font-weight: 900; font-size: .8rem; color: var(--ink-soft); margin-top: 4px; }
 .cw-clue {
   text-align: left;
@@ -1313,6 +1408,7 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   box-shadow: var(--shadow);
   padding: 8px 12px;
   width: 100%;
+  flex: 0 0 auto;
 }
 .cw-current-row { display: flex; align-items: center; gap: 8px; }
 .cw-current-num { font-weight: 900; color: var(--primary-dark); font-size: .82rem; white-space: nowrap; }
@@ -1329,8 +1425,12 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .ttt-board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   width: min(86vw, 38vh);
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: rgba(255, 253, 249, .8);
+  box-shadow: 0 0 0 5px #f0c98a, var(--shadow-soft);
 }
 .ttt-cell {
   aspect-ratio: 1;
@@ -1352,7 +1452,16 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 /* ---------- Word Snake ---------- */
 
 .snake-wrap { align-items: center; }
-.snake-hud { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: center; }
+.snake-hud, .swim-hud {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 10px; justify-content: center;
+  /* A panel, because cream letters on open water are unreadable. */
+  background: rgba(255, 253, 249, .88);
+  border-radius: var(--r-pill);
+  padding: 5px 16px;
+  box-shadow: var(--shadow);
+  align-self: center;
+}
 .snake-word, .swim-word { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .snake-word .icon-btn, .swim-word .icon-btn { min-width: 40px; min-height: 40px; font-size: 1.1rem; }
 
@@ -1379,8 +1488,9 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
      square. Setting a max-height against a 100% width just stretches them. */
   width: min(100%, calc(50vh * var(--snake-cols) / var(--snake-rows)));
   aspect-ratio: var(--snake-cols) / var(--snake-rows);
-  background: #cfe7f3;
+  background: rgba(126, 190, 219, .38);
   border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .5);
   padding: 5px;
   touch-action: none;
 }
@@ -1392,13 +1502,27 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   font-size: clamp(.6rem, 2vh, 1rem);
   text-transform: uppercase;
 }
-.snake-tail { background: #f3b9c9; }
+/* A trail of bubbles behind her, not a row of blocks. */
+.snake-tail {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255,255,255,.95) 0 16%,
+      rgba(198,235,250,.9) 17% 62%, rgba(140,205,232,.85) 63% 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.65);
+}
 /* The drawing carries a lot of air around the creature, so it is scaled up
    past the edges of its square to read as an axolotl rather than a speck. */
 .snake-cell.snake-head { overflow: visible; }
 .snake-head svg { width: 190%; height: 190%; margin: -45%; display: block; }
-.snake-letter { background: var(--surface); color: var(--ink-soft); box-shadow: inset 0 0 0 2px var(--bg-deep); }
-.snake-good { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 2px var(--primary-dark); }
+/* Every letter in the water looks identical on purpose: the one she needs
+   is the one she knows comes next, not the one that is a different colour.
+   .snake-good still marks it in the markup so the game can tell them
+   apart — it just must never be something she can see. */
+.snake-letter, .snake-good {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--bg-deep);
+}
 
 .snake-controls { display: flex; align-items: center; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .dpad {
@@ -1425,12 +1549,13 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 /* ---------- Tower Builder ---------- */
 
 .tower-wrap { flex-direction: column; }
-.tower-left { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.tower-left { display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; gap: 8px; }
 .tower-right { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-width: 0; }
 
-.tower-art { display: flex; align-items: flex-end; gap: 4px; height: 30vh; min-height: 150px; }
-.tower-svg { height: 100%; }
-.tower-svg svg { height: 100%; width: auto; }
+.tower-art { display: flex; align-items: flex-end; gap: 4px; max-height: 38vh; }
+.tower-svg { display: flex; align-items: flex-end; max-height: 38vh; }
+.tower-svg svg { width: auto; height: auto; max-height: 38vh; max-width: 100%; }
 .tower-builder { width: 76px; flex: 0 0 auto; }
 .tower-builder svg { width: 100%; height: auto; display: block; }
 
@@ -1473,17 +1598,17 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 /* ---------- Axolotl Swim ---------- */
 
 .swim-wrap { align-items: center; }
-.swim-hud { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: center; }
 
 .swim-pond {
   position: relative;
   width: 100%;
   flex: 1 1 auto;
   min-height: 200px;
-  max-height: 52vh;
+  max-height: 62vh;
   overflow: hidden;
   border-radius: var(--r-md);
-  background: linear-gradient(180deg, #d6eef8, #a9d8ec);
+  background: linear-gradient(180deg, #cfeaf7, #8fcbe6);
+  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, .55), var(--shadow-soft);
   touch-action: none;
   cursor: pointer;
 }
@@ -1540,20 +1665,19 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 @media (orientation: landscape) {
   .ws-wrap, .cw-wrap, .ttt-wrap, .tower-wrap { flex-direction: row; align-items: stretch; }
 
-  .ws-board-col { flex: 1 1 60%; }
-  .ws-side { flex: 0 0 34%; overflow: auto; }
+  .ws-board-col { flex: 1 1 60%; min-height: 0; }
+  .ws-side { flex: 0 0 34%; min-height: 0; overflow: auto; }
   .ws-grid { width: min(100%, 56vh); }
 
-  .cw-board-col { flex: 1 1 58%; }
-  .cw-side { flex: 0 0 38%; }
-  .cw-grid { width: min(100%, 46vh); }
+  .cw-board-col { flex: 1 1 58%; min-height: 0; }
+  .cw-side { flex: 0 0 38%; min-height: 0; }
+  .cw-grid { width: min(100%, calc(60vh * var(--cw-cols) / var(--cw-rows))); }
 
   .ttt-board-col { flex: 1 1 auto; }
   .ttt-side { flex: 0 0 30%; max-width: none; align-self: center; }
 
   .tower-left { flex: 0 0 40%; }
   .tower-right { flex: 1 1 58%; }
-  .tower-art { height: 34vh; }
 
   .snake-controls { gap: 18px; }
   .snake-board { width: min(100%, calc(44vh * var(--snake-cols) / var(--snake-rows))); }

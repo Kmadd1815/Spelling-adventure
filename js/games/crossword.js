@@ -8,6 +8,10 @@
    The speaker button reads the CLUE, never the answer. Reading a clue out
    loud is help with reading; reading the answer out loud would be help with
    spelling, and that would make the credit meaningless.
+
+   The next clue is read out automatically as soon as she finishes one, so
+   she can keep her eyes on the grid and her hands on the keyboard instead
+   of hunting for a speaker button between every word.
 */
 
 import { el, mount, clear, button } from '../ui/dom.js';
@@ -48,6 +52,14 @@ export default function crossword(ctx) {
   let active = 0;
   let cursor = 0;
   let cleanRun = true;
+  /* Bumped whenever the active clue changes. A deferred jump to the next
+     clue checks this before it fires, so tapping a clue of her own within
+     the pause after solving one is never overruled a moment later. */
+  let selection = 0;
+
+  const timers = [];
+  const wait = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
+  ctx.onCleanup(() => timers.forEach(clearTimeout));
 
   /* ---------- Layout ---------- */
 
@@ -56,9 +68,12 @@ export default function crossword(ctx) {
   const cluePanel = el('div', { class: 'cw-current' });
   const keyboard  = el('div', { class: 'keyboard keyboard-sm' });
 
+  /* The clue she is working on lives in the side column, not under the
+     grid: a tall puzzle plus a clue panel plus a keyboard does not fit a
+     landscape tablet, and the grid is the part that must not be cut off. */
   const body = el('div', { class: 'game-body cw-wrap' },
-    el('div', { class: 'cw-board-col' }, gridNode, cluePanel),
-    el('div', { class: 'cw-side' }, clueList, buddy.node)
+    el('div', { class: 'cw-board-col' }, gridNode),
+    el('div', { class: 'cw-side' }, cluePanel, clueList, buddy.node)
   );
 
   mount(ctx.stage,
@@ -157,10 +172,17 @@ export default function crossword(ctx) {
 
   /* ---------- Moving around ---------- */
 
-  function selectEntry(i) {
+  function selectEntry(i, { speak = false } = {}) {
     active = i;
     cursor = 0;
+    selection += 1;
     paint();
+    if (speak) sayClue();
+  }
+
+  function sayClue() {
+    const entry = puzzle.entries[active];
+    if (entry) speech.speak(entry.clue.speak);
   }
 
   /* Tapping a square picks the entry it belongs to — and taps the other way
@@ -241,9 +263,15 @@ export default function crossword(ctx) {
       solved.add(active);
       buddy.cheer(`${entry.word.text}!`);
       paint();
-      if (solved.size === puzzle.entries.length) return setTimeout(done, 900);
+      if (solved.size === puzzle.entries.length) return wait(done, 900);
       const nextUnsolved = puzzle.entries.findIndex((e, i) => !solved.has(i));
-      if (nextUnsolved >= 0) selectEntry(nextUnsolved);
+      // A beat first, so the cheer for the word she just got is not talked
+      // over by the clue for the next one — and only if she has not already
+      // picked a clue herself in the meantime.
+      const mine = selection;
+      if (nextUnsolved >= 0) {
+        wait(() => { if (selection === mine) selectEntry(nextUnsolved, { speak: true }); }, 900);
+      }
       return;
     }
 
@@ -310,6 +338,7 @@ export default function crossword(ctx) {
   });
   drawGrid();
   selectEntry(0);
+  wait(sayClue, 500);
 }
 
 /* ---------- Clues ----------
@@ -364,7 +393,16 @@ function generate(list) {
       }
     }
     if (!options.length) continue;
-    const spot = options[Math.floor(Math.random() * options.length)];
+
+    /* Prefer the placement that keeps the grid compact. A crossword that
+       grows into a long thin ladder has to be shrunk to fit the screen,
+       and then the squares are too small to read. Choosing at random
+       among the best few keeps every puzzle a bit different. */
+    const ranked = options
+      .map(spot => ({ spot, cost: boxCost(text, spot) }))
+      .sort((a, b) => a.cost - b.cost)
+      .slice(0, 3);
+    const spot = ranked[Math.floor(Math.random() * ranked.length)].spot;
     put(word, spot.r, spot.c, spot.dir);
   }
 
@@ -401,6 +439,18 @@ function generate(list) {
   });
 
   return { entries, cells: shifted, numbers, width, height };
+
+  /* How lopsided the grid would become if `text` went in at `spot`. */
+  function boxCost(text, spot) {
+    const dr = spot.dir === 'down' ? 1 : 0;
+    const dc = spot.dir === 'across' ? 1 : 0;
+    const keys = [...cells.keys()].map(k => k.split(',').map(Number));
+    const rs = keys.map(([r]) => r).concat(spot.r, spot.r + dr * (text.length - 1));
+    const cs = keys.map(([, c]) => c).concat(spot.c, spot.c + dc * (text.length - 1));
+    const h = Math.max(...rs) - Math.min(...rs) + 1;
+    const w = Math.max(...cs) - Math.min(...cs) + 1;
+    return Math.max(h, w) / Math.min(h, w) + (h + w) / 40;
+  }
 
   function put(word, r, c, dir) {
     const text = letters(word.text);

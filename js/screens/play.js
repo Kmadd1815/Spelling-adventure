@@ -88,7 +88,14 @@ export default function playScreen(container, { id = '' } = {}) {
   };
 
   game.load()
-    .then(mod => { if (!finished) mod.default(ctx); })
+    .then(mod => {
+      if (finished || abandoned) return;
+      mod.default(ctx);
+      /* Every game paints its board into a .game-body, so the backdrop is
+         applied here rather than six times over. */
+      const board = stage.querySelector('.game-body');
+      if (board && game.scene) board.classList.add('game-scene', `scene-${game.scene}`);
+    })
     .catch(err => {
       console.error('[play] could not load', game.id, err);
       release();
