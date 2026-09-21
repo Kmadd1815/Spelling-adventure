@@ -186,15 +186,16 @@ expression it has is a reaction to something she just did.
 
 ## The shop and her collection
 
-Stars buy things. There are 21 items in the shop across hats, accessories
-and decorations, priced against roughly 200 stars in a good week:
+Stars buy things. There are 42 items in the shop — hats, accessories,
+wallpaper, flooring, windows, doors, furniture and wall art — priced against
+roughly 200 stars in a good week:
 
 | | Price | Roughly |
 |---|---|---|
-| Little Bow, Bouncy Ball, Pretty Pebbles | 35–55 | a few days |
-| Cozy Scarf, Party Hat, Toadstool Lamp | 65–120 | most weeks |
-| Wizard Hat, Hero Cape, Book Nook | 160–300 | a week of saving |
-| Golden Crown, Fish Tank, Castle Playset | 550–900 | something to work towards |
+| Pebbles, Bouncy Ball, Picture Frame | 35–75 | a few days |
+| Party Hat, Wallpaper, Clock, Wooden Door | 80–150 | most weeks |
+| Wizard Hat, Cozy Bed, Arched Window, Book Nook | 160–300 | a week of saving |
+| Shell Bed, Golden Crown, Fish Tank, Castle Playset | 480–900 | something to work towards |
 
 Eleven more items exist that the shop cannot sell at any price. Those are
 **earned** — milestones, streaks, lists completed — and the Collection Book
@@ -211,17 +212,44 @@ Three separate layers, deliberately never merged:
 
 - **Stars** — the currency
 - **Collection** — everything she owns, permanently
-- **Equipped** — the few things on show right now
+- **Equipped** — the arrangement she chooses on top of it
 
-She can own thirty decorations and display three. The pet wears one hat and
-one accessory; the scene holds three decorations. Everything else waits in
-the wardrobe on the **My Pet** screen, where she can swap things any time.
+## Her room
 
-Hats and accessories are drawn onto the pet from its live measurements, so
-one drawing fits every growth stage — a hat that fits the baby fits the
-grown axolotl.
+The home screen is a room: a wall behind, a floor in front, and everything
+placed where it would actually go. She can change the **wallpaper** and the
+**flooring**, and add a **window** and a **door**.
 
-## Keyboards
+Each kind of thing has its own place and its own limit:
+
+| Slot | How many |
+|---|---|
+| Wallpaper, flooring | 1 each |
+| Window, door | 1 each |
+| Bed, rug | 1 each |
+| On the walls | **2** |
+| On the floor | **3** |
+| Hat, accessory (on the pet) | 1 each |
+
+A room is not a shelf with three spaces on it. Separate limits are what stop
+it turning into a pile, and what make choosing between two rugs a real
+decision rather than a question of whether there is room.
+
+Single slots **swap** — picking a new rug rolls up the old one. The two
+multi-slots fill up and then say so, since taking something down should be
+a choice rather than something that happens quietly.
+
+Floor decorations go in the **corners** — back right, front left, front
+right — with the bed in the back-left corner. Nothing is placed in the strip
+where the axolotl stands, so the room reads like a room rather than a ring
+of objects around a pet.
+
+A **soft cream wallpaper and warm wood floor** are hers from the very first
+launch, so the room is never blank.
+
+**Decorate** on the home screen shows the room with every slot beneath it.
+
+## Keyboards## Keyboards
 
 The app draws its own letters and never opens the system keyboard, because
 Android's suggestion strip would hand her the correctly spelled word while
@@ -290,12 +318,16 @@ js/core/                systems — no DOM in here
   words.js              THE spelling engine: pools, priority, mastery
   speech.js             THE voice: one setting, used everywhere
   rewards.js            stars, streaks, milestones, special items
-  pet.js                the axolotl: coats, growth stages, everything it says
+  pet.js                the axolotl: coats, growth stages, moods, treats
+  items.js              the catalogue, ownership and the room's slots
   season.js             date-driven season
   bus.js                tiny pub/sub
 
 js/ui/                  reusable pieces
-  dom.js  router.js  art.js (all SVG artwork)  toast.js
+  dom.js  router.js  toast.js  fx.js (reaction bursts)
+  art.js       the axolotl, drawn from a handful of proportions
+  item-art.js  every item, plus the wallpaper and floor surfaces
+  room.js      the room: wall, floor, and where each slot sits
 
 js/screens/             one file per screen
   home  setup  spell  words  pet  progress  parent

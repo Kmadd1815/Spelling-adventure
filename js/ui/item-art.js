@@ -184,6 +184,71 @@ export function wearableSVG(itemId, geom) {
 /** Accessories that sit behind the body (a cape) rather than in front. */
 export const BEHIND_BODY = new Set(['cape']);
 
+/* ============================ SURFACES ============================
+   Wallpaper and flooring are CSS backgrounds, not drawings: they must fill
+   a wall or a floor at any size, and a repeating gradient does that
+   perfectly at no cost. */
+
+/* Every entry sets backgroundColor separately from backgroundImage. Using
+   the `background` shorthand alongside backgroundImage silently drops the
+   base colour, which leaves a patterned surface floating on nothing. */
+export const SURFACES = {
+  /* ---- Wallpaper ---- */
+  wall_plain: {
+    backgroundColor: '#f6e7d2',
+    backgroundImage: 'linear-gradient(180deg, #fdf3e4, #f6e7d2)',
+  },
+  wall_stripes: {
+    backgroundColor: '#d3ebdd',
+    backgroundImage: 'repeating-linear-gradient(90deg, #e6f4ec 0 16px, #d3ebdd 16px 32px)',
+  },
+  wall_dots: {
+    backgroundColor: '#fbe4ec',
+    backgroundImage: 'radial-gradient(#f3adc6 22%, transparent 24%), radial-gradient(#f3adc6 22%, transparent 24%)',
+    backgroundSize: '28px 28px, 28px 28px',
+    backgroundPosition: '0 0, 14px 14px',
+  },
+  wall_stars: {
+    backgroundColor: '#3f4a78',
+    backgroundImage: 'radial-gradient(#fff3cc 14%, transparent 16%), radial-gradient(#ffe9a8 10%, transparent 12%)',
+    backgroundSize: '46px 46px, 62px 62px',
+    backgroundPosition: '0 0, 28px 24px',
+  },
+  wall_flowers: {
+    backgroundColor: '#eef7e8',
+    backgroundImage: 'radial-gradient(#f6a8c0 16%, transparent 18%), radial-gradient(#ffd980 12%, transparent 14%), radial-gradient(#9dd3ab 10%, transparent 12%)',
+    backgroundSize: '54px 54px, 54px 54px, 38px 38px',
+    backgroundPosition: '0 0, 27px 27px, 14px 34px',
+  },
+
+  /* ---- Flooring ---- */
+  floor_wood: {
+    backgroundColor: '#d9b183',
+    backgroundImage: 'repeating-linear-gradient(90deg, rgba(150,105,60,.30) 0 2px, transparent 2px 58px), repeating-linear-gradient(180deg, rgba(150,105,60,.16) 0 2px, transparent 2px 30px)',
+  },
+  floor_tile: {
+    backgroundColor: '#f2ece2',
+    backgroundImage: 'repeating-conic-gradient(#e0d2bd 0% 25%, #f7f2e8 0% 50%)',
+    backgroundSize: '44px 44px',
+  },
+  floor_grass: {
+    backgroundColor: '#9fd08a',
+    backgroundImage: 'repeating-linear-gradient(105deg, rgba(90,150,80,.30) 0 3px, transparent 3px 11px)',
+  },
+  floor_stone: {
+    backgroundColor: '#cfc9c0',
+    backgroundImage: 'radial-gradient(#bdb5aa 30%, transparent 32%), radial-gradient(#c9c2b8 26%, transparent 28%)',
+    backgroundSize: '52px 38px, 44px 32px',
+    backgroundPosition: '0 0, 26px 19px',
+  },
+  floor_pond: {
+    backgroundColor: '#8ecfe6',
+    backgroundImage: 'repeating-linear-gradient(100deg, rgba(255,255,255,.40) 0 4px, transparent 4px 16px), linear-gradient(180deg, rgba(255,255,255,.35), transparent)',
+  },
+};
+
+export const surfaceStyle = id => SURFACES[id] || SURFACES.wall_plain;
+
 /* =========================== DECORATIONS ===========================
    Each draws inside a 0 0 100 100 box, standing on y = 92. */
 
@@ -280,6 +345,91 @@ const DECOR = {
     <path d="M 25 38 v -14 l 12 5 -12 5" fill="#ef6f8e" stroke="#b34a66" stroke-width="2" stroke-linejoin="round"/>
     <path d="M 75 38 v -14 l 12 5 -12 5" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="2" stroke-linejoin="round"/>`,
 
+  /* ---- Windows. Drawn against the wall, so they show sky. ---- */
+  window_round: () => `
+    <circle cx="50" cy="48" r="34" fill="#bfe6f5" stroke="#a5875f" stroke-width="7"/>
+    <circle cx="50" cy="48" r="34" fill="none" stroke="#d9c4a5" stroke-width="3"/>
+    <path d="M 50 14 v 68 M 16 48 h 68" stroke="#d9c4a5" stroke-width="5"/>
+    <circle cx="38" cy="34" r="7" fill="#fff" opacity=".55"/>`,
+
+  window_cottage: () => `
+    <rect x="16" y="16" width="68" height="62" rx="4" fill="#bfe6f5" stroke="#a5875f" stroke-width="7"/>
+    <path d="M 50 16 v 62 M 16 47 h 68" stroke="#d9c4a5" stroke-width="5"/>
+    <rect x="10" y="76" width="80" height="8" rx="3" fill="#e8d3ba" stroke="#a5875f" stroke-width="3"/>
+    <circle cx="33" cy="32" r="6" fill="#fff" opacity=".5"/>`,
+
+  window_arch: () => `
+    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="#bfe6f5" stroke="#a5875f" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M 50 18 v 64 M 20 56 h 60" stroke="#d9c4a5" stroke-width="5"/>
+    <circle cx="36" cy="38" r="6" fill="#fff" opacity=".5"/>`,
+
+  /* ---- Doors. These stand on the floor line. ---- */
+  door_wood: () => `
+    <rect x="22" y="10" width="56" height="86" rx="4" fill="#c08f5c" stroke="#8a6340" stroke-width="5"/>
+    <rect x="30" y="18" width="40" height="32" rx="3" fill="#cfa06e" stroke="#8a6340" stroke-width="3"/>
+    <rect x="30" y="56" width="40" height="32" rx="3" fill="#cfa06e" stroke="#8a6340" stroke-width="3"/>
+    <circle cx="68" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+
+  door_round: () => `
+    <path d="M 20 96 V 46 a 30 30 0 0 1 60 0 v 50 z" fill="#8fbf7f" stroke="#5d8a52" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 50 20 v 76" stroke="#5d8a52" stroke-width="3" opacity=".6"/>
+    <circle cx="50" cy="58" r="6" fill="#f6c453" stroke="#c9922c" stroke-width="2.5"/>`,
+
+  door_fancy: () => `
+    <rect x="20" y="8" width="60" height="88" rx="5" fill="#a78bc9" stroke="#6f5a94" stroke-width="5"/>
+    <path d="M 50 14 l 18 18 -18 18 -18 -18 z" fill="#cdb8e4" stroke="#6f5a94" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="30" y="56" width="40" height="34" rx="3" fill="#cdb8e4" stroke="#6f5a94" stroke-width="3"/>
+    <circle cx="69" cy="54" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+
+  /* ---- Beds ---- */
+  bed_cushion: () => `
+    <ellipse cx="50" cy="70" rx="40" ry="22" fill="#f2849f" stroke="#b3596e" stroke-width="3.5"/>
+    <ellipse cx="50" cy="66" rx="29" ry="15" fill="#ffd6e2" stroke="#b3596e" stroke-width="2.5"/>
+    <path d="M 24 62 q 26 -12 52 0" fill="none" stroke="#fff" stroke-width="3" opacity=".55"/>`,
+
+  bed_cozy: () => `
+    <rect x="8" y="46" width="84" height="34" rx="7" fill="#c99a6e" stroke="#8a6340" stroke-width="3.5"/>
+    <rect x="8" y="34" width="20" height="46" rx="6" fill="#d9ab7c" stroke="#8a6340" stroke-width="3.5"/>
+    <rect x="16" y="50" width="70" height="20" rx="6" fill="#bfe6f5" stroke="#6f9fb3" stroke-width="3"/>
+    <ellipse cx="32" cy="52" rx="15" ry="9" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.5"/>
+    <path d="M 52 54 q 16 4 32 0" fill="none" stroke="#8fc6db" stroke-width="3"/>`,
+
+  bed_shell: () => `
+    <path d="M 10 80 q 0 -46 40 -46 q 40 0 40 46 z" fill="#f7c8d8" stroke="#c07e96" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M 50 34 v 46 M 28 42 q 6 22 4 38 M 72 42 q -6 22 -4 38"
+          fill="none" stroke="#e0a3b8" stroke-width="3"/>
+    <ellipse cx="50" cy="80" rx="42" ry="9" fill="#ffe3ec" stroke="#c07e96" stroke-width="3"/>`,
+
+  /* ---- Rugs ---- */
+  rug_round: () => `
+    <ellipse cx="50" cy="60" rx="44" ry="30" fill="#a8d5c4" stroke="#5f9683" stroke-width="3.5"/>
+    <ellipse cx="50" cy="60" rx="31" ry="21" fill="#d6ece4" stroke="#5f9683" stroke-width="2.5"/>
+    <ellipse cx="50" cy="60" rx="16" ry="11" fill="#a8d5c4" stroke="#5f9683" stroke-width="2.5"/>`,
+
+  /* ---- Wall decorations ---- */
+  frame: () => `
+    <rect x="14" y="20" width="72" height="58" rx="4" fill="#c99a6e" stroke="#8a6340" stroke-width="5"/>
+    <rect x="22" y="28" width="56" height="42" rx="2" fill="#bfe6f5"/>
+    <path d="M 22 60 q 14 -18 26 -6 q 10 10 30 -4 v 20 h -56 z" fill="#8fd3a8"/>
+    <circle cx="66" cy="38" r="6" fill="#ffd980"/>`,
+
+  clock: () => `
+    <circle cx="50" cy="50" r="34" fill="#fff6e8" stroke="#8a6340" stroke-width="5"/>
+    <circle cx="50" cy="50" r="27" fill="none" stroke="#d9c4a5" stroke-width="2"/>
+    <path d="M 50 50 V 30 M 50 50 l 15 9" stroke="#5a4033" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="4" fill="#e2566f"/>
+    <path d="M 50 16 v -6" stroke="#8a6340" stroke-width="4" stroke-linecap="round"/>`,
+
+  bunting: () => `
+    <path d="M 6 26 Q 50 44 94 26" fill="none" stroke="#a5875f" stroke-width="3.5"/>
+    ${[0, 1, 2, 3, 4, 5].map(i => {
+      const x = 12 + i * 15.5;
+      const y = 29 + Math.sin((i / 5) * Math.PI) * 8;
+      const c = ['#ef7f7f', '#f6c453', '#8fd3a8', '#6fb3d9', '#c9a3e0', '#f2849f'][i];
+      return `<path d="M ${x - 8} ${y} L ${x + 8} ${y} L ${x} ${y + 22} Z"
+                    fill="${c}" stroke="#8a7560" stroke-width="2" stroke-linejoin="round"/>`;
+    }).join('')}`,
+
   /* ---- Special decorations ---- */
   blossom_lamp: () => DECOR.lamp().replace(/#ef7f7f/g, '#f4a8c6').replace(/#b34d4d/g, '#b3596e'),
   star_rug:     () => DECOR.rug().replace(/#e8a17c/g, '#a78bc9').replace(/#f4c9a8/g, '#cdb8e4').replace(/#a5613f/g, '#7a5f9c'),
@@ -340,10 +490,21 @@ export function wearableThumbSVG(itemId, { size = 100 } = {}) {
     ${art}</svg>`;
 }
 
-/** Whatever kind of item it is, draw it. */
+/** A wallpaper or flooring shown as a swatch, for the shop and the book. */
+export function surfaceSwatch(itemId, { size = 92 } = {}) {
+  const style = Object.entries(surfaceStyle(itemId))
+    .map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`)
+    .join(';');
+  return `<div class="surface-swatch" style="width:${size}px;height:${size}px;${style}"></div>`;
+}
+
+/**
+ * Draw an item, whatever kind it is. Dispatching on which drawing exists
+ * rather than on the category means moving an item between slots — a
+ * lantern from the floor to the wall, say — never silently loses its art.
+ */
 export function itemSVG(item, opts) {
   if (!item) return '';
-  return item.category === 'decor'
-    ? decorSVG(item.id, opts)
-    : wearableThumbSVG(item.id, opts);
+  if (SURFACES[item.id]) return surfaceSwatch(item.id, opts);
+  return decorSVG(item.id, opts) || wearableThumbSVG(item.id, opts);
 }

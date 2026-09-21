@@ -18,6 +18,7 @@ import petScreen      from './screens/pet.js';
 import progressScreen from './screens/progress.js';
 import parentScreen   from './screens/parent.js';
 import shopScreen     from './screens/shop.js';
+import decorateScreen from './screens/decorate.js';
 import setupScreen    from './screens/setup.js';
 
 /* ---------- Routes ---------- */
@@ -31,6 +32,7 @@ router.route('/fulltest', { title: 'Spelling Test',     back: true, render: (c, 
 router.route('/words',    { title: 'My Words',  back: true, render: wordsScreen });
 router.route('/pet',      { title: 'My Pet',    back: true, render: petScreen });
 router.route('/progress', { title: 'My Progress', back: true, render: progressScreen });
+router.route('/decorate', { title: 'Decorate', back: true, render: decorateScreen });
 router.route('/shop',     { title: 'Shop', back: true, render: shopScreen });
 router.route('/parent',   { title: 'Parent Area', back: true, stars: false, render: parentScreen });
 

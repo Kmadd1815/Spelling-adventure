@@ -11,7 +11,8 @@ import { navigate } from '../ui/router.js';
 import * as pet from '../core/pet.js';
 import { COATS } from '../core/pet.js';
 import * as items from '../core/items.js';
-import { itemSVG, decorSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/item-art.js';
+import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 
@@ -26,26 +27,26 @@ export default function petScreen(container) {
     applySeasonTheme(season);
 
     const worn = items.equipped();
-    const bubble = el('div', { class: 'pet-speech', text: pet.greeting() });
+    const bubble = el('div', { class: 'room-speech', text: pet.greeting() });
 
-    const petNode = el('div', {
-      class: 'scene-pet pet-tappable', role: 'button', tabindex: '0',
-      'aria-label': `Pet ${info.name}`,
-      html: petSVG({
-        coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
-      }),
-      onClick: () => interact('pet'),
+    const drawPet = m => petSVG({
+      coat: info.coat, stage: info.stage, mood: m,
+      hat: worn.hat, accessory: worn.accessory,
     });
 
-    const stage = el('div', { class: 'hub-hero' },
-      el('div', { class: 'hero-season-chip', text: `${season.emoji} ${season.name}` }),
+    const room = buildRoom({
+      petHTML: drawPet(mood),
+      petProps: {
+        class: 'room-pet pet-tappable', role: 'button', tabindex: '0',
+        'aria-label': `Pet ${info.name}`,
+        onClick: () => interact('pet'),
+      },
+    });
+
+    const stage = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
+      el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),
       bubble,
-      el('div', { class: 'hero-scene' },
-        ...items.sceneItems().map(item =>
-          el('div', { class: 'scene-item', html: decorSVG(item.id, { size: 92 }) })),
-        petNode
-      )
+      room
     );
 
     const growthCard = el('div', { class: 'card' },
@@ -57,10 +58,9 @@ export default function petScreen(container) {
         : `${info.name} is fully grown and absolutely radiant.` })
     );
 
-    /* The wardrobe. Owning is permanent; what is on show is a handful of
-       slots she can rearrange whenever she likes. */
-    function shelf(categoryKey, title, hint) {
-      const owned = items.ownedOf(categoryKey);
+    /* Only what the axolotl wears lives here; the room has its own screen. */
+    function shelf(slot, title, hint) {
+      const owned = items.ownedOf(slot);
       if (!owned.length) {
         return el('div', { class: 'card' },
           el('h3', { text: title }),
@@ -73,31 +73,22 @@ export default function petScreen(container) {
           const on = items.isEquipped(item.id);
           return el('button', {
             class: `wardrobe-item${on ? ' on' : ''}`, type: 'button',
-            onClick: () => {
-              const r = items.toggleEquip(item.id);
-              if (!r.ok && r.reason === 'scene full') {
-                toast(`Only ${items.SCENE_SLOTS} things out at once \u2014 put one away first`, { ms: 4200 });
-                return;
-              }
-              render();
-            },
+            onClick: () => { items.toggleEquip(item.id); render(); },
           },
             el('div', { class: 'wardrobe-art', html: itemSVG(item, { size: 62 }) }),
             el('div', { class: 'wardrobe-name', text: item.name }),
-            item.price == null ? el('div', { class: 'wardrobe-tag', text: '\u2728 Earned' }) : null,
+            items.isSpecial(item) ? el('div', { class: 'wardrobe-tag', text: '\u2728 Earned' }) : null,
             on ? el('div', { class: 'wardrobe-on', text: '\u2713' }) : null
           );
         }))
       );
     }
 
-    const sceneCount = worn.scene.length;
     const wardrobe = el('div', { class: 'stack' },
       shelf('hat', '\u{1F452} Hats', 'Hats she buys or earns will show up here.'),
-      shelf('accessory', '\u{1F380} Accessories', 'Accessories will show up here.'),
-      shelf('decor', `\u{1FA91} Decorations (${sceneCount} of ${items.SCENE_SLOTS} out)`,
-        'Decorations will show up here once she has some.')
+      shelf('accessory', '\u{1F380} Accessories', 'Accessories will show up here.')
     );
+
 
     /* Free interactions always work. Treats buy the fancier ones — and
        having none of them changes nothing about the axolotl, which is
@@ -133,6 +124,8 @@ export default function petScreen(container) {
 
     mount(container, el('div', { class: 'stack' },
       stage, playCard, growthCard, wardrobe, actions,
+      button('Decorate the room', { cls: 'btn btn-green btn-block', emoji: '\u{1FA91}',
+        onClick: () => navigate('/decorate') }),
       button('Go to the shop', { cls: 'btn btn-pink btn-block', emoji: '\u{1F6CD}\uFE0F',
         onClick: () => navigate('/shop') }),
       button('Go practice', { cls: 'btn btn-primary btn-block', emoji: '\u2728',
@@ -155,9 +148,9 @@ export default function petScreen(container) {
     pet.noteMoment();
     mood = spec.mood;
 
-    const scene = container.querySelector('.hero-scene');
-    const petNode = container.querySelector('.scene-pet');
-    const bubble = container.querySelector('.pet-speech');
+    const scene = container.querySelector('.room');
+    const petNode = container.querySelector('.room-pet');
+    const bubble = container.querySelector('.room-speech');
 
     // Re-draw the face for the new mood, then celebrate over the top of it.
     if (petNode) {

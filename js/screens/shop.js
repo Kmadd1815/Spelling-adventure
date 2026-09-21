@@ -17,11 +17,12 @@ import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
 
 export default function shopScreen(container) {
-  let category = 'hat';
+  let tab = items.SHOP_TABS[0].key;
 
   function render() {
     const stars = rewards.stars();
-    const forSale = items.shopItems().filter(i => i.category === category);
+    const activeTab = items.SHOP_TABS.find(t => t.key === tab) || items.SHOP_TABS[0];
+    const forSale = items.shopItems().filter(i => activeTab.slots.includes(i.category));
     const cheapest = items.shopItems().filter(i => !items.owns(i.id))
       .reduce((lo, i) => (lo === null || i.price < lo ? i.price : lo), null);
 
@@ -36,10 +37,12 @@ export default function shopScreen(container) {
             : `Save up ${cheapest - stars} more and you can buy something.` })
       ),
 
+      /* Ten slots would be ten tabs, so they are grouped the way a person
+         would shop: things to wear, the room itself, furniture, wall art. */
       segmented(
-        Object.values(items.CATEGORY).map(c => ({ value: c.key, label: `${c.emoji} ${c.label}` })),
-        category,
-        v => { category = v; render(); }
+        items.SHOP_TABS.map(t => ({ value: t.key, label: `${t.emoji} ${t.label}` })),
+        tab,
+        v => { tab = v; render(); }
       ),
 
       el('div', { class: 'shop-grid' }, forSale.map(card))
@@ -109,7 +112,7 @@ export default function shopScreen(container) {
       el('p', { class: 'center muted tiny', text: item.blurb }),
       el('div', { class: 'row', style: { marginTop: '16px' } },
         button('Keep shopping', { cls: 'btn btn-quiet grow', onClick: () => { close(); render(); } }),
-        button(item.category === 'decor' ? 'Put it out' : 'Wear it now',
+        button(item.category === 'hat' || item.category === 'accessory' ? 'Wear it now' : 'Put it out',
           { cls: 'btn btn-primary grow', onClick: () => { close(); wearNow(item); } })
       ),
     ]);
@@ -133,10 +136,13 @@ export default function shopScreen(container) {
       el('p', { class: 'center tiny', text: on ? 'Out on display right now.' : 'Safe in your collection.' }),
       el('div', { class: 'row', style: { marginTop: '16px' } },
         button('Close', { cls: 'btn btn-quiet grow', onClick: () => close() }),
-        button(on ? 'Put it away' : (item.category === 'decor' ? 'Put it out' : 'Wear it'),
+        button(on ? 'Put it away' : (item.category === 'hat' || item.category === 'accessory' ? 'Wear it' : 'Put it out'),
           { cls: 'btn btn-primary grow', onClick: () => {
             const r = items.toggleEquip(item.id);
-            if (!r.ok && r.reason === 'scene full') toast('Your scene is full already', { ms: 4000 });
+            if (!r.ok && r.reason === 'full') {
+              const spec = items.SLOTS[item.category];
+              toast(`Only ${spec.max} ${spec.label.toLowerCase()} at a time`, { ms: 4000 });
+            }
             close(); render();
           } })
       ),

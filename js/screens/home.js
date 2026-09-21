@@ -7,7 +7,7 @@ import { petSVG } from '../ui/art.js';
 import * as pet from '../core/pet.js';
 import * as words from '../core/words.js';
 import * as items from '../core/items.js';
-import { decorSVG } from '../ui/item-art.js';
+import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 
@@ -21,48 +21,37 @@ export default function homeScreen(container) {
   const leftToday = words.wordsLeftToday().length;
   const dailyDone = words.dailyPracticeDone();
 
-  const bubble = el('div', { class: 'pet-speech', text: pet.greeting() });
+  const bubble = el('div', { class: 'room-speech', text: pet.greeting() });
+
+  const drawPet = mood => petSVG({
+    coat: info.coat, stage: info.stage, mood,
+    hat: items.equipped().hat, accessory: items.equipped().accessory,
+  });
 
   /* The axolotl is tappable wherever it appears. Petting costs nothing and
      is never used up, so there is always something nice to do here. */
-  const petNode = el('div', {
-    class: 'scene-pet pet-tappable', role: 'button', tabindex: '0',
+  const petProps = {
+    class: 'room-pet pet-tappable',
+    role: 'button', tabindex: '0',
     'aria-label': `Pet ${info.name}`,
-    html: petSVG({
-      coat: info.coat, stage: info.stage, mood: 'happy',
-      hat: items.equipped().hat, accessory: items.equipped().accessory,
-    }),
     onClick: () => {
       pet.noteMoment();
       const spec = pet.INTERACTIONS.pet;
-      petNode.innerHTML = petSVG({
-        coat: info.coat, stage: info.stage, mood: spec.mood,
-        hat: items.equipped().hat, accessory: items.equipped().accessory,
-      });
-      hop(petNode);
+      const node = room.querySelector('.room-pet');
+      node.innerHTML = drawPet(spec.mood);
+      hop(node);
       bubble.textContent = pet.interactionLine('pet');
-      burst(scene, spec.effect);
-      setTimeout(() => {
-        petNode.innerHTML = petSVG({
-          coat: info.coat, stage: info.stage, mood: 'happy',
-          hat: items.equipped().hat, accessory: items.equipped().accessory,
-        });
-      }, 2200);
+      burst(room, spec.effect);
+      setTimeout(() => { node.innerHTML = drawPet('happy'); }, 2200);
     },
-  });
+  };
 
-  /* Her scene: the pet, whatever it is wearing, and up to three things she
-     has chosen to put out. */
-  const scene = el('div', { class: 'hero-scene' },
-    ...items.sceneItems().map(item =>
-      el('div', { class: 'scene-item', html: decorSVG(item.id, { size: 92 }) })),
-    petNode
-  );
+  const room = buildRoom({ petHTML: drawPet('happy'), petProps });
 
-  const hero = el('div', { class: 'hub-hero' },
-    el('div', { class: 'hero-season-chip', text: `${season.emoji} ${season.name}` }),
+  const hero = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
+    el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),
     bubble,
-    scene
+    room
   );
 
   const tile = (label, sub, emoji, cls, to) =>
@@ -134,6 +123,7 @@ export default function homeScreen(container) {
 
   body.append(el('div', { class: 'hub-grid hub-grid-3' },
     smallTile('Shop', '\u{1F6CD}\uFE0F', 't-pink', '/shop'),
+    smallTile('Decorate', '\u{1FA91}', 't-green', '/decorate'),
     smallTile('Progress', '\u{1F4CA}', 't-gold', '/progress'),
     smallTile('Collection', '\u{1F4D6}', 't-purple', '/progress?tab=collection'),
     smallTile('Grown-ups', '\u{1F510}', 't-blue', '/parent')

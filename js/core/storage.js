@@ -79,17 +79,47 @@ export function defaultState() {
       items: [],   // { id, itemId, source, earnedAt }
     },
 
-    /* The few things on show right now. Owning is permanent; this is a
-       choice she can change whenever she likes. */
+    /* What is on show right now, a slot at a time. Owning is permanent;
+       this is the arrangement she chooses on top of it. */
     equipped: {
+      wallpaper: 'wall_plain',
+      flooring: 'floor_wood',
+      window: null,
+      door: null,
+      bed: null,
+      rug: null,
       hat: null,
       accessory: null,
-      scene: [],   // itemIds, up to items.SCENE_SLOTS
+      wallDecor: [],    // up to 2
+      floorDecor: [],   // up to 3
     },
   };
 }
 
 function migrate(state) {
+  /* The scene used to be one flat list of three things. It is a room now,
+     with a place for each kind of thing, so anything already out gets sorted
+     into the slot its category belongs to rather than being dropped. */
+  if (state.equipped && Array.isArray(state.equipped.scene)) {
+    const CATEGORY_OF = {
+      rug: 'rug', star_rug: 'rug',
+      lantern: 'wallDecor', week_banner: 'wallDecor', sun_mobile: 'wallDecor',
+      ribbon_shelf: 'wallDecor', trophy_shelf: 'wallDecor',
+    };
+    const e = state.equipped;
+    e.wallDecor = e.wallDecor || [];
+    e.floorDecor = e.floorDecor || [];
+    for (const id of state.equipped.scene) {
+      const slot = CATEGORY_OF[id] || 'floorDecor';
+      if (slot === 'rug') e.rug = e.rug || id;
+      else if (slot === 'wallDecor') { if (e.wallDecor.length < 2) e.wallDecor.push(id); }
+      else if (e.floorDecor.length < 3) e.floorDecor.push(id);
+    }
+    delete state.equipped.scene;
+    if (!e.wallpaper) e.wallpaper = 'wall_plain';
+    if (!e.flooring) e.flooring = 'floor_wood';
+  }
+
   // Mastery used to be counted as a list of session ids. It is now a streak
   // of correct answers capped at one a day, so carry the old count across as
   // a starting streak rather than throwing her progress away.

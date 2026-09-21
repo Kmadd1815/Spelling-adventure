@@ -38,6 +38,7 @@ const SHELL = [
   './js/ui/item-art.js',
   './js/ui/toast.js',
   './js/ui/fx.js',
+  './js/ui/room.js',
   './js/screens/home.js',
   './js/screens/setup.js',
   './js/screens/spell.js',
@@ -46,6 +47,7 @@ const SHELL = [
   './js/screens/progress.js',
   './js/screens/parent.js',
   './js/screens/shop.js',
+  './js/screens/decorate.js',
 ];
 
 self.addEventListener('install', event => {

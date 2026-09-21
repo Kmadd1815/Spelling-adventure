@@ -104,11 +104,12 @@ export default function progressScreen(container, params) {
         text: 'Some are bought in the shop. Some can only be earned.' })
     ));
 
-    for (const cat of Object.values(items.CATEGORY)) {
-      const all = items.CATALOG.filter(i => i.category === cat.key);
+    for (const [slot, spec] of Object.entries(items.SLOTS)) {
+      const all = items.itemsForSlot(slot);
+      if (!all.length) continue;
       const mine = all.filter(i => items.owns(i.id));
       body.append(el('div', { class: 'section-title',
-        text: `${cat.emoji} ${cat.label} \u2014 ${mine.length} of ${all.length}` }));
+        text: `${spec.label} \u2014 ${mine.length} of ${all.length}` }));
       body.append(el('div', { class: 'book-grid' }, all.map(bookEntry)));
     }
 
@@ -117,7 +118,7 @@ export default function progressScreen(container, params) {
 
   function bookEntry(item) {
     const owned = items.owns(item.id);
-    const special = item.price == null;
+    const special = items.isSpecial(item);
 
     if (!owned) {
       return el('div', { class: 'book-cell locked' },
