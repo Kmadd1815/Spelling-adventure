@@ -163,7 +163,7 @@ export default function petScreen(container) {
       hop(petNode);
     }
     if (bubble) bubble.textContent = pet.interactionLine(key);
-    burst(scene, spec.effect);
+    burst(scene, spec.effect, { origin: petNode });
 
     // Settle back to calm, and only then re-render so the treat count and
     // the tally catch up without interrupting the animation.

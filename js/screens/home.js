@@ -41,7 +41,7 @@ export default function homeScreen(container) {
       node.innerHTML = drawPet(spec.mood);
       hop(node);
       bubble.textContent = pet.interactionLine('pet');
-      burst(room, spec.effect);
+      burst(room, spec.effect, { origin: node });
       setTimeout(() => { node.innerHTML = drawPet('happy'); }, 2200);
     },
   };

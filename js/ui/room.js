@@ -42,12 +42,15 @@ const PLACES = {
 
 function place(node, spec) {
   node.style.position = 'absolute';
-  node.style.left = `${spec.left}%`;
+  /* Centred pieces work out their own left edge rather than using
+     translateX(-50%). A transform here would be wiped out the moment any
+     animation sets its own transform — which is exactly what made the
+     axolotl leap sideways every time it was petted. */
+  node.style.left = `${spec.centre ? spec.left - spec.width / 2 : spec.left}%`;
   node.style.width = `${spec.width}%`;
   if (spec.top !== undefined) node.style.top = `${spec.top}%`;
   else node.style.bottom = `${spec.bottom}%`;
   node.style.zIndex = String(spec.depth);
-  if (spec.centre) node.style.transform = 'translateX(-50%)';
   return node;
 }
 

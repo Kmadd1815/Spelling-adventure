@@ -15,14 +15,32 @@ const EFFECTS = {
 
 /**
  * Fire an effect over a container.
- * @param {HTMLElement} host   positioned element to draw over
- * @param {string} kind        hearts | bubbles | sparkles | crumbs
+ * @param {HTMLElement} host    positioned element to draw over
+ * @param {string} kind         hearts | bubbles | sparkles | crumbs
+ * @param {object} [opts]
+ * @param {HTMLElement} [opts.origin]
+ *   What the burst should come out of. Without it the effect lands at the
+ *   middle of the host, which in a tall room is up on the wall rather than
+ *   anywhere near the axolotl.
  */
-export function burst(host, kind = 'hearts') {
+export function burst(host, kind = 'hearts', { origin = null } = {}) {
   if (!host) return;
   const spec = EFFECTS[kind] || EFFECTS.hearts;
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  // Where in the host the burst starts, as percentages.
+  let cx = 50, cy = 46, spread = 16;
+  if (origin) {
+    const h = host.getBoundingClientRect();
+    const o = origin.getBoundingClientRect();
+    if (h.width && h.height) {
+      cx = ((o.left + o.width / 2) - h.left) / h.width * 100;
+      // A third of the way down the creature: its face, near enough.
+      cy = ((o.top + o.height * 0.34) - h.top) / h.height * 100;
+      spread = Math.max(8, (o.width / h.width) * 100 * 0.42);
+    }
+  }
 
   let layer = host.querySelector(':scope > .fx-layer');
   if (!layer) {
@@ -36,8 +54,8 @@ export function burst(host, kind = 'hearts') {
       class: spec.cls,
       text: spec.chars[i % spec.chars.length],
       style: {
-        left: `${34 + Math.random() * 32}%`,
-        top: kind === 'crumbs' ? '48%' : '46%',
+        left: `${cx + (Math.random() - 0.5) * spread * 2}%`,
+        top: `${cy + (kind === 'crumbs' ? 4 : 0)}%`,
         // Each piece drifts its own way, so a burst never looks stamped out.
         '--fx-dx': `${(Math.random() - 0.5) * 90}px`,
         '--fx-rot': `${(Math.random() - 0.5) * 70}deg`,
