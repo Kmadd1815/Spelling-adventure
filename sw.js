@@ -1,10 +1,16 @@
 /* Offline support.
 
-   Bump CACHE whenever files change, otherwise the tablet keeps serving the
-   old copy. The app shell is cached up front so it opens with no network
-   at all; everything is same-origin and there are no third-party requests. */
+   A module worker, so the version constant has exactly one home. Bumping
+   APP_VERSION in js/core/version.js changes the cache name here, which
+   retires the old cache and ships the new files — there is no second copy
+   of the version to forget about.
 
-const CACHE = 'spelling-adventure-v4';
+   The app shell is cached up front so it opens with no network at all;
+   everything is same-origin and there are no third-party requests. */
+
+import { APP_VERSION } from './js/core/version.js';
+
+const CACHE = `spelling-adventure-${APP_VERSION}`;
 
 const SHELL = [
   './',
@@ -15,6 +21,8 @@ const SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './js/app.js',
+  './js/core/version.js',
+  './js/core/updates.js',
   './js/core/bus.js',
   './js/core/storage.js',
   './js/core/state.js',

@@ -11,6 +11,8 @@ import * as speech from '../core/speech.js';
 import * as storage from '../core/storage.js';
 import { getState, update, replaceState, resetAll, settings, flushNow } from '../core/state.js';
 import { on as onBus } from '../core/bus.js';
+import { APP_VERSION, BUILD_DATE } from '../core/version.js';
+import { checkNow, updateWaiting } from '../core/updates.js';
 import { setQueue } from './spell.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
@@ -106,6 +108,39 @@ export default function parentScreen(container) {
     ));
 
     const ready = getState().child.setupComplete;
+    /* Which build is actually on this tablet. Without this there is no way
+       to tell whether a change has arrived yet, short of hunting for it. */
+    const versionLine = el('div', { class: 'center tiny muted', style: { marginTop: '18px' },
+      text: `Spelling Adventure v${APP_VERSION} \u00B7 ${BUILD_DATE}` });
+
+    const updateBtn = button('Check for updates', { cls: 'btn btn-quiet btn-block',
+      emoji: '\u21BB', onClick: async () => {
+        updateBtn.disabled = true;
+        updateBtn.lastChild.textContent = 'Checking\u2026';
+        const outcome = await checkNow();
+        updateBtn.disabled = false;
+        updateBtn.lastChild.textContent = 'Check for updates';
+        if (outcome === 'found') {
+          toast('New version found \u2014 it will load when you go back to the game.', { ms: 5000 });
+        } else if (outcome === 'current') {
+          toast('Already up to date');
+        } else {
+          toast('Could not check right now');
+        }
+      } });
+
+    body.append(el('div', { class: 'card' },
+      el('h3', { text: 'App version' }),
+      versionLine,
+      el('div', { style: { height: '12px' } }),
+      updateBtn,
+      updateWaiting()
+        ? el('p', { class: 'tiny center', style: { marginTop: '10px', fontWeight: '800' },
+            text: '\u2728 A new version is ready and will load when you leave this screen.' })
+        : el('p', { class: 'muted tiny center', style: { marginTop: '10px' },
+            text: 'The app updates itself on its own. This is only for when you are impatient.' })
+    ));
+
     body.append(button(ready ? 'Back to the game' : 'Back to the welcome screen', {
       cls: 'btn btn-primary btn-block', emoji: ready ? '\u{1F3E0}' : '\u{1F44B}',
       onClick: () => navigate(ready ? '/' : '/setup') }));

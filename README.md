@@ -18,9 +18,20 @@ step, so it can be edited and deployed entirely from a tablet.
 It now opens fullscreen like a real app, and works with no internet after
 the first load.
 
-When the app is updated, Chrome may keep serving the old copy for a day.
-To force it: open the app, pull down to refresh, or clear the app from
-Recents and reopen it.
+### Updates
+
+The app updates itself. On every launch it checks for a new version, and
+when one is ready it refreshes — but only on the home or welcome screen,
+never in the middle of a spelling word. In practice: push a change, reopen
+the app, and it is current.
+
+*Parent Area → App version* shows which build is actually on the tablet,
+with a **Check for updates** button for when you are impatient.
+
+**Never clear site data to force an update.** That is where every word,
+star and treasure lives. Uninstalling the home-screen app is unnecessary
+too — and if an update ever does seem stuck, opening the Pages URL in a
+normal Chrome tab and pulling to refresh is enough.
 
 ---
 
@@ -197,7 +208,10 @@ These are deliberate and should survive future changes:
 ```
 index.html              app shell
 css/app.css             all styling
-sw.js                   offline caching  (bump CACHE when files change)
+sw.js                   offline caching, a module worker
+js/core/version.js      THE version — sw.js imports it, so the cache name
+                        and the number shown in the app cannot drift apart
+js/core/updates.js      checks for new versions, refreshes at a safe moment
 manifest.webmanifest    home-screen install
 
 js/app.js               bootstrap: routes, speech unlock, star counter
@@ -238,4 +252,6 @@ recordAttempt(queue[0].id, wasCorrect, sessionId);  // the shared mastery
 Do not re-implement mastery, word selection or speech inside a game. If a
 game needs something the engine cannot do, extend the engine.
 
-Remember to add the new file to `SHELL` in `sw.js` and bump `CACHE`.
+Remember to add the new file to `SHELL` in `sw.js`, and bump `APP_VERSION`
+in `js/core/version.js` — that is what retires the old cache and ships the
+new files to the tablet.

@@ -8,6 +8,7 @@ import * as speech from './core/speech.js';
 import { applySeasonTheme } from './core/season.js';
 import { getState } from './core/state.js';
 import { on } from './core/bus.js';
+import { watchForUpdates } from './core/updates.js';
 import { toast } from './ui/toast.js';
 
 import homeScreen     from './screens/home.js';
@@ -91,11 +92,12 @@ if (!getState().child.setupComplete && !location.hash.startsWith('#/parent')) {
 
 router.start();
 
-/* ---------- Offline support ---------- */
+/* ---------- Offline support and updates ----------
 
-if ('serviceWorker' in navigator) {
-  addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err =>
-      console.warn('[sw] registration failed', err));
-  });
-}
+   A reload in the middle of a spelling word would throw away what she is
+   doing, so a new version waits for the home or welcome screen — which she
+   passes through constantly — before refreshing. */
+
+watchForUpdates({
+  isSafeToReload: () => ['/', '/setup'].includes(router.currentRoute()),
+});
