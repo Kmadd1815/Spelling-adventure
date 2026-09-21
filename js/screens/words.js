@@ -19,7 +19,7 @@ export default function wordsScreen(container, params) {
     const mastered = words.masteredWords();
 
     const tabs = segmented([
-      { value: 'active',   label: `Practising (${active.length})` },
+      { value: 'active',   label: `Practicing (${active.length})` },
       { value: 'mastered', label: `Mastered (${mastered.length})` },
     ], tab, value => { tab = value; render(); });
 
@@ -31,7 +31,7 @@ export default function wordsScreen(container, params) {
       body.append(el('div', { class: 'card center' },
         el('div', { style: { fontSize: '2.2rem' }, text: tab === 'active' ? '\u{1F389}' : '⭐' }),
         el('p', { class: 'muted', text: tab === 'active'
-          ? 'No words to practise right now.'
+          ? 'No words to practice right now.'
           : 'Words you master will be kept here forever.' })
       ));
     } else {
@@ -51,7 +51,7 @@ export default function wordsScreen(container, params) {
     }
 
     if (tab === 'active' && list.length) {
-      body.append(button('Practise these', { cls: 'btn btn-primary btn-block', emoji: '✨',
+      body.append(button('Practice these', { cls: 'btn btn-primary btn-block', emoji: '✨',
         onClick: () => navigate('/practice') }));
     }
 

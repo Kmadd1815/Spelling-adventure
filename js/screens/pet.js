@@ -60,7 +60,7 @@ export default function petScreen(container) {
 
     mount(container, el('div', { class: 'stack' },
       stage, growthCard, treasures, actions,
-      button('Go practise', { cls: 'btn btn-primary btn-block', emoji: '✨',
+      button('Go practice', { cls: 'btn btn-primary btn-block', emoji: '✨',
         onClick: () => navigate('/practice') })
     ));
   }

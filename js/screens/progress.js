@@ -37,7 +37,7 @@ export default function progressScreen(container, params) {
 
     body.append(el('div', { class: 'stat-grid' },
       stat(s.mastered, '⭐ Mastered'),
-      stat(s.active, '\u{1F331} Practising'),
+      stat(s.active, '\u{1F331} Practicing'),
       stat(p.currentStreak, '\u{1F525} Day streak'),
       stat(p.stars, '★ Stars')
     ));

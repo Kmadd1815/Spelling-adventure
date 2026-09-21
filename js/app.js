@@ -22,8 +22,10 @@ import setupScreen    from './screens/setup.js';
 
 router.route('/',         { title: 'Spelling Adventure', back: false, render: homeScreen });
 router.route('/setup',    { title: 'Welcome', back: false, stars: false, render: setupScreen });
-router.route('/practice', { title: 'Practice',  back: true, render: (c, p) => spellScreen(c, { ...p, mode: 'practice' }) });
-router.route('/test',     { title: 'Spelling Test', back: true, render: (c, p) => spellScreen(c, { ...p, mode: 'test' }) });
+router.route('/daily',    { title: "Today's Practice", back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'daily' }) });
+router.route('/practice', { title: 'Practice',          back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'extra' }) });
+router.route('/test',     { title: 'Practice Test',     back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'practiceTest' }) });
+router.route('/fulltest', { title: 'Spelling Test',     back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'fullTest' }) });
 router.route('/words',    { title: 'My Words',  back: true, render: wordsScreen });
 router.route('/pet',      { title: 'My Pet',    back: true, render: petScreen });
 router.route('/progress', { title: 'My Progress', back: true, render: progressScreen });
@@ -44,7 +46,11 @@ function paintStars() {
 }
 
 on('state:changed', paintStars);
-on('stars:awarded', ({ amount }) => { if (amount > 0) toast(`+${amount} stars`, { gold: true }); });
+// Activities show their own itemised breakdown, so a toast would only
+// repeat the total. Stars awarded anywhere else still announce themselves.
+on('stars:awarded', ({ amount, reason }) => {
+  if (amount > 0 && String(reason).startsWith('milestone:')) toast(`+${amount} stars`, { gold: true });
+});
 on('milestone:earned', m => toast(`${m.emoji}  ${m.title}`, { gold: true, ms: 4200 }));
 
 // Before the child has finished setup, "back" belongs on the welcome screen

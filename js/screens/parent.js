@@ -10,13 +10,28 @@ import * as words from '../core/words.js';
 import * as speech from '../core/speech.js';
 import * as storage from '../core/storage.js';
 import { getState, update, replaceState, resetAll, settings, flushNow } from '../core/state.js';
+import { on as onBus } from '../core/bus.js';
 import { setQueue } from './spell.js';
 
-/* Unlocking lasts until the app is closed, not forever. */
+/* The parent area re-locks every time it is left. A flag that survived until
+   the page reloaded meant one PIN entry unlocked it for the rest of the day,
+   which is no lock at all on a tablet that never gets closed. */
 let unlocked = false;
 
 export default function parentScreen(container) {
   if (!unlocked) return pinGate(container, () => parentScreen(container));
+
+  /* Leaving the parent area at all — the back arrow, a button, or the
+     browser's own gesture — drops the lock again. This hangs off the router
+     rather than this screen's teardown because the teardown returned from
+     here is discarded on the path through the PIN gate. The listener takes
+     itself off as soon as it fires, so entering and leaving repeatedly does
+     not pile them up. */
+  let stopWatching;
+  stopWatching = onBus('route:before', () => {
+    unlocked = false;
+    stopWatching?.();
+  });
 
   let view = { name: 'hub' };
 
@@ -193,7 +208,7 @@ export default function parentScreen(container) {
             toast(list.archived ? 'List is active again' : 'List archived');
             render();
           } }),
-          button('Practise this list', { cls: 'btn btn-quiet grow', onClick: () => {
+          button('Practice this list', { cls: 'btn btn-quiet grow', onClick: () => {
             const pool = ws.filter(w => !words.isMastered(w));
             if (!pool.length) return toast('Every word on this list is mastered');
             setQueue(words.pickWords({ count: Math.min(10, pool.length), pool: 'list', listId: list.id })
@@ -291,7 +306,7 @@ export default function parentScreen(container) {
       el('div', { class: 'row', style: { marginTop: '10px' } },
         button('Reset progress', { cls: 'btn btn-quiet grow', onClick: async () => {
           const ok = await confirmDialog({ title: 'Reset this word?',
-            message: 'Its mastery credits are cleared so it returns to the active practice pool. Its history is kept.',
+            message: 'Its streak is cleared so it returns to the active practice pool. Its history is kept.',
             confirmLabel: 'Reset' });
           if (!ok) return;
           words.resetWordProgress(word.id); close(); render(); toast('Word is back in rotation');
@@ -382,23 +397,18 @@ export default function parentScreen(container) {
       el('div', { class: 'card' },
         el('h2', { text: 'Mastery' }),
         el('p', { class: 'muted tiny', text:
-          'How many separate sittings she has to spell a word correctly before it counts as mastered and leaves the practice pool. Two correct answers in one session only ever count as one.' }),
+          'How many times in a row she has to spell a word correctly before it counts as mastered and leaves the practice pool. Only one correct answer counts per day, so this really means three different days \u2014 learning the word, rather than copying letters she is still looking at. Missing it starts the count over.' }),
         segmented([
-          { value: 2, label: '2 times' },
-          { value: 3, label: '3 times' },
-          { value: 5, label: '5 times' },
+          { value: 2, label: '2 in a row' },
+          { value: 3, label: '3 in a row' },
+          { value: 5, label: '5 in a row' },
         ], s.masteryThreshold, v => { update(st => { st.settings.masteryThreshold = v; }); toast('Saved'); })
       ),
 
       el('div', { class: 'card' },
         el('h3', { text: 'When she misses a word' }),
         el('p', { class: 'muted tiny', text:
-          'A missed word always returns to the active pool and gets asked again sooner. This only controls what happens to credits it had already earned.' }),
-        segmented([
-          { value: 'setback', label: 'Lose one credit' },
-          { value: 'keep',    label: 'Keep credits' },
-          { value: 'reset',   label: 'Start over' },
-        ], s.missBehavior, v => { update(st => { st.settings.missBehavior = v; }); toast('Saved'); })
+          'She sees the correct spelling, then moves on. The word comes back a few words later in the same session so she has to recall it rather than copy it. That second look is practice only: it earns no stars and does not count towards mastery.' })
       ),
 
       el('div', { class: 'card' },
@@ -410,7 +420,18 @@ export default function parentScreen(container) {
           { value: 8,  label: '8' },
           { value: 12, label: '12' },
           { value: 17, label: '17' },
-        ], s.practiceSize, v => { update(st => { st.settings.practiceSize = v; }); toast('Saved'); })
+        ], s.practiceSize, v => { update(st => { st.settings.practiceSize = v; }); toast('Saved'); }),
+        el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+          'Today\u2019s Practice works through the list, showing each word once a day. When every word has had its turn the button goes quiet until tomorrow; extra practice stays available and is worth fewer stars.' })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'Words per practice test' }),
+        segmented([
+          { value: 8,  label: '8' },
+          { value: 10, label: '10' },
+          { value: 15, label: '15' },
+        ], s.practiceTestSize, v => { update(st => { st.settings.practiceTestSize = v; }); toast('Saved'); })
       ),
 
       el('div', { class: 'card' },
@@ -487,7 +508,7 @@ export default function parentScreen(container) {
           ? el('div', { class: 'stack-sm' }, trouble.map(wordLine))
           : el('p', { class: 'muted tiny', text: 'Nothing is giving her trouble right now.' }),
         trouble.length
-          ? button('Practise just these', { cls: 'btn btn-primary btn-block', style: { marginTop: '12px' },
+          ? button('Practice just these', { cls: 'btn btn-primary btn-block', style: { marginTop: '12px' },
               onClick: () => { setQueue(trouble.slice(0, 8)); navigate('/practice'); } })
           : null
       ),
@@ -599,7 +620,8 @@ export default function parentScreen(container) {
           update(st => {
             st.words.forEach(w => {
               w.attempts = 0; w.correctCount = 0; w.incorrectCount = 0;
-              w.creditSessions = []; w.recent = []; w.masteredAt = null;
+              w.streak = 0; w.lastCreditDay = null; w.lastDailyDay = null;
+              w.recent = []; w.masteredAt = null;
               w.lastSeen = null; w.lastCorrect = null; w.lastMissed = null;
             });
             st.progress = storage.defaultState().progress;
@@ -643,7 +665,8 @@ export default function parentScreen(container) {
     update(st => {
       st.words.forEach(w => {
         w.attempts = 0; w.correctCount = 0; w.incorrectCount = 0;
-        w.creditSessions = []; w.recent = []; w.masteredAt = null;
+        w.streak = 0; w.lastCreditDay = null; w.lastDailyDay = null;
+              w.recent = []; w.masteredAt = null;
         w.firstSeen = null; w.lastSeen = null; w.lastCorrect = null; w.lastMissed = null;
       });
       st.progress = storage.defaultState().progress;
@@ -686,6 +709,8 @@ export default function parentScreen(container) {
 
 function pinGate(container, onUnlock) {
   let entered = '';
+  // Before the child has finished setup there is no hub to go back to.
+  const ready = getState().child.setupComplete;
 
   const dots = el('div', { class: 'row', style: { justifyContent: 'center' } });
   const message = el('div', { class: 'center tiny muted', text: 'Enter the parent PIN' });
@@ -737,6 +762,7 @@ function pinGate(container, onUnlock) {
     ),
     pad,
     el('p', { class: 'center tiny muted', text: 'The PIN starts as 1234 and can be changed inside.' }),
-    button('Back to the game', { cls: 'btn btn-quiet btn-block', onClick: () => navigate('/') })
+    button(ready ? 'Back to the game' : 'Back to the welcome screen',
+      { cls: 'btn btn-quiet btn-block', onClick: () => navigate(ready ? '/' : '/setup') })
   ));
 }

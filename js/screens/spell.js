@@ -1,11 +1,22 @@
-/* Listen & Spell — the one spelling activity.
+/* The spelling activities.
 
-   Practice and Test are the same engine with different manners:
-     Practice  shows what happened after every word and lets her try again.
-     Test      stays quiet until the end, like a real spelling test.
+   Four kinds, all driven by the same engine so mastery can never mean two
+   different things in two places:
 
-   Every mini-game added later should call recordAttempt() the same way this
-   screen does, so mastery can never mean two different things in two places.
+     daily        Today's Practice. Works through the active list, showing
+                  each word once a day, with feedback after every answer.
+     extra        Free practice. Same feel, any active word, worth less.
+     practiceTest A short quiet quiz — no feedback until the end.
+     fullTest     A whole spelling list, exactly like the real thing,
+                  including words she has already mastered.
+
+   Missing a word never means retyping it while she is still looking at the
+   answer. She sees the correct spelling, moves on, and meets the word again
+   a few words later — recall rather than copying. That second look is for
+   learning only: it earns nothing and does not touch her mastery streak.
+
+   Any mini-game added later should call words.recordAttempt() exactly the
+   way this screen does, and nothing else.
 */
 
 import { el, mount, button, clear } from '../ui/dom.js';
@@ -15,17 +26,36 @@ import * as speech from '../core/speech.js';
 import * as words from '../core/words.js';
 import * as rewards from '../core/rewards.js';
 import * as pet from '../core/pet.js';
-import { update, settings } from '../core/state.js';
+import { getState, update, settings } from '../core/state.js';
 
-/* A place to hand a specific set of words to the next session — used by
-   "practice the tricky ones" and by the parent's per-list practice. */
+/* Hands a specific set of words to the next session — used by "practice the
+   tricky ones", the parent's per-list practice, and reviewing mastered words. */
 let queueOverride = null;
 export function setQueue(wordList) { queueOverride = wordList.slice(); }
 
-/* The QWERTY layout mirrors a real US keyboard, staggered rows and all,
-   so the positions she learns on screen are the positions her fingers will
-   find on the Bluetooth keyboard. Backspace sits at the end of the top row
-   and Enter at the end of the home row, exactly where they really are. */
+const KINDS = {
+  daily: {
+    label: "Today's Practice", pool: 'daily',
+    feedback: true, retry: true, marksDaily: true,
+  },
+  extra: {
+    label: 'Practice', pool: 'active',
+    feedback: true, retry: true, marksDaily: false,
+  },
+  practiceTest: {
+    label: 'Practice test', pool: 'active',
+    feedback: false, retry: false, marksDaily: false,
+  },
+  fullTest: {
+    label: 'Spelling test', pool: 'list',
+    feedback: false, retry: false, marksDaily: false,
+  },
+};
+
+/* How many words later a missed word comes back. Far enough that she has to
+   remember it rather than echo it, close enough to still be the same lesson. */
+const RETRY_GAP = 3;
+
 const ABC_ROWS = ['abcdefg', 'hijklmn', 'opqrstu', "vwxyz'"];
 
 const QWERTY_ROWS = [
@@ -34,9 +64,9 @@ const QWERTY_ROWS = [
   { lead: 3, keys: 'zxcvbnm',    end: 'shift', leadShift: true },
 ];
 
-export default function spellScreen(container, { mode = 'practice', pool = 'active', listId = null } = {}) {
-  // The activity owns the whole viewport below the top bar so the keyboard
-  // is always reachable without scrolling.
+export default function spellScreen(container, { kind = 'daily', listId = null } = {}) {
+  const config = KINDS[kind] || KINDS.daily;
+
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.height = '100%';
@@ -52,33 +82,38 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
 
   /* ---------- Build the queue ---------- */
 
-  const size = mode === 'test'
-    ? Math.max(1, words.activeWords().length ? Math.min(words.activeWords().length, 20) : 0)
-    : Math.max(1, settings().practiceSize || 8);
+  let plan;   // [{ word, isRetry }]
 
-  let queue;
   if (queueOverride && queueOverride.length) {
-    queue = queueOverride;
+    plan = queueOverride.map(word => ({ word, isRetry: false }));
     queueOverride = null;
+  } else if (kind === 'fullTest') {
+    // A real spelling test covers the whole list in order, mastered words
+    // and all. Missing one she had mastered honestly puts it back in play.
+    plan = words.wordsInList(listId).map(word => ({ word, isRetry: false }));
   } else {
-    queue = words.pickWords({ count: size, pool, listId });
+    const size = kind === 'practiceTest'
+      ? Math.max(1, settings().practiceTestSize || 10)
+      : Math.max(1, settings().practiceSize || 8);
+    plan = words.pickWords({ count: size, pool: config.pool })
+      .map(word => ({ word, isRetry: false }));
   }
 
-  if (!queue.length) {
-    mount(container, emptyState(pool));
+  if (!plan.length) {
+    releaseLayout();
+    mount(container, emptyState(kind));
     return () => cleanupFns.forEach(f => f());
   }
 
   /* ---------- Session state ---------- */
 
-  const sessionId = `s_${Date.now().toString(36)}`;
-  const results = [];            // { wordId, text, typed, correct }
+  const originalIds = plan.map(e => e.word.id);
+  const results = new Map();       // wordId -> { text, typed, correct }  (first attempts only)
+  const masteredThisSession = [];
   let index = 0;
   let typed = '';
-  let locked = false;            // true while feedback is on screen
-  let physicalUsed = false;      // a Bluetooth keyboard has been used
-  let retrying = false;          // this attempt is a second look, not scored
-  let masteredThisSession = [];
+  let locked = false;
+  let physicalUsed = false;
 
   /* ---------- Layout ---------- */
 
@@ -101,24 +136,21 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
   );
   mount(container, stage);
 
-  buildKeyboard();
-  renderPips();
-  showWord({ speakIt: true });
-
   /* ---------- Rendering ---------- */
 
-  function currentWord() { return queue[index]; }
+  // Function declarations, not const arrows: everything in this screen is
+  // hoisted so that the start-up calls at the bottom cannot reach a binding
+  // that has not been initialised yet.
+  function entry() { return plan[index]; }
+  function currentWord() { return entry().word; }
 
   function renderPips() {
     clear(pips);
-    queue.forEach((_, i) => {
-      const r = results[i];
+    originalIds.forEach(id => {
+      const r = results.get(id);
       let cls = 'pip';
-      if (i === index && !locked) cls += ' current';
-      else if (r) cls += r.correct ? ' done' : ' missed';
-      // In a test she does not learn how she did until the end, so a
-      // finished word is marked as done either way.
-      if (mode === 'test' && r) cls = 'pip done';
+      if (r) cls += config.feedback ? (r.correct ? ' done' : ' missed') : ' done';
+      else if (!locked && entry() && entry().word.id === id) cls += ' current';
       pips.append(el('div', { class: cls }));
     });
   }
@@ -136,31 +168,33 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
 
     mount(prompt,
       el('button', {
-        class: 'speak-btn',
-        type: 'button',
-        'aria-label': 'Hear the word',
+        class: 'speak-btn', type: 'button', 'aria-label': 'Hear the word',
         onClick: () => sayWord({ withSentence }),
       }, '\u{1F50A}'),
-      el('div', { class: 'muted tiny', text: mode === 'test' ? 'Spelling test' : 'Listen, then spell it' })
+      el('div', { class: 'muted tiny', text: entry().isRetry
+        ? 'Here is that word again — you have got this'
+        : (config.feedback ? 'Listen, then spell it' : config.label) })
     );
 
     renderHelp();
-
     if (speakIt) setTimeout(() => sayWord({ withSentence }), 260);
   }
 
   function renderHelp() {
     const word = currentWord();
     mount(helpRow,
-      button('Slower', { cls: 'btn btn-quiet', emoji: '\u{1F422}', onClick: () => speech.speakWordSlowly(word) }),
+      button('Slower', { cls: 'btn btn-quiet', emoji: '\u{1F422}',
+        onClick: () => speech.speakWordSlowly(word) }),
       word.sentence
-        ? button('In a sentence', { cls: 'btn btn-quiet', emoji: '\u{1F4AC}', onClick: () => speech.speakSentence(word) })
+        ? button('In a sentence', { cls: 'btn btn-quiet', emoji: '\u{1F4AC}',
+            onClick: () => speech.speakSentence(word) })
         : null,
-      (mode === 'practice' && word.hint)
-        ? button('Hint', { cls: 'btn btn-quiet', emoji: '\u{1F4A1}', onClick: () => toast(word.hint, { ms: 4000 }) })
+      (config.feedback && word.hint)
+        ? button('Hint', { cls: 'btn btn-quiet', emoji: '\u{1F4A1}',
+            onClick: () => toast(word.hint, { ms: 4000 }) })
         : null,
       physicalUsed
-        ? button('Letters', { cls: 'btn btn-quiet', emoji: '\u2328',
+        ? button('Letters', { cls: 'btn btn-quiet', emoji: '⌨',
             onClick: () => stage.classList.toggle('physical-kb') })
         : null
     );
@@ -175,30 +209,27 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
 
   function renderTiles(state = 'typing') {
     clear(tiles);
-    const letters = typed.split('');
-    letters.forEach((ch, i) => {
+    typed.split('').forEach(ch => {
       let cls = 'tile';
       if (state === 'good') cls += ' good';
       if (state === 'bad')  cls += ' bad';
-      tiles.append(el('div', { class: cls, text: ch, key: i }));
+      tiles.append(el('div', { class: cls, text: ch }));
     });
-    if (state === 'typing') {
-      tiles.append(el('div', { class: 'tile empty caret' }));
-    }
+    if (state === 'typing') tiles.append(el('div', { class: 'tile empty caret' }));
   }
 
   /* ---------- Keyboard ----------
-     The app never uses the system keyboard. Gboard's suggestion strip
-     would offer her the correctly spelled word while she is being asked
-     to spell it, which would quietly defeat the whole app. */
+     The app never opens the system keyboard: Android's suggestion strip
+     would offer her the correctly spelled word while she is being asked to
+     spell it. The QWERTY layout mirrors a real US keyboard so the positions
+     carry over to the Bluetooth one. */
+
   function buildKeyboard() {
     clear(keyboard);
     if (settings().keyboardLayout === 'abc') buildAbcKeyboard();
     else buildQwertyKeyboard();
   }
 
-  // Function declarations, not const arrows: buildKeyboard() runs during
-  // setup, well before this point in the source is reached.
   function letterKey(ch) {
     return el('button', {
       class: 'key', type: 'button', text: ch,
@@ -207,32 +238,25 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     });
   }
 
-  /* Twenty-four half-columns per row is what lets the home row sit half a
-     key right of the top row, and the bottom row a key and a half right of
-     that — the same stagger her fingers meet on the Bluetooth keyboard. */
   function buildQwertyKeyboard() {
     QWERTY_ROWS.forEach(row => {
       const grid = el('div', { class: 'kb-grid' });
-
       if (row.leadShift) {
         grid.append(el('div', { class: 'key key-shift', style: { gridColumn: 'span 3' },
-          text: '\u21E7', 'aria-hidden': 'true' }));
+          text: '⇧', 'aria-hidden': 'true' }));
       } else if (row.lead) {
         grid.append(el('div', { style: { gridColumn: `span ${row.lead}` } }));
       }
-
       row.keys.split('').forEach(ch => grid.append(letterKey(ch)));
-
       if (row.end === 'del') {
-        grid.append(el('button', { class: 'key key-del', type: 'button', text: '\u232B',
+        grid.append(el('button', { class: 'key key-del', type: 'button', text: '⌫',
           style: { gridColumn: 'span 4' }, 'aria-label': 'Delete', onClick: backspace }));
       } else if (row.end === 'enter') {
         grid.append(el('button', { class: 'key key-enter', type: 'button', text: 'Check',
           style: { gridColumn: 'span 3' }, onClick: submit }));
       } else {
-        // Right shift: a landmark for her hands, not a working key.
         grid.append(el('div', { class: 'key key-shift', style: { gridColumn: 'span 7' },
-          text: '\u21E7', 'aria-hidden': 'true' }));
+          text: '⇧', 'aria-hidden': 'true' }));
       }
       keyboard.append(grid);
     });
@@ -247,7 +271,7 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
       keyboard.append(row);
     });
     keyboard.append(el('div', { class: 'kb-row' },
-      el('button', { class: 'key key-wide key-del', type: 'button', text: '\u232B',
+      el('button', { class: 'key key-wide key-del', type: 'button', text: '⌫',
         'aria-label': 'Delete', onClick: backspace }),
       el('button', { class: 'key key-wide key-enter', type: 'button', text: 'Check',
         onClick: submit })
@@ -255,8 +279,7 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
   }
 
   function typeLetter(ch) {
-    if (locked) return;
-    if (typed.length >= 24) return;
+    if (locked || typed.length >= 24) return;
     typed += ch;
     renderTiles();
   }
@@ -267,14 +290,14 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     renderTiles();
   }
 
-  /* A Bluetooth keyboard is the better way to practise typing, so when one
-     starts being used the on-screen letters step aside and give the screen
-     back. A button brings them back if she puts the keyboard down. */
+  /* A Bluetooth keyboard is the better way to practice typing, so when one
+     starts being used the on-screen letters step aside. A button brings them
+     back if she puts it down. */
   function notePhysicalKeyboard() {
     if (physicalUsed) return;
     physicalUsed = true;
     stage.classList.add('physical-kb');
-    toast('Using your keyboard \u2014 tap \u2328 to show the letters again.', { ms: 4200 });
+    toast('Using your keyboard — tap ⌨ to show the letters again.', { ms: 4200 });
     renderHelp();
   }
 
@@ -292,33 +315,40 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
 
   function submit() {
     if (locked) return;
-    const word = currentWord();
+    const { word, isRetry } = entry();
     const attempt = typed.trim().toLowerCase();
     if (!attempt) { toast('Tap the letters to spell the word'); return; }
 
     const correct = attempt === word.text.trim().toLowerCase();
 
-    // A retry is a second look at the same word, for learning. It is not
-    // scored again, so a miss can never be double-counted against her.
-    if (!retrying) {
-      const outcome = words.recordAttempt(word.id, correct, sessionId);
-      if (outcome?.justMastered) masteredThisSession.push(word);
-      results[index] = { wordId: word.id, text: word.text, typed: attempt, correct };
+    // A second look at a word she just missed is practice, not assessment:
+    // it is recorded in her history but cannot advance or break the streak,
+    // and it earns nothing.
+    const outcome = words.recordAttempt(word.id, correct, { countsForMastery: !isRetry });
+    if (outcome?.justMastered) masteredThisSession.push(word);
+
+    if (!isRetry) {
+      results.set(word.id, { text: word.text, typed: attempt, correct });
+      if (config.marksDaily) words.markCoveredToday(word.id);
+      // Bring a missed word back a few words later, once.
+      if (!correct && config.retry) {
+        const at = Math.min(index + RETRY_GAP, plan.length);
+        plan.splice(at, 0, { word, isRetry: true });
+      }
     }
-    retrying = false;
+
     locked = true;
 
-    if (mode === 'test') {
+    if (!config.feedback) {
       renderTiles();
       renderPips();
       setTimeout(next, 420);
       return;
     }
-
-    correct ? showCorrect(word) : showAlmost(word, attempt);
+    correct ? showCorrect(word, isRetry) : showMissed(word, attempt, isRetry);
   }
 
-  function showCorrect(word) {
+  function showCorrect(word, isRetry) {
     stage.classList.add('showing-feedback');
     renderTiles('good');
     renderPips();
@@ -326,7 +356,8 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
 
     const justMastered = masteredThisSession.includes(word);
     mount(feedback, el('div', { class: 'feedback feedback-good' },
-      el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered() : pet.praiseCorrect() }),
+      el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered()
+        : isRetry ? 'You remembered it!' : pet.praiseCorrect() }),
       el('div', { class: 'correct-spelling', text: word.text }),
       masteryDots(word)
     ));
@@ -335,24 +366,30 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     setTimeout(next, justMastered ? 2200 : 1300);
   }
 
-  function showAlmost(word, attempt) {
+  function showMissed(word, attempt, isRetry) {
     stage.classList.add('showing-feedback');
     renderTiles('bad');
     tiles.classList.add('shake');
     setTimeout(() => tiles.classList.remove('shake'), 420);
     renderPips();
 
+    const comingBack = !isRetry && config.retry;
+
     mount(feedback, el('div', { class: 'feedback feedback-almost' },
       el('span', { class: 'big', text: pet.praiseAlmost() }),
       el('div', { class: 'your-try', text: attempt }),
       el('div', { class: 'correct-spelling', text: word.text }),
       el('div', { class: 'row', style: { justifyContent: 'center', marginTop: '10px' } },
-        button('Hear it', { cls: 'btn btn-quiet', emoji: '\u{1F50A}', onClick: () => speech.speakWord(word) }),
-        button('Show me', { cls: 'btn btn-quiet', emoji: '\u{1F524}', onClick: () => speech.spellOut(word) }),
-        button('Try again', { cls: 'btn btn-primary', onClick: () => { retrying = true; showWord({ speakIt: true }); } })
+        button('Hear it', { cls: 'btn btn-quiet', emoji: '\u{1F50A}',
+          onClick: () => speech.speakWord(word) }),
+        button('Show me', { cls: 'btn btn-quiet', emoji: '\u{1F524}',
+          onClick: () => speech.spellOut(word) }),
+        button('Next word', { cls: 'btn btn-primary', emoji: '➡️', onClick: next })
       ),
       el('div', { class: 'tiny muted', style: { marginTop: '10px' },
-        text: 'This word will come back soon so you can get it.' })
+        text: comingBack
+          ? 'Look closely at it — this word will come back in a moment.'
+          : 'You will see this one again next time.' })
     ));
   }
 
@@ -361,12 +398,16 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     const need = words.threshold();
     const wrap = el('div', { class: 'mastery-dots', style: { justifyContent: 'center', marginTop: '6px' } });
     for (let i = 0; i < need; i++) wrap.append(el('div', { class: i < have ? 'mdot on' : 'mdot' }));
-    return el('div', { class: 'center' }, wrap);
+    return el('div', { class: 'center' },
+      wrap,
+      el('div', { class: 'tiny muted', style: { marginTop: '4px' },
+        text: have >= need ? 'Mastered!' : `${have} of ${need} days in a row` })
+    );
   }
 
   function next() {
     index += 1;
-    if (index >= queue.length) return finish();
+    if (index >= plan.length) return finish();
     showWord({ speakIt: true });
   }
 
@@ -375,21 +416,21 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
   function finish() {
     speech.stop();
 
-    const attempted = results.filter(Boolean).length;
-    const correct   = results.filter(r => r?.correct).length;
-    const missed    = results.filter(r => r && !r.correct);
+    const first = [...results.values()];
+    const attempted = first.length;
+    const firstTryCorrect = first.filter(r => r.correct).length;
+    const missed = first.filter(r => !r.correct);
 
-    const earned = rewards.payForSession({
-      correct, attempted, mastered: masteredThisSession.length, isTest: mode === 'test',
+    const payout = rewards.payForActivity({
+      kind, firstTryCorrect, attempted, mastered: masteredThisSession.length,
     });
 
     update(state => {
       state.progress.sessionsCompleted += 1;
-      if (mode === 'test') state.progress.testsCompleted += 1;
+      if (kind === 'practiceTest' || kind === 'fullTest') state.progress.testsCompleted += 1;
       state.sessions.push({
-        id: sessionId, mode, at: Date.now(),
-        attempted, correct,
-        results: results.filter(Boolean).map(r => ({ wordId: r.wordId, correct: r.correct })),
+        id: `s_${Date.now().toString(36)}`, mode: kind, at: Date.now(),
+        attempted, correct: firstTryCorrect,
       });
       if (state.sessions.length > 60) state.sessions = state.sessions.slice(-60);
     });
@@ -397,27 +438,37 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     const streak = rewards.touchStreak();
     const milestones = rewards.checkMilestones();
 
-    if (correct === attempted && attempted > 0) confetti(48);
+    if (attempted > 0 && firstTryCorrect === attempted) confetti(48);
 
     releaseLayout();
-    mount(container, resultsScreen({ attempted, correct, missed, earned, streak, milestones }));
+    mount(container, resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones }));
   }
 
-  function resultsScreen({ attempted, correct, missed, earned, streak, milestones }) {
+  function resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones }) {
     const petInfo = pet.pet();
-
-    const headline = correct === attempted
-      ? 'Every single one!'
-      : correct >= attempted / 2 ? 'Nice work!' : 'Good effort — you tried them all.';
+    const headline = firstTryCorrect === attempted ? 'Every single one!'
+      : firstTryCorrect >= attempted / 2 ? 'Nice work!' : 'Good effort — you tried them all.';
 
     const body = el('div', { class: 'stack' },
       el('div', { class: 'card center' },
         el('div', { style: { fontSize: '2.4rem' }, text: '\u{1F389}' }),
         el('h2', { text: headline }),
-        el('p', { class: 'muted', text: `${correct} of ${attempted} spelled correctly` }),
-        el('div', { class: 'row', style: { justifyContent: 'center' } },
-          el('div', { class: 'star-chip' },
-            el('span', { class: 'star-chip-icon', text: '★' }), `+${earned}`)
+        el('p', { class: 'muted', text: `${firstTryCorrect} of ${attempted} on the first try` })
+      ),
+
+      /* The itemised payout. Seeing the accuracy line separately is what
+         makes the accuracy bonus mean anything to her. */
+      el('div', { class: 'card' },
+        el('h3', { text: 'Stars earned' }),
+        el('div', { class: 'stack-sm' },
+          payout.lines.map(line => el('div', { class: 'payout-row' },
+            el('div', { class: 'grow', text: line.label }),
+            el('div', { class: 'payout-stars', text: `+${line.stars}` })
+          ))
+        ),
+        el('div', { class: 'payout-total' },
+          el('div', { class: 'grow', text: 'Total' }),
+          el('div', { text: `★ ${payout.total}` })
         )
       )
     );
@@ -425,13 +476,13 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     if (masteredThisSession.length) {
       body.append(el('div', { class: 'card' },
         el('h3', { text: `⭐ Mastered ${masteredThisSession.length === 1 ? 'a new word' : 'new words'}!` }),
-        el('p', { class: 'muted tiny', text: `${petInfo.name} is so proud. These words leave your practice list now.` }),
-        el('div', { class: 'stack-sm' },
-          masteredThisSession.map(w => el('div', { class: 'word-row' },
+        el('p', { class: 'muted tiny', text:
+          `${petInfo.name} is so proud. These words leave your practice list now.` }),
+        el('div', { class: 'stack-sm' }, masteredThisSession.map(w =>
+          el('div', { class: 'word-row' },
             el('div', { class: 'w-text', text: w.text }),
             el('div', { class: 'badge badge-mastered', text: '⭐ Mastered' })
-          ))
-        )
+          )))
       ));
     }
 
@@ -442,42 +493,32 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
       ));
     }
 
-    milestones.forEach(m => {
-      body.append(el('div', { class: 'card center' },
-        el('div', { style: { fontSize: '2rem' }, text: m.emoji }),
-        el('h3', { text: m.title }),
-        el('p', { class: 'muted tiny', text: m.blurb }),
-        m.item ? el('p', { class: 'tiny', text: `You earned: ${m.item.emoji} ${m.item.name}` }) : null
-      ));
-    });
+    milestones.forEach(m => body.append(el('div', { class: 'card center' },
+      el('div', { style: { fontSize: '2rem' }, text: m.emoji }),
+      el('h3', { text: m.title }),
+      el('p', { class: 'muted tiny', text: m.blurb }),
+      m.item ? el('p', { class: 'tiny', text: `You earned: ${m.item.emoji} ${m.item.name}` }) : null
+    )));
 
     if (missed.length) {
       body.append(el('div', { class: 'card' },
         el('h3', { text: 'Words to look at again' }),
-        el('div', { class: 'stack-sm' },
-          missed.map(r => el('div', { class: 'word-row' },
+        el('div', { class: 'stack-sm' }, missed.map(r =>
+          el('div', { class: 'word-row' },
             el('div', { class: 'w-text', text: r.text }),
             el('div', { class: 'w-meta', text: `you wrote: ${r.typed}` }),
-            el('button', {
-              class: 'icon-btn', type: 'button', 'aria-label': `Hear ${r.text}`,
-              onClick: () => speech.speak(r.text),
-            }, '\u{1F50A}')
-          ))
-        ),
-        button('Practice these', {
-          cls: 'btn btn-primary btn-block', emoji: '\u{1F504}',
-          style: { marginTop: '12px' },
-          onClick: () => {
-            setQueue(missed.map(r => words.wordById(r.wordId)).filter(Boolean));
-            navigate('/practice');
-          },
-        })
+            el('button', { class: 'icon-btn', type: 'button', 'aria-label': `Hear ${r.text}`,
+              onClick: () => speech.speak(r.text) }, '\u{1F50A}')
+          )))
       ));
     }
 
+    const left = words.wordsLeftToday().length;
     body.append(el('div', { class: 'row' },
-      button('Do more', { cls: 'btn btn-green grow', emoji: '➕',
-        onClick: rerender }),
+      (kind === 'daily' && left > 0)
+        ? button('Keep going', { cls: 'btn btn-green grow', emoji: '➕', onClick: rerender })
+        : button('Practice more', { cls: 'btn btn-green grow', emoji: '✨',
+            onClick: () => navigate('/practice') }),
       button('Go home', { cls: 'btn btn-primary grow', emoji: '\u{1F3E0}',
         onClick: () => navigate('/') })
     ));
@@ -485,23 +526,35 @@ export default function spellScreen(container, { mode = 'practice', pool = 'acti
     return body;
   }
 
+  /* ---------- Go ----------
+     Deliberately the last thing in this function: every helper above is
+     defined by the time any of it runs. */
+
+  buildKeyboard();
+  showWord({ speakIt: true });
+
   return () => cleanupFns.forEach(f => f());
 }
 
-/* ---------- Nothing to practise yet ---------- */
+/* ---------- Nothing to do ---------- */
 
-function emptyState(pool) {
-  if (pool === 'mastered') {
+function emptyState(kind) {
+  if (kind === 'daily') {
     return el('div', { class: 'card center stack' },
-      el('div', { style: { fontSize: '2.4rem' }, text: '⭐' }),
-      el('h2', { text: 'No mastered words yet' }),
-      el('p', { class: 'muted', text: 'Keep practising — they will show up here.' }),
-      button('Go home', { cls: 'btn btn-primary', onClick: () => navigate('/') })
+      el('div', { style: { fontSize: '2.4rem' }, text: '\u{1F31F}' }),
+      el('h2', { text: 'All done for today!' }),
+      el('p', { class: 'muted', text:
+        'You have practiced every word on your list today. Come back tomorrow — or do some extra practice if you want more.' }),
+      el('div', { class: 'row', style: { justifyContent: 'center' } },
+        button('Extra practice', { cls: 'btn btn-green', emoji: '✨',
+          onClick: () => navigate('/practice') }),
+        button('Go home', { cls: 'btn btn-primary', onClick: () => navigate('/') })
+      )
     );
   }
   return el('div', { class: 'card center stack' },
     el('div', { style: { fontSize: '2.4rem' }, text: '\u{1F389}' }),
-    el('h2', { text: 'Nothing to practise!' }),
+    el('h2', { text: 'Nothing to practice!' }),
     el('p', { class: 'muted', text:
       'Every word has been mastered, or there are no words yet. A grown-up can add this week’s list in the Parent Area.' }),
     el('div', { class: 'row', style: { justifyContent: 'center' } },

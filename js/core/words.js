@@ -36,7 +36,9 @@ export function makeWord(text, listId, extra = {}) {
     attempts: 0,
     correctCount: 0,
     incorrectCount: 0,
-    creditSessions: [],   // distinct session ids where it was spelled right
+    streak: 0,            // consecutive correct answers, at most one per day
+    lastCreditDay: null,  // 'YYYY-MM-DD' the streak last went up
+    lastDailyDay: null,   // 'YYYY-MM-DD' it last came up in Today's Practice
     recent: [],           // last few outcomes, newest last: true/false
 
     firstSeen: null,
@@ -62,9 +64,27 @@ export function threshold() {
   return Math.max(1, settings().masteryThreshold || 3);
 }
 
-/** How many separate sessions this word has been spelled correctly in. */
+/** Today, as a date key. Mastery counts at most one correct answer a day. */
+export function dayKey(d = new Date()) {
+  const pad = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Consecutive correct answers, counted at most once per day.
+ *
+ * Three in a row on three different days is a very different claim from
+ * three in a row in five minutes: the first means she learned the word,
+ * the second means she can copy letters she is still looking at. A miss
+ * resets this to zero.
+ */
 export function credits(word) {
-  return word.creditSessions.length;
+  return word.streak || 0;
+}
+
+/** Has this word already earned its one streak credit today? */
+export function creditedToday(word) {
+  return word.lastCreditDay === dayKey();
 }
 
 export function statusOf(word) {
@@ -146,7 +166,7 @@ function priorityScore(word, newestListId) {
  * Choose the next batch of words for an activity.
  * @param {object} opts
  * @param {number} opts.count        how many words to return
- * @param {'active'|'mastered'|'all'|'list'} opts.pool
+ * @param {'active'|'daily'|'mastered'|'all'|'list'} opts.pool
  * @param {string} [opts.listId]     required when pool === 'list'
  * @param {boolean} [opts.allowRepeats] pad by repeating when the pool is small
  */
@@ -156,6 +176,9 @@ export function pickWords({ count = 8, pool = 'active', listId = null, allowRepe
     case 'mastered': candidates = masteredWords(); break;
     case 'all':      candidates = allWords().slice(); break;
     case 'list':     candidates = wordsInList(listId); break;
+    // Today's Practice works through the list, so it only offers words that
+    // have not already had their turn today.
+    case 'daily':    candidates = wordsLeftToday(); break;
     default:         candidates = activeWords();
   }
   if (!candidates.length) return [];
@@ -184,13 +207,28 @@ export function pickWords({ count = 8, pool = 'active', listId = null, allowRepe
    This is the ONLY way a word's mastery changes. Mini-games call this
    and nothing else, so mastery can never drift between activities. */
 
-export function recordAttempt(wordId, wasCorrect, sessionId) {
+/**
+ * Record one attempt at a word. This is the ONLY way mastery ever changes,
+ * so every activity and every future mini-game must come through here.
+ *
+ * @param {string} wordId
+ * @param {boolean} wasCorrect
+ * @param {object} [opts]
+ * @param {boolean} [opts.countsForMastery=true]
+ *   false for a second look at a word she just missed. Those re-tries are
+ *   for learning: they are recorded in her history but neither advance the
+ *   streak nor break it again, and they earn nothing.
+ */
+export function recordAttempt(wordId, wasCorrect, opts = {}) {
+  const { countsForMastery = true } = opts;
+
   return update(state => {
     const word = state.words.find(w => w.id === wordId);
     if (!word) return { ok: false };
 
     const wasMastered = isMastered(word);
     const now = Date.now();
+    const today = dayKey();
 
     word.attempts += 1;
     word.lastSeen = now;
@@ -202,34 +240,55 @@ export function recordAttempt(wordId, wasCorrect, sessionId) {
     if (wasCorrect) {
       word.correctCount += 1;
       word.lastCorrect = now;
-      // One mastery credit per session, so three right answers in a row
-      // inside one sitting is not the same as knowing it on three days.
-      if (sessionId && !word.creditSessions.includes(sessionId)) {
-        word.creditSessions.push(sessionId);
-      }
     } else {
       word.incorrectCount += 1;
       word.lastMissed = now;
-      const behaviour = state.settings.missBehavior;
-      if (behaviour === 'reset') {
-        word.creditSessions = [];
-      } else if (behaviour === 'setback') {
-        word.creditSessions.pop();   // lose one credit, never all of them
+    }
+
+    if (countsForMastery) {
+      if (wasCorrect) {
+        // One credit a day, so the streak measures days she knew it.
+        if (word.lastCreditDay !== today) {
+          word.streak = (word.streak || 0) + 1;
+          word.lastCreditDay = today;
+        }
+      } else {
+        word.streak = 0;
+        word.lastCreditDay = null;
+        word.masteredAt = null;      // a missed word comes back into rotation
       }
-      // 'keep' leaves credits untouched.
-      word.masteredAt = null;        // a missed word returns to the pool
     }
 
     state.progress.wordsAttempted += 1;
 
-    const nowMastered = credits(word) >= Math.max(1, state.settings.masteryThreshold || 3);
+    const need = Math.max(1, state.settings.masteryThreshold || 3);
+    const nowMastered = (word.streak || 0) >= need;
     if (nowMastered && !word.masteredAt) word.masteredAt = now;
 
     const justMastered = nowMastered && !wasMastered;
     if (justMastered) emit('word:mastered', word);
 
-    return { ok: true, word, justMastered, credits: credits(word) };
+    return { ok: true, word, justMastered, credits: word.streak || 0 };
   });
+}
+
+/** Note that a word came up in Today's Practice, so it is done for today. */
+export function markCoveredToday(wordId) {
+  update(state => {
+    const word = state.words.find(w => w.id === wordId);
+    if (word) word.lastDailyDay = dayKey();
+  });
+}
+
+/** Active words Today's Practice has not covered yet today. */
+export function wordsLeftToday() {
+  const today = dayKey();
+  return activeWords().filter(w => w.lastDailyDay !== today);
+}
+
+/** True once every active word has had its turn today. */
+export function dailyPracticeDone() {
+  return activeWords().length > 0 && wordsLeftToday().length === 0;
 }
 
 /* ---------- Lists ---------- */
@@ -310,7 +369,8 @@ export function resetWordProgress(wordId) {
   update(state => {
     const w = state.words.find(x => x.id === wordId);
     if (!w) return;
-    w.creditSessions = [];
+    w.streak = 0;
+    w.lastCreditDay = null;
     w.recent = [];
     w.masteredAt = null;
   });

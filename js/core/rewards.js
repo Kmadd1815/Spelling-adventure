@@ -213,19 +213,53 @@ export function nextMilestone() {
   return { milestone: target, have: stats.mastered, goal };
 }
 
-/* ---------- Session payout ----------
-   Effort is paid, not just perfection: every attempt earns something,
-   correct answers earn more, and mastering a word earns a lot. */
+/* ---------- Activity payout ----------
 
-export function payForSession({ correct = 0, attempted = 0, mastered = 0, isTest = false }) {
+   Every activity returns an itemised list of what it paid and why, because
+   "+37 stars" tells her nothing but "+15 spelling test, +17 words right on
+   the first try, +5 perfect score" tells her exactly what the effort bought.
+   Accuracy is visibly its own line, which is the whole point of paying for it.
+*/
+
+export const ACTIVITY = {
+  daily:        { key: 'daily',        label: "Today's Practice" },
+  practiceTest: { key: 'practiceTest', label: 'Practice test' },
+  fullTest:     { key: 'fullTest',     label: 'Spelling test' },
+  extra:        { key: 'extra',        label: 'Extra practice' },
+};
+
+/**
+ * Work out and award the stars for a finished activity.
+ *
+ * @param {object} result
+ * @param {string} result.kind             an ACTIVITY key
+ * @param {number} result.firstTryCorrect  words right on the very first try
+ * @param {number} result.attempted        words asked
+ * @param {number} result.mastered         words that reached mastery here
+ * @returns {{lines: Array<{label: string, stars: number}>, total: number}}
+ */
+export function payForActivity({ kind, firstTryCorrect = 0, attempted = 0, mastered = 0 }) {
   const s = getState().settings;
-  let total = 0;
-  total += correct * s.starsPerCorrect;
-  total += Math.max(0, attempted - correct) * s.starsPerTry;   // trying still counts
-  total += mastered * s.starsPerMastery;
-  if (attempted > 0) total += s.starsPerSession;
-  if (isTest && attempted > 0) total += s.starsPerSession;     // finishing a test is a big deal
+  const lines = [];
+  const add = (label, stars) => { if (stars > 0) lines.push({ label, stars }); };
 
-  awardStars(total, isTest ? 'test' : 'practice');
-  return total;
+  const perfect = attempted > 0 && firstTryCorrect === attempted;
+
+  if (kind === 'extra') {
+    // Extra runs through words she has already done today are worth a
+    // little, not nothing — but never as much as the day's real work.
+    add(perfect ? 'Extra practice, all correct!' : 'Extra practice',
+        perfect ? s.starsExtraClean : s.starsExtraTried);
+  } else {
+    const base = { daily: s.starsDaily, practiceTest: s.starsPracticeTest, fullTest: s.starsFullTest }[kind] || 0;
+    add(`Finished ${ACTIVITY[kind]?.label || 'the activity'}`, base);
+    add(`${firstTryCorrect} spelled right the first try`, firstTryCorrect * s.starsPerFirstTry);
+    if (kind === 'fullTest' && perfect) add('Perfect score!', s.starsPerfectTest);
+  }
+
+  add(`${mastered} new ${mastered === 1 ? 'word' : 'words'} mastered`, mastered * s.starsPerMastery);
+
+  const total = lines.reduce((sum, l) => sum + l.stars, 0);
+  if (total > 0) awardStars(total, kind);
+  return { lines, total };
 }

@@ -22,9 +22,9 @@ export function defaultState() {
 
     settings: {
       /* Spelling */
-      masteryThreshold: 3,      // distinct sessions spelled correctly
-      missBehavior: 'setback',  // 'keep' | 'setback' | 'reset'
-      practiceSize: 8,
+      masteryThreshold: 3,      // correct answers in a row, max one a day
+      practiceSize: 8,          // words in Today's Practice
+      practiceTestSize: 10,     // words in a practice test
       includeMasteredInPractice: false,
 
       /* Voice */
@@ -35,11 +35,19 @@ export function defaultState() {
       /* Input */
       keyboardLayout: 'qwerty', // 'qwerty' (real US layout) | 'abc'
 
-      /* Rewards */
-      starsPerCorrect: 2,
-      starsPerTry: 1,
-      starsPerSession: 5,
-      starsPerMastery: 15,
+      /* Rewards.
+         Every activity pays a flat base for finishing it, plus one star for
+         each word spelled right on the first try. The base is what pays for
+         effort, so a hard session still earns something; the per-word stars
+         are what pay for accuracy. */
+      starsDaily: 5,            // finishing Today's Practice
+      starsPracticeTest: 10,    // finishing a practice test
+      starsFullTest: 15,        // finishing a full spelling test
+      starsPerFirstTry: 1,      // each word right on the first try
+      starsPerfectTest: 5,      // bonus for a flawless full spelling test
+      starsExtraClean: 2,       // an extra practice run with no mistakes
+      starsExtraTried: 1,       // an extra practice run with any mistakes
+      starsPerMastery: 5,       // each word that reaches mastery
 
       /* Parent gate */
       parentPin: '1234',
@@ -71,6 +79,18 @@ export function defaultState() {
 }
 
 function migrate(state) {
+  // Mastery used to be counted as a list of session ids. It is now a streak
+  // of correct answers capped at one a day, so carry the old count across as
+  // a starting streak rather than throwing her progress away.
+  for (const w of state.words || []) {
+    if (w.streak === undefined) {
+      w.streak = Array.isArray(w.creditSessions) ? w.creditSessions.length : 0;
+      w.lastCreditDay = null;
+      w.lastDailyDay = null;
+    }
+    delete w.creditSessions;
+  }
+
   // Fill in anything a newer version added, without touching existing data.
   const base = defaultState();
   const merged = {

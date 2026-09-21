@@ -105,24 +105,42 @@ move it to your cloud drive. Doing this every few weeks is enough.
 
 ## How mastery works
 
-- A word is **mastered** after being spelled correctly in N *separate*
-  sittings (default 3, configurable). Three right answers inside one
-  session only ever count as one — knowing a word on three different days
-  is the thing being measured.
+- A word is **mastered** after being spelled correctly **N times in a row**
+  (default 3, configurable), and **only one correct answer counts per day**.
+  So three in a row really means three different days — she learned the word,
+  rather than copying letters she was still looking at.
+- **Missing a word starts the count over.**
 - Mastered words **leave** the normal practice pool.
 - Unmastered words **carry forward** week after week until she gets them.
 - Mastered words are **never deleted**. They live in *My Words → Mastered*
   and can be reviewed deliberately, but never turn up in normal practice.
-- Missing a word is never punished. It returns to the pool, comes back
-  sooner, and she gets to try again immediately.
 
-So a typical week looks like: 2 leftover words + 17 new = 19 active. As she
-masters them the active list shrinks, and only the hard ones follow her.
+### Missing a word
 
-The **words per practice** setting caps a single sitting (default 8) even
-when the active pool is much larger.
+She sees the correct spelling, then moves on to the next word. The one she
+missed comes back **a few words later in the same session**, so she has to
+recall it rather than retype something still on screen. That second look is
+practice only: it earns no stars and cannot advance or break her streak. If
+she misses it again it waits for the next session.
 
----
+## The activities
+
+| | What it is | Stars |
+|---|---|---|
+| **Today's Practice** | Works through the active list, each word once a day, feedback after every answer | **5** + 1 per first-try correct |
+| **Practice** | Extra practice, any active word, always available | **+2** all correct, **+1** otherwise |
+| **Practice Test** | A short quiet quiz, no answers until the end | **10** + 1 per correct |
+| **Spelling Test** | A whole list, mastered words included, just like the real thing | **15** + 1 per correct, **+5** perfect |
+| Mastering a word | | **+5** each |
+
+The flat base pays for **effort** — a hard session still earns something, so
+finishing is always worth doing. The per-word stars pay for **accuracy**. The
+results screen itemises every line rather than showing one total, so the
+accuracy bonus is something she can actually see herself earning.
+
+Once every active word has had its turn today, **Today's Practice goes quiet
+until tomorrow**. Extra practice stays open, and is deliberately worth much
+less — it is for when she wants more, not a way to farm stars.
 
 ## Keyboards
 
@@ -153,6 +171,8 @@ These are deliberate and should survive future changes:
 
 1. Mastered words leave the active pool.
 2. Unmastered words carry forward indefinitely.
+2b. Mastery is a streak of correct answers capped at one a day, so it can
+   only ever be earned across separate days. A miss resets it.
 3. Mastered words are never deleted.
 4. Mastered words only reappear when explicitly requested.
 5. Stars are ordinary currency.

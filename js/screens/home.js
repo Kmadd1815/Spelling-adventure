@@ -1,7 +1,7 @@
 /* The hub. Pet front and centre, one obvious thing to do, everything else
    one tap away. */
 
-import { el, mount, button } from '../ui/dom.js';
+import { el, mount, button, modal } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
 import { petSVG } from '../ui/art.js';
 import * as pet from '../core/pet.js';
@@ -15,6 +15,8 @@ export default function homeScreen(container) {
   const info = pet.pet();
   const active = words.activeWords().length;
   const hasWords = words.allWords().length > 0;
+  const leftToday = words.wordsLeftToday().length;
+  const dailyDone = words.dailyPracticeDone();
 
   const hero = el('div', { class: 'hub-hero' },
     el('div', { class: 'hero-season-chip', text: `${season.emoji} ${season.name}` }),
@@ -48,24 +50,44 @@ export default function homeScreen(container) {
     body.append(el('div', { class: 'card center' },
       el('div', { style: { fontSize: '2rem' }, text: '\u{1F31F}' }),
       el('h2', { text: 'You mastered every word!' }),
-      el('p', { class: 'muted', text: 'Time for a new list. You can still practise your mastered words any time.' })
+      el('p', { class: 'muted', text: 'Time for a new list. You can still practice your mastered words any time.' })
     ));
+  } else if (dailyDone) {
+    // Every active word has had its turn today. The button goes quiet rather
+    // than vanishing, so finishing the day's work is visibly an ending.
+    body.append(el('button', {
+      class: 'btn btn-lg btn-block', type: 'button', disabled: true,
+      style: { opacity: '.55' },
+    },
+      el('span', { class: 'emoji', style: { fontSize: '1.6rem' }, text: '\u2705' }),
+      el('span', {}, 'All done for today!')
+    ));
+    body.append(el('div', { class: 'center tiny muted',
+      text: 'Come back tomorrow \u2014 or tap Practice for extra words.' }));
   } else {
     body.append(el('button', {
       class: 'btn btn-primary btn-lg btn-block', type: 'button',
-      onClick: () => navigate('/practice'),
+      onClick: () => navigate('/daily'),
     },
-      el('span', { class: 'emoji', style: { fontSize: '1.6rem' }, text: '✨' }),
-      el('span', {}, `Today’s Practice`)
+      el('span', { class: 'emoji', style: { fontSize: '1.6rem' }, text: '\u2728' }),
+      el('span', {}, 'Today\u2019s Practice')
     ));
     body.append(el('div', { class: 'center tiny muted',
-      text: `${active} ${active === 1 ? 'word' : 'words'} in your practice list` }));
+      text: `${leftToday} of ${active} ${active === 1 ? 'word' : 'words'} left today` }));
   }
 
+  const testTile = el('button', {
+    class: 'hub-tile t-blue', type: 'button', onClick: chooseTest,
+  },
+    el('span', { class: 'emoji', text: '\u270F\uFE0F' }),
+    el('span', { text: 'Take a Test' }),
+    el('small', { text: 'Show what you know' })
+  );
+
   body.append(el('div', { class: 'hub-grid' },
-    tile('Practice', 'Listen & spell', '\u{1F4DA}', 't-orange', '/practice'),
-    tile('Spelling Test', 'Show what you know', '✏️', 't-blue', '/test'),
-    tile('My Words', 'See your list', '\u{1F5C2}️', 't-green', '/words'),
+    tile('Practice', 'Extra words', '\u{1F4DA}', 't-orange', '/practice'),
+    testTile,
+    tile('My Words', 'See your list', '\u{1F5C2}\uFE0F', 't-green', '/words'),
     tile('My Pet', info.name, '\u{1F43E}', 't-purple', '/pet')
   ));
 
@@ -76,4 +98,41 @@ export default function homeScreen(container) {
   ));
 
   mount(container, body);
+
+  /* Two kinds of test now, so a chooser keeps both off the hub without
+     hiding either one. */
+  function chooseTest() {
+    const lists = words.activeLists().filter(l => words.wordsInList(l.id).length > 0);
+    const close = modal('Which test?', [
+      button('Practice Test', { cls: 'btn btn-blue btn-block btn-lg', emoji: '\u{1F4DD}',
+        onClick: () => { close(); navigate('/test'); } }),
+      el('p', { class: 'tiny muted center', style: { margin: '6px 0 16px' },
+        text: 'A short quiz. No answers until the end.' }),
+
+      lists.length
+        ? button('Full Spelling Test', { cls: 'btn btn-purple btn-block btn-lg', emoji: '\u{1F3C5}',
+            onClick: () => { close(); chooseList(lists); } })
+        : null,
+      lists.length
+        ? el('p', { class: 'tiny muted center', style: { margin: '6px 0 0' },
+            text: 'Every word on a whole list, just like the real test.' })
+        : null,
+
+      button('Never mind', { cls: 'btn btn-quiet btn-block', style: { marginTop: '18px' },
+        onClick: () => close() }),
+    ]);
+  }
+
+  function chooseList(lists) {
+    if (lists.length === 1) return navigate(`/fulltest?listId=${lists[0].id}`);
+    const close = modal('Which list?', [
+      el('div', { class: 'stack-sm' }, lists.map(list =>
+        button(`${list.name} (${words.wordsInList(list.id).length} words)`, {
+          cls: 'btn btn-quiet btn-block',
+          onClick: () => { close(); navigate(`/fulltest?listId=${list.id}`); },
+        }))),
+      button('Never mind', { cls: 'btn btn-quiet btn-block', style: { marginTop: '16px' },
+        onClick: () => close() }),
+    ]);
+  }
 }
