@@ -123,6 +123,86 @@ export const CATALOG = [
   { id: 'fish_tank',     name: 'Fish Tank',       category: 'floorDecor', price: 650, blurb: 'Three fish. They have names.' },
   { id: 'castle',        name: 'Castle Playset',  category: 'floorDecor', price: 900, blurb: 'A whole tiny kingdom.' },
 
+  /* ================= Second wave =================
+     Sized for about thirty weeks of use. The gap this fills is not the total
+     cost — it is how much exists at each price. Eight things under eighty
+     stars meant the cheap end ran dry in a month, so this leans low and mid
+     so there is always something new within reach. */
+
+  /* ---- More hats ---- */
+  { id: 'flower_pin',   name: 'Flower Pin',      category: 'hat', price: 45,  blurb: 'One perfect daisy.' },
+  { id: 'headband',     name: 'Headband',        category: 'hat', price: 55,  blurb: 'Keeps the gills tidy.' },
+  { id: 'sun_hat',      name: 'Sun Hat',         category: 'hat', price: 60,  blurb: 'Wide brim, very summery.' },
+  { id: 'beanie',       name: 'Woolly Beanie',   category: 'hat', price: 75,  blurb: 'With a bobble on top.' },
+  { id: 'chef_hat',     name: 'Chef Hat',        category: 'hat', price: 100, blurb: 'For very serious cooking.' },
+  { id: 'pirate_hat',   name: 'Pirate Hat',      category: 'hat', price: 170, blurb: 'Arr.' },
+  { id: 'tiara',        name: 'Sparkle Tiara',   category: 'hat', price: 360, blurb: 'Catches the light beautifully.' },
+
+  /* ---- More to wear ---- */
+  { id: 'bell_collar',  name: 'Bell Collar',     category: 'accessory', price: 50,  blurb: 'Jingles when you wiggle.' },
+  { id: 'necklace',     name: 'Bead Necklace',   category: 'accessory', price: 65,  blurb: 'Hand-threaded, obviously.' },
+  { id: 'flower_lei',   name: 'Flower Lei',      category: 'accessory', price: 85,  blurb: 'A ring of blossoms.' },
+  { id: 'snorkel',      name: 'Snorkel',         category: 'accessory', price: 115, blurb: 'Completely unnecessary. Wonderful.' },
+  { id: 'backpack',     name: 'Little Backpack', category: 'accessory', price: 140, blurb: 'For carrying snacks.' },
+  { id: 'sweater',      name: 'Stripy Sweater',  category: 'accessory', price: 175, blurb: 'Knitted with love.' },
+  { id: 'fairy_wings',  name: 'Fairy Wings',     category: 'accessory', price: 330, blurb: 'They shimmer.' },
+
+  /* ---- More wallpaper ---- */
+  { id: 'wall_clouds',  name: 'Cloudy Sky',      category: 'wallpaper', price: 110, blurb: 'Soft and drifting.' },
+  { id: 'wall_rainbow', name: 'Rainbow Stripes', category: 'wallpaper', price: 185, blurb: 'Every colour at once.' },
+  { id: 'wall_books',   name: 'Library Wall',    category: 'wallpaper', price: 240, blurb: 'Books all the way up.' },
+  { id: 'wall_ocean',   name: 'Deep Ocean',      category: 'wallpaper', price: 270, blurb: 'Where an axolotl belongs.' },
+
+  /* ---- More flooring ---- */
+  { id: 'floor_moss',   name: 'Mossy Floor',     category: 'flooring', price: 105, blurb: 'Springy and green.' },
+  { id: 'floor_sand',   name: 'Soft Sand',       category: 'flooring', price: 125, blurb: 'Warm between the toes.' },
+  { id: 'floor_marble', name: 'Marble',          category: 'flooring', price: 230, blurb: 'Rather grand.' },
+  { id: 'floor_petals', name: 'Fallen Petals',   category: 'flooring', price: 290, blurb: 'Pink all over.' },
+
+  /* ---- More windows and doors ---- */
+  { id: 'window_flower',name: 'Flower Box',      category: 'window', price: 210, blurb: 'A window with a garden on it.' },
+  { id: 'window_star',  name: 'Star Window',     category: 'window', price: 330, blurb: 'Shaped like a star.' },
+  { id: 'door_barn',    name: 'Barn Door',       category: 'door', price: 185, blurb: 'Opens in two halves.' },
+  { id: 'door_star',    name: 'Starlight Door',  category: 'door', price: 340, blurb: 'Glows around the edges.' },
+
+  /* ---- More beds ---- */
+  { id: 'bed_hammock',  name: 'Hammock',         category: 'bed', price: 195, blurb: 'Swings very gently.' },
+  { id: 'bed_lilypad',  name: 'Lily Pad Bed',    category: 'bed', price: 255, blurb: 'Floats, sort of.' },
+  { id: 'bed_mushroom', name: 'Mushroom Bed',    category: 'bed', price: 330, blurb: 'Red with white spots.' },
+  { id: 'bed_cloud',    name: 'Cloud Bed',       category: 'bed', price: 520, blurb: 'As soft as it looks.' },
+
+  /* ---- More rugs ---- */
+  { id: 'rug_moss',     name: 'Moss Mat',        category: 'rug', price: 130, blurb: 'A little patch of forest.' },
+  { id: 'rug_star',     name: 'Star Rug',        category: 'rug', price: 175, blurb: 'Five points, very tidy.' },
+  { id: 'rug_flower',   name: 'Flower Rug',      category: 'rug', price: 240, blurb: 'Petals all around.' },
+  { id: 'rug_cloud',    name: 'Cloud Rug',       category: 'rug', price: 300, blurb: 'Like standing on the sky.' },
+
+  /* ---- More for the walls ---- */
+  { id: 'butterflies',  name: 'Butterflies',     category: 'wallDecor', price: 60,  blurb: 'Three, mid-flutter.' },
+  { id: 'small_shelf',  name: 'Little Shelf',    category: 'wallDecor', price: 85,  blurb: 'Just big enough.' },
+  { id: 'mirror',       name: 'Round Mirror',    category: 'wallDecor', price: 115, blurb: 'Who is that handsome axolotl?' },
+  { id: 'wall_planter', name: 'Hanging Planter', category: 'wallDecor', price: 135, blurb: 'Trailing leaves.' },
+  { id: 'map',          name: 'Treasure Map',    category: 'wallDecor', price: 160, blurb: 'X is somewhere.' },
+  { id: 'fairy_lights', name: 'Fairy Lights',    category: 'wallDecor', price: 195, blurb: 'Warm little bulbs.' },
+  { id: 'rainbow_arch', name: 'Rainbow',         category: 'wallDecor', price: 250, blurb: 'Indoors, which is rare.' },
+
+  /* ---- Plants, properly ---- */
+  { id: 'plant_cactus',    name: 'Little Cactus',  category: 'floorDecor', price: 60,  blurb: 'Prickly but friendly.' },
+  { id: 'plant_succulent', name: 'Succulent',      category: 'floorDecor', price: 70,  blurb: 'Almost impossible to kill.' },
+  { id: 'plant_flowers',   name: 'Flower Pot',     category: 'floorDecor', price: 95,  blurb: 'Three blooms, all different.' },
+  { id: 'mushrooms',       name: 'Toadstools',     category: 'floorDecor', price: 110, blurb: 'A small red cluster.' },
+  { id: 'plant_big_leaf',  name: 'Big Leaf Plant', category: 'floorDecor', price: 165, blurb: 'Enormous cheerful leaves.' },
+  { id: 'plant_tall',      name: 'Tall Palm',      category: 'floorDecor', price: 145, blurb: 'Reaches right up.' },
+  { id: 'plant_bonsai',    name: 'Bonsai Tree',    category: 'floorDecor', price: 190, blurb: 'Tiny and very old.' },
+
+  /* ---- More for the floor ---- */
+  { id: 'watering_can',    name: 'Watering Can',   category: 'floorDecor', price: 40,  blurb: 'For all those plants.' },
+  { id: 'toy_blocks',      name: 'Toy Blocks',     category: 'floorDecor', price: 55,  blurb: 'Spells a word, if you like.' },
+  { id: 'stool',           name: 'Little Stool',   category: 'floorDecor', price: 80,  blurb: 'Three sturdy legs.' },
+  { id: 'floor_lamp',      name: 'Standing Lamp',  category: 'floorDecor', price: 175, blurb: 'Leans over to read by.' },
+  { id: 'easel',           name: 'Painting Easel', category: 'floorDecor', price: 225, blurb: 'A masterpiece in progress.' },
+  { id: 'rocking_horse',   name: 'Rocking Horse',  category: 'floorDecor', price: 290, blurb: 'Creaks pleasantly.' },
+
   /* ---- Special. Earned only; no price exists for these. ---- */
   { id: 'sprout_charm',   name: 'Little Sprout Charm', category: 'accessory',  price: null, blurb: 'Your very first mastered word.' },
   { id: 'blossom_lamp',   name: 'Blossom Lamp',        category: 'floorDecor', price: null, blurb: 'Ten words, all yours.' },

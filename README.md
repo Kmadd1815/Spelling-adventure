@@ -186,16 +186,33 @@ expression it has is a reaction to something she just did.
 
 ## The shop and her collection
 
-Stars buy things. There are 42 items in the shop — hats, accessories,
-wallpaper, flooring, windows, doors, furniture and wall art — priced against
-roughly 200 stars in a good week:
+Stars buy things. There are **96 items** in the shop — hats, accessories,
+wallpaper, flooring, windows, doors, beds, rugs, furniture, plants and wall
+art — priced against roughly 200 stars in a good week:
 
 | | Price | Roughly |
 |---|---|---|
-| Pebbles, Bouncy Ball, Picture Frame | 35–75 | a few days |
-| Party Hat, Wallpaper, Clock, Wooden Door | 80–150 | most weeks |
-| Wizard Hat, Cozy Bed, Arched Window, Book Nook | 160–300 | a week of saving |
-| Shell Bed, Golden Crown, Fish Tank, Castle Playset | 480–900 | something to work towards |
+| Watering Can, Little Bow, Pebbles, Bell Collar | 35–75 | a few days |
+| Sun Hat, Flower Pot, Butterflies, Mossy Floor | 80–150 | most weeks |
+| Wizard Hat, Bonsai Tree, Hammock, Rainbow | 150–300 | a week or two of saving |
+| Sparkle Tiara, Cloud Bed, Golden Crown | 300–600 | about a month |
+| Fish Tank, Castle Playset | 650–900 | a long goal |
+
+The shape that matters is not the total but **how much exists at each price**,
+so there is always something new within reach:
+
+```
+under 80   19 items
+80-150     27 items
+150-300    35 items
+300-600    13 items
+600+        2 items
+```
+
+Everything together costs 17,930 stars, so thirty weeks of steady work buys
+roughly a third of the shop — about one new thing a week, with plenty left
+to want. More can be added at any time by appending to the catalogue in
+`js/core/items.js` and drawing the item in `js/ui/item-art.js`.
 
 Eleven more items exist that the shop cannot sell at any price. Those are
 **earned** — milestones, streaks, lists completed — and the Collection Book
