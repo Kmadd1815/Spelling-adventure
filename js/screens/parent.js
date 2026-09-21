@@ -482,6 +482,16 @@ export default function parentScreen(container) {
       ),
 
       el('div', { class: 'card' },
+        el('h3', { text: 'Mini-games' }),
+        el('p', { class: 'muted tiny', text:
+          'Six games that use her own spelling words. They pay far less than practice does \u2014 the first go at each game every day earns most, a repeat earns a token, and all six together are capped at 25 stars a day \u2014 so the shop still runs on spelling. Crossword and Tic Tac Toe ask her to spell a whole word from memory and can add to a mastery streak; no game can ever break one.' }),
+        segmented([
+          { value: false, label: 'Always open' },
+          { value: true,  label: 'After practice' },
+        ], !!s.gamesAfterDaily, v => { update(st => { st.settings.gamesAfterDaily = v; }); toast('Saved'); })
+      ),
+
+      el('div', { class: 'card' },
         el('h3', { text: 'Parent PIN' }),
         button('Change PIN', { cls: 'btn btn-quiet', onClick: changePinDialog })
       )

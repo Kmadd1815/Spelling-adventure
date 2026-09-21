@@ -1079,3 +1079,491 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   .key { height: 40px; font-size: 1.05rem; }
   .spell-middle { gap: 7px; }
 }
+
+
+/* ==========================================================================
+   Mini-games
+   Six games, one shell. Each one fills the screen the way the spelling
+   activities do: a short header, a board that takes whatever room is left,
+   and the axolotl somewhere in shot the whole time.
+   ========================================================================== */
+
+/* ---------- The axolotl's seat ---------- */
+
+.buddy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 8px 10px;
+  position: relative;
+  flex: 0 0 auto;
+}
+.buddy-side { flex-direction: column; width: 100%; text-align: center; }
+.buddy-strip { flex-direction: row; }
+/* Voice only: she is the axolotl in this game, so the panel is what it is
+   saying rather than a second copy of it. */
+.buddy-voice { background: none; box-shadow: none; padding: 0; }
+.buddy-voice .buddy-bubble {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.buddy-pet {
+  width: 84px;
+  flex: 0 0 auto;
+  transform-origin: 50% 100%;
+}
+.buddy-pet svg { width: 100%; height: auto; display: block; }
+.buddy-side .buddy-pet { width: 104px; }
+
+.buddy-bubble {
+  background: var(--surface-alt);
+  border-radius: var(--r-md);
+  padding: 7px 12px;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.buddy-side .buddy-bubble { width: 100%; }
+
+/* ---------- The hub ---------- */
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 720px) { .game-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  padding: 14px 10px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-family: var(--font);
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 150px;
+}
+.game-card:active { transform: translateY(3px); box-shadow: none; }
+.game-card-locked { opacity: .55; cursor: default; }
+.game-card-locked:active { transform: none; box-shadow: var(--shadow); }
+
+.game-emoji { font-size: 2.1rem; line-height: 1.1; }
+.game-name  { font-weight: 900; font-size: 1.05rem; }
+.game-blurb { font-size: .78rem; color: var(--ink-soft); line-height: 1.25; }
+.game-role  { font-size: .72rem; color: var(--ink-faint); margin-top: 2px; }
+.game-note  { font-size: .72rem; color: var(--primary-dark); font-weight: 800; margin-top: 4px; }
+
+/* ---------- The shell every game runs in ---------- */
+
+.game-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 8px;
+}
+
+.game-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.game-head-title { font-weight: 900; font-size: 1.05rem; flex: 1 1 auto; }
+
+.game-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+}
+
+.keyboard-sm { padding-top: 4px; gap: 5px; }
+.keyboard-sm .key { height: 44px; font-size: 1.1rem; }
+.keyboard-sm .kb-grid { gap: 5px; }
+
+.answer-tiles-sm { min-height: 46px; gap: 5px; }
+.answer-tiles-sm .tile { width: 34px; height: 44px; font-size: 1.25rem; }
+
+.speak-btn-sm { width: 62px; height: 62px; font-size: 1.6rem; box-shadow: 0 4px 0 #4f93ba; }
+
+/* ---------- Word Search ---------- */
+
+.ws-wrap { flex-direction: column; }
+.ws-board-col { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
+.ws-side { display: flex; flex-direction: column; gap: 8px; }
+
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ws-size), 1fr);
+  gap: 3px;
+  width: min(100%, 62vh);
+  align-self: center;
+}
+.ws-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--bg-deep);
+  font-family: var(--font);
+  font-size: clamp(.7rem, 2.6vh, 1.2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+.ws-cell.ws-pick  { background: var(--gold); box-shadow: inset 0 0 0 2px var(--primary-dark); }
+.ws-cell.ws-miss  { background: #fdeadb; }
+.ws-cell.ws-found { background: #dff3e4; box-shadow: inset 0 0 0 2px var(--green); color: var(--green-dark); }
+.ws-cell.shake    { animation: shake .4s ease; }
+
+.ws-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.ws-word {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 3px 6px 3px 12px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+.ws-word .icon-btn { min-width: 36px; min-height: 36px; font-size: 1rem; }
+.ws-word-found { opacity: .5; text-decoration: line-through; }
+
+/* ---------- Crossword ---------- */
+
+.cw-wrap { flex-direction: column; }
+.cw-board-col { display: flex; flex-direction: column; gap: 8px; align-items: center; min-height: 0; }
+.cw-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cw-cols), 1fr);
+  gap: 2px;
+  width: min(100%, 54vh);
+}
+.cw-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 5px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--bg-deep);
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.cw-blank { background: transparent; box-shadow: none; }
+.cw-num {
+  position: absolute; top: 1px; left: 3px;
+  font-size: clamp(.45rem, 1.3vh, .62rem);
+  font-weight: 800; color: var(--ink-faint);
+}
+.cw-letter {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  font-size: clamp(.8rem, 2.6vh, 1.3rem);
+  font-weight: 900;
+  color: var(--ink);
+}
+.cw-cell.cw-active { background: #eaf4fb; }
+.cw-cell.cw-cursor { box-shadow: inset 0 0 0 3px var(--primary); }
+.cw-cell.cw-solved { background: #dff3e4; box-shadow: inset 0 0 0 2px var(--green); }
+.cw-cell.cw-solved .cw-letter { color: var(--green-dark); }
+.cw-cell.shake { animation: shake .4s ease; }
+
+.cw-clues { overflow: auto; display: flex; flex-direction: column; gap: 3px; }
+.cw-clue-head { font-weight: 900; font-size: .8rem; color: var(--ink-soft); margin-top: 4px; }
+.cw-clue {
+  text-align: left;
+  border: none;
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-family: var(--font);
+  font-size: .82rem;
+  color: var(--ink);
+  cursor: pointer;
+  line-height: 1.25;
+}
+.cw-clue-on   { background: var(--gold); font-weight: 800; }
+.cw-clue-done { opacity: .5; text-decoration: line-through; }
+
+.cw-current {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 8px 12px;
+  width: 100%;
+}
+.cw-current-row { display: flex; align-items: center; gap: 8px; }
+.cw-current-num { font-weight: 900; color: var(--primary-dark); font-size: .82rem; white-space: nowrap; }
+.cw-current-text { font-size: .92rem; font-weight: 700; line-height: 1.25; }
+.cw-reveal { text-align: center; }
+
+/* ---------- Tic Tac Toe ---------- */
+
+.ttt-wrap { flex-direction: column; align-items: center; }
+.ttt-board-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ttt-side { width: 100%; max-width: 320px; }
+.ttt-status { font-weight: 800; color: var(--ink-soft); font-size: .92rem; min-height: 1.4em; }
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: min(86vw, 38vh);
+}
+.ttt-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 3px var(--bg-deep);
+  font-size: clamp(1.4rem, 5vh, 2.6rem);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.ttt-her { background: #fff6e0; box-shadow: inset 0 0 0 3px var(--gold); }
+.ttt-pet { background: #eaf4fb; box-shadow: inset 0 0 0 3px var(--blue); }
+.ttt-pending { box-shadow: inset 0 0 0 3px var(--primary); color: var(--primary); }
+.ttt-win { animation: pulse 1s ease infinite; }
+.ttt-spell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+/* ---------- Word Snake ---------- */
+
+.snake-wrap { align-items: center; }
+.snake-hud { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: center; }
+.snake-word, .swim-word { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.snake-word .icon-btn, .swim-word .icon-btn { min-width: 40px; min-height: 40px; font-size: 1.1rem; }
+
+.snake-slot, .swim-slot {
+  min-width: 26px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-alt);
+  border-radius: 7px;
+  font-weight: 900; font-size: 1.1rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+.snake-slot-on, .swim-slot-on { background: #dff3e4; color: var(--green-dark); }
+
+.snake-bubbles, .swim-bubbles { display: flex; gap: 3px; font-size: 1.2rem; }
+.snake-bubble-gone, .swim-bubble-gone { opacity: .22; filter: grayscale(1); }
+
+.snake-board {
+  display: grid;
+  grid-template-columns: repeat(var(--snake-cols), 1fr);
+  grid-template-rows: repeat(var(--snake-rows), 1fr);
+  gap: 2px;
+  /* Width is derived from the height the pond may have, so the cells stay
+     square. Setting a max-height against a 100% width just stretches them. */
+  width: min(100%, calc(50vh * var(--snake-cols) / var(--snake-rows)));
+  aspect-ratio: var(--snake-cols) / var(--snake-rows);
+  background: #cfe7f3;
+  border-radius: var(--r-md);
+  padding: 5px;
+  touch-action: none;
+}
+.snake-board.shake { animation: shake .4s ease; }
+.snake-cell {
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: clamp(.6rem, 2vh, 1rem);
+  text-transform: uppercase;
+}
+.snake-tail { background: #f3b9c9; }
+/* The drawing carries a lot of air around the creature, so it is scaled up
+   past the edges of its square to read as an axolotl rather than a speck. */
+.snake-cell.snake-head { overflow: visible; }
+.snake-head svg { width: 190%; height: 190%; margin: -45%; display: block; }
+.snake-letter { background: var(--surface); color: var(--ink-soft); box-shadow: inset 0 0 0 2px var(--bg-deep); }
+.snake-good { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 2px var(--primary-dark); }
+
+.snake-controls { display: flex; align-items: center; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(2, 52px);
+  gap: 5px;
+}
+.dpad-up    { grid-column: 2; grid-row: 1; }
+.dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-down  { grid-column: 2; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-btn {
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--bg-deep);
+  font-size: 1.5rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dpad-btn:active { transform: translateY(3px); box-shadow: none; }
+
+/* ---------- Tower Builder ---------- */
+
+.tower-wrap { flex-direction: column; }
+.tower-left { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.tower-right { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-width: 0; }
+
+.tower-art { display: flex; align-items: flex-end; gap: 4px; height: 30vh; min-height: 150px; }
+.tower-svg { height: 100%; }
+.tower-svg svg { height: 100%; width: auto; }
+.tower-builder { width: 76px; flex: 0 0 auto; }
+.tower-builder svg { width: 100%; height: auto; display: block; }
+
+.tower-slots { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; justify-content: center; }
+.tower-slot {
+  width: 34px; height: 44px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 3px var(--bg-deep);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 900;
+  text-transform: lowercase;
+}
+.tower-slot-on { background: #dff3e4; box-shadow: inset 0 0 0 3px var(--green); color: var(--green-dark); }
+.tower-slot-shown { background: #fdeadb; box-shadow: inset 0 0 0 3px var(--primary); color: var(--primary-dark); }
+
+.tower-spares { display: flex; align-items: center; gap: 3px; justify-content: center; font-size: 1.05rem; }
+.tower-spare-used { opacity: .22; filter: grayscale(1); }
+.tower-clue { text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.tower-clue .icon-btn { min-width: 38px; min-height: 38px; font-size: 1rem; }
+
+.tower-pad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.tower-key {
+  height: 46px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--bg-deep);
+  font-family: var(--font);
+  font-size: 1.15rem; font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.tower-key:active { transform: translateY(3px); box-shadow: none; }
+.tower-key-yes { background: #dff3e4; color: var(--green-dark); box-shadow: none; }
+.tower-key-no  { background: var(--bg-deep); color: var(--ink-faint); box-shadow: none; }
+.tower-key[disabled] { cursor: default; }
+
+/* ---------- Axolotl Swim ---------- */
+
+.swim-wrap { align-items: center; }
+.swim-hud { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: center; }
+
+.swim-pond {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 200px;
+  max-height: 52vh;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, #d6eef8, #a9d8ec);
+  touch-action: none;
+  cursor: pointer;
+}
+.swim-pet {
+  position: absolute;
+  width: 62px; height: 62px;
+  left: 0; top: 0;
+}
+.swim-pet svg { width: 100%; height: 100%; display: block; }
+.swim-hurt { animation: swim-flash .32s ease 4; }
+@keyframes swim-flash { 0%,100% { opacity: 1; } 50% { opacity: .32; } }
+
+.swim-rock {
+  position: absolute;
+  background: linear-gradient(180deg, #8fbfa4, #6ea287);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 3px #5b8c74;
+}
+.swim-rock-top { border-radius: 0 0 14px 14px; }
+.swim-rock-bottom { border-radius: 14px 14px 0 0; }
+
+.swim-token {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--bg-deep);
+  font-weight: 900; font-size: 1.1rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.swim-token-good { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 2px var(--primary-dark); }
+
+.swim-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.swim-banner {
+  background: rgba(255,253,249,.94);
+  border-radius: var(--r-md);
+  padding: 12px 22px;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+}
+.swim-banner .big { font-size: 1.6rem; font-weight: 900; }
+.swim-foot { display: flex; justify-content: center; }
+
+/* ---------- Games in landscape ----------
+   Sideways is the way the tablet sits for typing, so the boards that come
+   with a keyboard or a word list put the axolotl beside them rather than
+   underneath, where it would push the board off the bottom. */
+
+@media (orientation: landscape) {
+  .ws-wrap, .cw-wrap, .ttt-wrap, .tower-wrap { flex-direction: row; align-items: stretch; }
+
+  .ws-board-col { flex: 1 1 60%; }
+  .ws-side { flex: 0 0 34%; overflow: auto; }
+  .ws-grid { width: min(100%, 56vh); }
+
+  .cw-board-col { flex: 1 1 58%; }
+  .cw-side { flex: 0 0 38%; }
+  .cw-grid { width: min(100%, 46vh); }
+
+  .ttt-board-col { flex: 1 1 auto; }
+  .ttt-side { flex: 0 0 30%; max-width: none; align-self: center; }
+
+  .tower-left { flex: 0 0 40%; }
+  .tower-right { flex: 1 1 58%; }
+  .tower-art { height: 34vh; }
+
+  .snake-controls { gap: 18px; }
+  .snake-board { width: min(100%, calc(44vh * var(--snake-cols) / var(--snake-rows))); }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .buddy-pet { width: 62px; }
+  .buddy-side .buddy-pet { width: 72px; }
+  .buddy-bubble { font-size: .82rem; padding: 5px 9px; }
+  .keyboard-sm .key { height: 38px; font-size: 1rem; }
+  .tower-key { height: 38px; }
+  .dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); }
+}

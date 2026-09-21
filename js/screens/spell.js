@@ -15,11 +15,12 @@
    a few words later — recall rather than copying. That second look is for
    learning only: it earns nothing and does not touch her mastery streak.
 
-   Any mini-game added later should call words.recordAttempt() exactly the
-   way this screen does, and nothing else.
+   The mini-games reach mastery through core/games.js, which wraps this
+   same words.recordAttempt() call — there is no second path to it.
 */
 
 import { el, mount, button, clear } from '../ui/dom.js';
+import { buildKeyboard as drawKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { toast, confetti } from '../ui/toast.js';
 import { navigate, render as rerender } from '../ui/router.js';
 import * as speech from '../core/speech.js';
@@ -56,14 +57,6 @@ const KINDS = {
 /* How many words later a missed word comes back. Far enough that she has to
    remember it rather than echo it, close enough to still be the same lesson. */
 const RETRY_GAP = 3;
-
-const ABC_ROWS = ['abcdefg', 'hijklmn', 'opqrstu', "vwxyz'"];
-
-const QWERTY_ROWS = [
-  { lead: 0, keys: 'qwertyuiop', end: 'del'   },
-  { lead: 1, keys: "asdfghjkl'", end: 'enter' },
-  { lead: 3, keys: 'zxcvbnm',    end: 'shift', leadShift: true },
-];
 
 export default function spellScreen(container, { kind = 'daily', listId = null } = {}) {
   const config = KINDS[kind] || KINDS.daily;
@@ -220,63 +213,16 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
   }
 
   /* ---------- Keyboard ----------
-     The app never opens the system keyboard: Android's suggestion strip
-     would offer her the correctly spelled word while she is being asked to
-     spell it. The QWERTY layout mirrors a real US keyboard so the positions
-     carry over to the Bluetooth one. */
+     Drawn by ui/keyboard.js, which the mini-games use too, so there is only
+     one keyboard in the app and it behaves the same everywhere. */
 
   function buildKeyboard() {
-    clear(keyboard);
-    if (settings().keyboardLayout === 'abc') buildAbcKeyboard();
-    else buildQwertyKeyboard();
-  }
-
-  function letterKey(ch) {
-    return el('button', {
-      class: 'key', type: 'button', text: ch,
-      style: { gridColumn: 'span 2' },
-      onClick: () => typeLetter(ch),
+    drawKeyboard(keyboard, {
+      onLetter: typeLetter,
+      onBackspace: backspace,
+      onEnter: submit,
+      enterLabel: 'Check',
     });
-  }
-
-  function buildQwertyKeyboard() {
-    QWERTY_ROWS.forEach(row => {
-      const grid = el('div', { class: 'kb-grid' });
-      if (row.leadShift) {
-        grid.append(el('div', { class: 'key key-shift', style: { gridColumn: 'span 3' },
-          text: '⇧', 'aria-hidden': 'true' }));
-      } else if (row.lead) {
-        grid.append(el('div', { style: { gridColumn: `span ${row.lead}` } }));
-      }
-      row.keys.split('').forEach(ch => grid.append(letterKey(ch)));
-      if (row.end === 'del') {
-        grid.append(el('button', { class: 'key key-del', type: 'button', text: '⌫',
-          style: { gridColumn: 'span 4' }, 'aria-label': 'Delete', onClick: backspace }));
-      } else if (row.end === 'enter') {
-        grid.append(el('button', { class: 'key key-enter', type: 'button', text: 'Check',
-          style: { gridColumn: 'span 3' }, onClick: submit }));
-      } else {
-        grid.append(el('div', { class: 'key key-shift', style: { gridColumn: 'span 7' },
-          text: '⇧', 'aria-hidden': 'true' }));
-      }
-      keyboard.append(grid);
-    });
-  }
-
-  function buildAbcKeyboard() {
-    ABC_ROWS.forEach(rowText => {
-      const row = el('div', { class: 'kb-row' });
-      rowText.split('').forEach(ch => row.append(el('button', {
-        class: 'key', type: 'button', text: ch, onClick: () => typeLetter(ch),
-      })));
-      keyboard.append(row);
-    });
-    keyboard.append(el('div', { class: 'kb-row' },
-      el('button', { class: 'key key-wide key-del', type: 'button', text: '⌫',
-        'aria-label': 'Delete', onClick: backspace }),
-      el('button', { class: 'key key-wide key-enter', type: 'button', text: 'Check',
-        onClick: submit })
-    ));
   }
 
   function typeLetter(ch) {
@@ -302,15 +248,13 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     renderHelp();
   }
 
-  const onKeyDown = e => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (locked && e.key !== 'Enter') return;
-    if (/^[a-zA-Z']$/.test(e.key)) { notePhysicalKeyboard(); typeLetter(e.key.toLowerCase()); e.preventDefault(); }
-    else if (e.key === 'Backspace') { notePhysicalKeyboard(); backspace(); e.preventDefault(); }
-    else if (e.key === 'Enter') { notePhysicalKeyboard(); submit(); e.preventDefault(); }
-  };
-  addEventListener('keydown', onKeyDown);
-  cleanupFns.push(() => removeEventListener('keydown', onKeyDown));
+  cleanupFns.push(watchPhysicalKeyboard({
+    onLetter: typeLetter,
+    onBackspace: backspace,
+    onEnter: submit,
+    onFirstUse: notePhysicalKeyboard,
+    isLocked: () => locked,
+  }));
 
   /* ---------- Checking ---------- */
 

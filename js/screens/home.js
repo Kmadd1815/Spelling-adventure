@@ -122,6 +122,7 @@ export default function homeScreen(container) {
   ));
 
   body.append(el('div', { class: 'hub-grid hub-grid-3' },
+    smallTile('Games', '\u{1F3AE}', 't-blue', '/games'),
     smallTile('Shop', '\u{1F6CD}\uFE0F', 't-pink', '/shop'),
     smallTile('Decorate', '\u{1FA91}', 't-green', '/decorate'),
     smallTile('Progress', '\u{1F4CA}', 't-gold', '/progress'),

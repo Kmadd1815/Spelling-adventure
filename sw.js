@@ -31,6 +31,7 @@ const SHELL = [
   './js/core/speech.js',
   './js/core/rewards.js',
   './js/core/pet.js',
+  './js/core/games.js',
   './js/core/season.js',
   './js/ui/dom.js',
   './js/ui/router.js',
@@ -39,6 +40,8 @@ const SHELL = [
   './js/ui/toast.js',
   './js/ui/fx.js',
   './js/ui/room.js',
+  './js/ui/buddy.js',
+  './js/ui/keyboard.js',
   './js/screens/home.js',
   './js/screens/setup.js',
   './js/screens/spell.js',
@@ -48,6 +51,16 @@ const SHELL = [
   './js/screens/parent.js',
   './js/screens/shop.js',
   './js/screens/decorate.js',
+  './js/screens/games.js',
+  './js/screens/play.js',
+  /* The games themselves are loaded on demand, so they are listed here to
+     make sure they are in the cache before she is ever offline. */
+  './js/games/wordsearch.js',
+  './js/games/crossword.js',
+  './js/games/tictactoe.js',
+  './js/games/snake.js',
+  './js/games/tower.js',
+  './js/games/swim.js',
 ];
 
 self.addEventListener('install', event => {

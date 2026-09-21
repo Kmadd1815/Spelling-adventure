@@ -35,6 +35,9 @@ export function defaultState() {
       /* Input */
       keyboardLayout: 'qwerty', // 'qwerty' (real US layout) | 'abc'
 
+      /* Mini-games */
+      gamesAfterDaily: false,   // when on, games wait until practice is done
+
       /* Rewards.
          Every activity pays a flat base for finishing it, plus one star for
          each word spelled right on the first try. The base is what pays for
@@ -62,11 +65,17 @@ export function defaultState() {
       petMoments: 0,    // a tally of times played together; only ever goes up
       sessionsCompleted: 0,
       testsCompleted: 0,
+      gamesPlayed: 0,
       wordsAttempted: 0,
       currentStreak: 0,
       longestStreak: 0,
       lastPracticeDay: null,   // 'YYYY-MM-DD'
       milestonesEarned: [],    // milestone ids
+
+      /* What the mini-games have paid today, so the daily ceiling survives
+         a reload. Reset by core/games.js the first time it is read on a
+         new day. */
+      gameDay: null,           // { day, stars, plays: { gameId: count } }
     },
 
     /* Rolling history, trimmed to the most recent sessions. */

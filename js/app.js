@@ -20,6 +20,9 @@ import parentScreen   from './screens/parent.js';
 import shopScreen     from './screens/shop.js';
 import decorateScreen from './screens/decorate.js';
 import setupScreen    from './screens/setup.js';
+import gamesScreen    from './screens/games.js';
+import playScreen     from './screens/play.js';
+import { byId as gameById } from './core/games.js';
 
 /* ---------- Routes ---------- */
 
@@ -34,6 +37,8 @@ router.route('/pet',      { title: 'My Pet',    back: true, render: petScreen })
 router.route('/progress', { title: 'My Progress', back: true, render: progressScreen });
 router.route('/decorate', { title: 'Decorate', back: true, render: decorateScreen });
 router.route('/shop',     { title: 'Shop', back: true, render: shopScreen });
+router.route('/games',    { title: 'Mini-Games', back: true, render: gamesScreen });
+router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', back: true, render: playScreen });
 router.route('/parent',   { title: 'Parent Area', back: true, stars: false, render: parentScreen });
 
 /* ---------- Top bar ---------- */

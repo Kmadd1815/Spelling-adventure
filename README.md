@@ -153,6 +153,56 @@ Once every active word has had its turn today, **Today's Practice goes quiet
 until tomorrow**. Extra practice stays open, and is deliberately worth much
 less — it is for when she wants more, not a way to farm stars.
 
+## Mini-games
+
+Six games, all of them played with her own spelling words, and the axolotl
+is in every one of them.
+
+| | What it is | The axolotl | Counts for mastery |
+|---|---|---|---|
+| **Word Search** | Her words hidden in a 10×10 grid, forwards only | Cheers from the side | no |
+| **Crossword** | Built from the definitions on her list | Reads the clues | **yes** |
+| **Tic Tac Toe** | Spell a word right to claim a square | Plays against her | **yes** |
+| **Word Snake** | Swim around collecting letters in order | She plays as it | no |
+| **Tower Builder** | Guess letters; every right one lays a block | Builds the tower | no |
+| **Axolotl Swim** | Hold to swim up, dodge rocks, catch letters | She plays as it | no |
+
+### What games can and cannot do to her progress
+
+Everything goes through `core/games.js`, which is the only route from a game
+to the spelling engine:
+
+* **A game can add a mastery credit. A game can never take one away.** Losing
+  a game she is playing for fun must not undo a word she knows, so a missed
+  word in a game is written into her history and stops there.
+* Only **Crossword** and **Tic Tac Toe** can add a credit at all, because
+  they are the only two where she spells the whole word from memory with
+  nothing to copy. Word Search shows her the spelling; Snake and Swim hand
+  her the letters in order; Tower is letter-guessing against blanks.
+* Crossword's speaker button reads the **clue**, never the answer. Reading a
+  clue out loud is help with reading; reading the answer out loud would make
+  the credit meaningless.
+* The one-credit-a-day cap still applies, so a game cannot be used to rush a
+  word to mastery in an afternoon.
+
+### What games pay
+
+Games are worth real stars, and far fewer than practice:
+
+* The **first go at each game each day** pays a base plus one star per word
+  she got, plus a bonus for a clean run — usually 8–14 stars.
+* Any **repeat go at the same game that day** pays **1 star**.
+* Everything the games pay is capped at **25 stars a day**, all six games
+  together. The hub says how many are left before she starts, and the results
+  card says so plainly when the cap is what trimmed a payout.
+
+So playing three different games is worth roughly a day's practice, and
+playing one game thirty times is not worth anything much. The shop ladder
+still runs on spelling.
+
+There is a grown-up setting — **Mini-games** in the Parent Area — to make the
+games wait until Today's Practice is finished. It is off by default.
+
 ## Playing with the axolotl
 
 The pet breathes, its gills drift, and it blinks — all the time, with no
@@ -266,7 +316,7 @@ launch, so the room is never blank.
 
 **Decorate** on the home screen shows the room with every slot beneath it.
 
-## Keyboards## Keyboards
+## Keyboards
 
 The app draws its own letters and never opens the system keyboard, because
 Android's suggestion strip would hand her the correctly spelled word while
@@ -313,6 +363,10 @@ These are deliberate and should survive future changes:
    what makes growth readable at a glance.
 9. Breaking a streak costs nothing and is never mentioned.
 10. All spelling goes through one engine; all speech goes through one voice.
+11. A mini-game can add to a mastery streak but can never break one, and only
+   a game where she spells the whole word from memory can add to one at all.
+12. Mini-games pay less than practice, and their earnings are capped per day,
+   so the shop can never be funded by games instead of spelling.
 
 ---
 
@@ -337,6 +391,8 @@ js/core/                systems — no DOM in here
   rewards.js            stars, streaks, milestones, special items
   pet.js                the axolotl: coats, growth stages, moods, treats
   items.js              the catalogue, ownership and the room's slots
+  games.js              the mini-game registry, their payouts and the one
+                        door between a game and the spelling engine
   season.js             date-driven season
   bus.js                tiny pub/sub
 
@@ -345,29 +401,55 @@ js/ui/                  reusable pieces
   art.js       the axolotl, drawn from a handful of proportions
   item-art.js  every item, plus the wallpaper and floor surfaces
   room.js      the room: wall, floor, and where each slot sits
+  keyboard.js  THE on-screen keyboard, shared by spelling and games
+  buddy.js     the axolotl's seat in every mini-game
 
 js/screens/             one file per screen
-  home  setup  spell  words  pet  progress  parent
+  home  setup  spell  words  pet  progress  parent  shop  decorate
+  games.js     the mini-game hub
+  play.js      the frame every game runs inside: loading, recording,
+               paying out, and the shared results card
+
+js/games/               one file per mini-game
+  wordsearch  crossword  tictactoe  snake  tower  swim
 ```
 
-### Adding a mini-game later
+### Adding another mini-game
 
-Create `js/screens/games/your-game.js`, register a route in `app.js`, and
-use the existing APIs:
+Write `js/games/your-game.js` with a default export that takes the context
+`screens/play.js` hands it, and add one entry to `GAMES` in
+`js/core/games.js`. The hub, the route, the payout, the results card and the
+axolotl all come for free.
 
 ```js
-import { pickWords, recordAttempt } from '../../core/words.js';
-import { promptWord } from '../../core/speech.js';
-import { payForSession } from '../../core/rewards.js';
+import { gameHeader } from '../screens/play.js';
+import { createBuddy } from '../ui/buddy.js';
+import { gameWords } from '../core/games.js';
 
-const sessionId = `s_${Date.now().toString(36)}`;
-const queue = pickWords({ count: 8 });          // active, prioritised
-await promptWord(queue[0]);                      // the shared voice
-recordAttempt(queue[0].id, wasCorrect, sessionId);  // the shared mastery
+export default function yourGame(ctx) {
+  const buddy = createBuddy({ layout: 'side' });
+  const queue = gameWords(5);          // active words first, prioritised
+
+  ctx.record(word, wasCorrect);        // the ONLY route to her progress
+  ctx.onCleanup(() => clearInterval(timer));
+  ctx.finish({ wordsWon: 3, headline: 'Nice one!' });
+}
 ```
 
-Do not re-implement mastery, word selection or speech inside a game. If a
-game needs something the engine cannot do, extend the engine.
+A game never imports `words.js`, `rewards.js` or `state.js`. `ctx.record()`
+applies that game's mastery rule — set by `canMaster` in the registry — and
+`ctx.finish()` prices the result against the daily ceiling. If a game needs
+something the engine cannot do, extend the engine rather than working around
+it inside the game.
+
+Two traps worth knowing, both of which have already bitten this codebase:
+
+* **Do all of a screen's set-up at the very end of its function**, after
+  every helper is declared. Calling a `const` arrow before its line is
+  reached throws, and it throws at run time on the tablet, not here.
+* **Never position something with `transform` if an animation will also set
+  `transform` on it.** The animation wins and the thing jumps. Use `left`,
+  `top`, or a negative margin.
 
 Remember to add the new file to `SHELL` in `sw.js`, and bump `APP_VERSION`
 in `js/core/version.js` — that is what retires the old cache and ships the
