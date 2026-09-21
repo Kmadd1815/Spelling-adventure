@@ -76,12 +76,16 @@ function gill(hx, hy, rx, ry, c, side, i, g, pass) {
  * @param {object} opts.coat   a COATS entry
  * @param {object} opts.stage  a STAGES entry
  * @param {boolean} [opts.happy] a wider grin
+ * @param {string} [opts.mood] calm | happy | excited | love | munch | sleepy
+ * @param {boolean} [opts.alive] idle breathing, blinking and swaying gills
  * @param {string} [opts.hat]       a worn hat's item id
  * @param {string} [opts.accessory] a worn accessory's item id
  * @returns {string} an <svg> string
  */
 export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
+                         mood = null, alive = true,
                          hat = null, accessory = null } = {}) {
+  if (!mood) mood = happy ? 'happy' : 'calm';
   const c = coat;
   const h = stage.headScale;
   const b = stage.bodyScale;
@@ -150,16 +154,50 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
 
   // The grin. It spans most of the face and turns up at both ends — the
   // single most recognisable thing about an axolotl's expression.
-  const grin = `<path d="M ${n(headCx - headRx * 0.40)} ${n(headCy + headRy * 0.16)}
-             Q ${n(headCx)} ${n(headCy + headRy * (happy ? 0.74 : 0.58))}
-               ${n(headCx + headRx * 0.40)} ${n(headCy + headRy * 0.16)}"
-          fill="none" stroke="${c.dark}" stroke-width="2.8" stroke-linecap="round"/>`;
+  const MOUTH_DROP = { calm: 0.58, happy: 0.74, excited: 0.86, love: 0.80, munch: 0.62, sleepy: 0.44 };
+  const drop = MOUTH_DROP[mood] ?? 0.58;
 
-  const eye = side => `
-    <circle cx="${n(headCx + side * headRx * 0.42)}" cy="${n(headCy - headRy * 0.16)}"
-            r="${n(headRx * 0.072)}" fill="#3a2e28"/>
-    <circle cx="${n(headCx + side * headRx * 0.42 + headRx * 0.026)}" cy="${n(headCy - headRy * 0.20)}"
-            r="${n(headRx * 0.026)}" fill="#fff" opacity=".9"/>`;
+  const grin = mood === 'munch'
+    ? `<g class="pet-munch">
+         <ellipse cx="${n(headCx)}" cy="${n(headCy + headRy * 0.34)}"
+                  rx="${n(headRx * 0.20)}" ry="${n(headRy * 0.17)}" fill="${c.dark}"/>
+         <ellipse cx="${n(headCx)}" cy="${n(headCy + headRy * 0.38)}"
+                  rx="${n(headRx * 0.11)}" ry="${n(headRy * 0.09)}" fill="#e2566f"/>
+       </g>`
+    : `<path d="M ${n(headCx - headRx * 0.40)} ${n(headCy + headRy * 0.16)}
+                Q ${n(headCx)} ${n(headCy + headRy * drop)}
+                  ${n(headCx + headRx * 0.40)} ${n(headCy + headRy * 0.16)}"
+             fill="none" stroke="${c.dark}" stroke-width="2.8" stroke-linecap="round"/>`
+      + (mood === 'excited'
+          ? `<ellipse cx="${n(headCx)}" cy="${n(headCy + headRy * 0.42)}"
+                      rx="${n(headRx * 0.13)}" ry="${n(headRy * 0.12)}" fill="${c.dark}" opacity=".85"/>`
+          : '');
+
+  const eyeY = headCy - headRy * 0.16;
+  const eyeR = headRx * 0.072;
+  const wide = mood === 'excited';
+  const shutAlways = mood === 'love' || mood === 'munch' || mood === 'sleepy';
+
+  const openEye = side => {
+    const cx = headCx + side * headRx * 0.42;
+    const r = eyeR * (wide ? 1.5 : 1);
+    return `<circle cx="${n(cx)}" cy="${n(eyeY)}" r="${n(r)}" fill="#3a2e28"/>
+            <circle cx="${n(cx + r * 0.36)}" cy="${n(eyeY - r * 0.40)}" r="${n(r * 0.34)}" fill="#fff" opacity=".9"/>`;
+  };
+
+  /* A happy closed eye: the little upward arc that does most of the work of
+     making a face look delighted. Sleepy curves the other way. */
+  const shutEye = side => {
+    const cx = headCx + side * headRx * 0.42;
+    const w = eyeR * 1.7, h = eyeR * (mood === 'sleepy' ? -1.1 : 1.3);
+    return `<path d="M ${n(cx - w)} ${n(eyeY + h * 0.4)} Q ${n(cx)} ${n(eyeY - h)} ${n(cx + w)} ${n(eyeY + h * 0.4)}"
+                  fill="none" stroke="#3a2e28" stroke-width="${n(eyeR * 0.72)}" stroke-linecap="round"/>`;
+  };
+
+  const eyes = shutAlways
+    ? `<g>${shutEye(-1)}${shutEye(1)}</g>`
+    : `<g class="pet-eye-open">${openEye(-1)}${openEye(1)}</g>
+       <g class="pet-eye-shut">${shutEye(-1)}${shutEye(1)}</g>`;
 
   const nostril = side => `<circle cx="${n(headCx + side * headRx * 0.10)}" cy="${n(headCy + headRy * 0.06)}"
       r="${n(headRx * 0.022)}" fill="${c.dark}" opacity=".55"/>`;
@@ -172,10 +210,12 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
     </g>` : '';
 
   return `
-<svg class="pet-stage" viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
+<svg class="pet-stage${alive ? ' pet-alive' : ''}" data-mood="${mood}"
+     viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
      aria-label="An axolotl">
   <ellipse cx="100" cy="${n(groundY)}" rx="${n(bodyRx * 0.82)}" ry="7" fill="#000" opacity=".10"/>
   ${sparkles}
+  <g class="pet-breathe" style="transform-origin:${n(bodyCx)}px ${n(groundY)}px">
   ${accBehind ? accArt : ''}
   ${tail}
 
@@ -188,8 +228,10 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   ${foot(-1)}${foot(1)}
 
   <!-- gills, outlined underneath then filled over -->
-  ${gillsUnder}
-  ${gillsOver}
+  <g class="pet-gills" style="transform-origin:${n(headCx)}px ${n(headCy)}px">
+    ${gillsUnder}
+    ${gillsOver}
+  </g>
 
   <!-- head -->
   <ellipse cx="${n(headCx)}" cy="${n(headCy)}" rx="${n(headRx)}" ry="${n(headRy)}"
@@ -200,12 +242,13 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   <ellipse cx="${n(headCx + headRx * 0.58)}" cy="${n(headCy + headRy * 0.26)}"
            rx="${n(headRx * 0.11)}" ry="${n(headRy * 0.085)}" fill="${c.gill}" opacity=".45"/>
 
-  ${eye(-1)}${eye(1)}
+  ${eyes}
   ${nostril(-1)}${nostril(1)}
   ${grin}
 
   ${accBehind ? '' : accArt}
   ${hatArt}
+  </g>
 </svg>`;
 }
 

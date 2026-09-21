@@ -58,6 +58,8 @@ export function defaultState() {
 
     progress: {
       stars: 0,
+      treats: 0,        // earned by spelling, spent on spoiling the axolotl
+      petMoments: 0,    // a tally of times played together; only ever goes up
       sessionsCompleted: 0,
       testsCompleted: 0,
       wordsAttempted: 0,

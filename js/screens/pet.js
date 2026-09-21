@@ -12,9 +12,13 @@ import * as pet from '../core/pet.js';
 import { COATS } from '../core/pet.js';
 import * as items from '../core/items.js';
 import { itemSVG, decorSVG } from '../ui/item-art.js';
+import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 
 export default function petScreen(container) {
+  let mood = 'calm';
+  let moodTimer = null;
+
   function render() {
     const info = pet.pet();
     const growth = pet.growthProgress();
@@ -22,16 +26,25 @@ export default function petScreen(container) {
     applySeasonTheme(season);
 
     const worn = items.equipped();
+    const bubble = el('div', { class: 'pet-speech', text: pet.greeting() });
+
+    const petNode = el('div', {
+      class: 'scene-pet pet-tappable', role: 'button', tabindex: '0',
+      'aria-label': `Pet ${info.name}`,
+      html: petSVG({
+        coat: info.coat, stage: info.stage, mood,
+        hat: worn.hat, accessory: worn.accessory,
+      }),
+      onClick: () => interact('pet'),
+    });
+
     const stage = el('div', { class: 'hub-hero' },
       el('div', { class: 'hero-season-chip', text: `${season.emoji} ${season.name}` }),
-      el('div', { class: 'pet-speech', text: pet.greeting() }),
+      bubble,
       el('div', { class: 'hero-scene' },
         ...items.sceneItems().map(item =>
           el('div', { class: 'scene-item', html: decorSVG(item.id, { size: 92 }) })),
-        el('div', { class: 'scene-pet', html: petSVG({
-          coat: info.coat, stage: info.stage, happy: true,
-          hat: worn.hat, accessory: worn.accessory,
-        }) })
+        petNode
       )
     );
 
@@ -86,18 +99,96 @@ export default function petScreen(container) {
         'Decorations will show up here once she has some.')
     );
 
+    /* Free interactions always work. Treats buy the fancier ones — and
+       having none of them changes nothing about the axolotl, which is
+       exactly as happy either way and still right there to be petted. */
+    const playCard = el('div', { class: 'card' },
+      el('div', { class: 'row', style: { justifyContent: 'space-between' } },
+        el('h3', { text: 'Play together', style: { margin: '0' } }),
+        el('div', { class: 'treat-chip' }, '\u{1F36C}', String(pet.treats()))
+      ),
+      /* Petting is listed as well as being tappable: the free options have
+         to be visible, so there is always something she can obviously do. */
+      el('div', { class: 'play-grid', style: { marginTop: '12px' } },
+        playButton('pet',    't-orange'),
+        playButton('splash', 't-blue'),
+        playButton('feed',   't-pink'),
+        playButton('play',   't-green'),
+        playButton('cuddle', 't-purple')
+      ),
+      el('p', { class: 'muted tiny center', style: { marginTop: '12px' },
+        text: pet.treats() > 0
+          ? `You have ${pet.treats()} ${pet.treats() === 1 ? 'treat' : 'treats'} saved up. Tap the axolotl any time \u2014 that is always free.`
+          : 'Spelling earns treats to spoil your axolotl with. Splashing and petting are always free.' }),
+      pet.moments() > 0
+        ? el('p', { class: 'muted tiny center', style: { marginTop: '4px' },
+            text: `You have played together ${pet.moments()} ${pet.moments() === 1 ? 'time' : 'times'}.` })
+        : null
+    );
+
     const actions = el('div', { class: 'row' },
       button('Rename', { cls: 'btn btn-quiet grow', emoji: '✏️', onClick: renameDialog }),
       button('Change coat', { cls: 'btn btn-quiet grow', emoji: '\u{1F3A8}', onClick: coatDialog })
     );
 
     mount(container, el('div', { class: 'stack' },
-      stage, growthCard, wardrobe, actions,
+      stage, playCard, growthCard, wardrobe, actions,
       button('Go to the shop', { cls: 'btn btn-pink btn-block', emoji: '\u{1F6CD}\uFE0F',
         onClick: () => navigate('/shop') }),
       button('Go practice', { cls: 'btn btn-primary btn-block', emoji: '\u2728',
         onClick: () => navigate('/practice') })
     ));
+  }
+
+  /**
+   * Run an interaction. Free ones always work; the rest cost a treat, and
+   * being out of treats simply means that button is quiet for now.
+   */
+  function interact(key) {
+    const spec = pet.INTERACTIONS[key];
+    if (!spec) return;
+    if (spec.cost > 0 && !pet.spendTreat()) {
+      toast('Do some spelling to earn more treats!', { ms: 3200 });
+      return;
+    }
+
+    pet.noteMoment();
+    mood = spec.mood;
+
+    const scene = container.querySelector('.hero-scene');
+    const petNode = container.querySelector('.scene-pet');
+    const bubble = container.querySelector('.pet-speech');
+
+    // Re-draw the face for the new mood, then celebrate over the top of it.
+    if (petNode) {
+      const info = pet.pet();
+      const worn = items.equipped();
+      petNode.innerHTML = petSVG({
+        coat: info.coat, stage: info.stage, mood,
+        hat: worn.hat, accessory: worn.accessory,
+      });
+      hop(petNode);
+    }
+    if (bubble) bubble.textContent = pet.interactionLine(key);
+    burst(scene, spec.effect);
+
+    // Settle back to calm, and only then re-render so the treat count and
+    // the tally catch up without interrupting the animation.
+    clearTimeout(moodTimer);
+    moodTimer = setTimeout(() => { mood = 'calm'; render(); }, 2400);
+  }
+
+  function playButton(key, tone) {
+    const spec = pet.INTERACTIONS[key];
+    const locked = spec.cost > 0 && pet.treats() < spec.cost;
+    return el('button', {
+      class: `play-btn ${tone}`, type: 'button', disabled: locked,
+      onClick: () => interact(key),
+    },
+      el('span', { class: 'emoji', text: spec.emoji }),
+      el('span', { text: spec.label }),
+      el('small', { text: spec.cost ? `\u{1F36C} ${spec.cost}` : 'free' })
+    );
   }
 
   function renameDialog() {
@@ -136,4 +227,5 @@ export default function petScreen(container) {
   }
 
   render();
+  return () => clearTimeout(moodTimer);
 }

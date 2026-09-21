@@ -10,7 +10,7 @@ export function el(tag, props = {}, ...children) {
     if (key === 'class')      node.className = value;
     else if (key === 'text')  node.textContent = value;
     else if (key === 'html')  node.innerHTML = value;      // only for our own SVG
-    else if (key === 'style' && typeof value === 'object') Object.assign(node.style, value);
+    else if (key === 'style' && typeof value === 'object') applyStyle(node, value);
     else if (key === 'dataset') Object.assign(node.dataset, value);
     else if (key.startsWith('on') && typeof value === 'function') {
       node.addEventListener(key.slice(2).toLowerCase(), value);
@@ -21,6 +21,16 @@ export function el(tag, props = {}, ...children) {
 
   appendAll(node, children);
   return node;
+}
+
+/* Custom properties (--fx-dx and friends) are invisible to Object.assign on
+   a style object, so they need setProperty. */
+function applyStyle(node, styles) {
+  for (const [prop, value] of Object.entries(styles)) {
+    if (value === null || value === undefined) continue;
+    if (prop.startsWith('--')) node.style.setProperty(prop, String(value));
+    else node.style[prop] = value;
+  }
 }
 
 function appendAll(parent, children) {

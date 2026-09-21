@@ -153,6 +153,37 @@ Once every active word has had its turn today, **Today's Practice goes quiet
 until tomorrow**. Extra practice stays open, and is deliberately worth much
 less — it is for when she wants more, not a way to farm stars.
 
+## Playing with the axolotl
+
+The pet breathes, its gills drift, and it blinks — all the time, with no
+input. Tap it anywhere and it reacts: a hop, a floating burst of hearts,
+a closed-eyed grin and something to say.
+
+Five interactions on the **My Pet** screen:
+
+| | Cost |
+|---|---|
+| **Pet** — hearts, a happy face | free, always |
+| **Splash** — bubbles everywhere | free, always |
+| **Feed** — a strawberry and a munching face | 1 treat |
+| **Play** — sparkles and a big grin | 1 treat |
+| **Cuddle** — the cosiest face it has | 1 treat |
+
+**Treats** come from spelling: one per completed activity, plus two for
+every word mastered.
+
+### Treats are a gift, never an upkeep
+
+This is the part worth being careful about. Running out of treats changes
+**nothing** about the axolotl. It does not get hungry, sad, lonely or sick,
+it never mentions how long it has been, and it is exactly as happy and as
+available to play with at zero treats as at fifty. The two free
+interactions are always there, so there is always something nice she can do.
+
+There is deliberately no code anywhere that reads the treat count and makes
+the pet worse off, and no mood the pet can drift into on its own — every
+expression it has is a reaction to something she just did.
+
 ## The shop and her collection
 
 Stars buy things. There are 21 items in the shop across hats, accessories

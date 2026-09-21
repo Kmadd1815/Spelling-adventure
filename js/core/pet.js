@@ -8,6 +8,7 @@
 */
 
 import { getState, update } from './state.js';
+import { emit } from './bus.js';
 import { masteredWords } from './words.js';
 
 /* One animal, on purpose.
@@ -92,6 +93,52 @@ export function setPet({ coat, name }) {
   });
 }
 
+/* ---------- Moods ----------
+   A face, not a state. Nothing here decays, and there is no mood the pet
+   can fall into on its own — every one of these is a reaction to something
+   she just did. */
+
+export const MOODS = ['calm', 'happy', 'excited', 'love', 'munch', 'sleepy'];
+
+/* ---------- Treats ----------
+
+   Treats are earned by spelling and spent on giving the axolotl something
+   nice. They are a gift she gets to give, never an upkeep cost: running out
+   of treats changes nothing about the pet, which stays exactly as happy and
+   is still there to be played with for free.
+
+   There is deliberately no code anywhere that reads the treat count and
+   makes the pet worse off. */
+
+export function treats() {
+  return getState().progress.treats || 0;
+}
+
+export function earnTreats(n, reason = '') {
+  const count = Math.max(0, Math.round(n));
+  if (!count) return 0;
+  update(state => { state.progress.treats = (state.progress.treats || 0) + count; });
+  emit('treats:earned', { count, reason });
+  return count;
+}
+
+/** Spend one treat. Returns false when there are none — and nothing bad
+    happens as a result; the free interactions are always available. */
+export function spendTreat() {
+  if (treats() < 1) return false;
+  update(state => { state.progress.treats -= 1; });
+  return true;
+}
+
+/** A warm tally that only ever goes up. Never a meter, never a target. */
+export function moments() {
+  return getState().progress.petMoments || 0;
+}
+
+export function noteMoment() {
+  update(state => { state.progress.petMoments = (state.progress.petMoments || 0) + 1; });
+}
+
 /* ---------- What the pet says ----------
 
    Every line here is either neutral or warm. None of them mention absence,
@@ -147,6 +194,39 @@ export const greeting       = () => pick(GREETINGS);
 export const praiseCorrect  = () => pick(CORRECT_LINES);
 export const praiseAlmost   = () => pick(ALMOST_LINES);
 export const praiseMastered = () => pick(MASTERED_LINES);
+
+export const INTERACTIONS = {
+  pet: {
+    key: 'pet', label: 'Pet', emoji: '\u{1F91A}', cost: 0, mood: 'love', effect: 'hearts',
+    lines: ['That is the best.', 'Hee hee!', 'More please!', 'You give the nicest pats.',
+            'I like you a lot.', '*happy wiggle*'],
+  },
+  splash: {
+    key: 'splash', label: 'Splash', emoji: '\u{1FAE7}', cost: 0, mood: 'happy', effect: 'bubbles',
+    lines: ['Splashy splashy!', 'Bubbles everywhere!', 'Watch this one \u2014 it is huge.',
+            'Blub blub blub.', 'The water is perfect today.'],
+  },
+  feed: {
+    key: 'feed', label: 'Feed', emoji: '\u{1F353}', cost: 1, mood: 'munch', effect: 'crumbs',
+    lines: ['Mmm, my favourite!', 'Nom nom nom.', 'Thank you!', 'That was delicious.',
+            'You always pick the good ones.'],
+  },
+  play: {
+    key: 'play', label: 'Play', emoji: '\u{1FA80}', cost: 1, mood: 'excited', effect: 'sparkles',
+    lines: ['Again! Again!', 'I am SO fast.', 'This is the best game.',
+            'Did you see that?!', 'Whee!'],
+  },
+  cuddle: {
+    key: 'cuddle', label: 'Cuddle', emoji: '\u{1F917}', cost: 1, mood: 'love', effect: 'hearts',
+    lines: ['Cozy.', 'I could stay here forever.', 'You are my favourite person.',
+            'Warm and squishy.', '*contented sigh*'],
+  },
+};
+
+export function interactionLine(key) {
+  const set = INTERACTIONS[key];
+  return set ? pick(set.lines) : pick(GREETINGS);
+}
 
 export function stageUpLine(stage) {
   return `${pet().name} grew into a ${stage.name}!`;

@@ -584,6 +584,124 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #7fd096, var(--green)); border-radius: var(--r-pill); transition: width .5s ease; }
 .bar.gold > i { background: linear-gradient(90deg, #ffd980, var(--gold)); }
 
+/* ---------- A pet that is actually alive ----------
+
+   Idle motion is what separates a picture of an axolotl from a pet. None of
+   this reacts to neglect — it simply always runs. */
+
+.pet-alive .pet-breathe { animation: petBreathe 3.8s ease-in-out infinite; }
+@keyframes petBreathe {
+  0%, 100% { transform: scaleY(1)     translateY(0); }
+  50%      { transform: scaleY(1.018) translateY(-1.5px); }
+}
+
+/* Gills drift the way they would in water. */
+.pet-alive .pet-gills { animation: gillSway 4.6s ease-in-out infinite; }
+@keyframes gillSway {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50%      { transform: rotate(1.6deg); }
+}
+
+/* Blinking swaps two drawings rather than squashing one, so the eyes cannot
+   drift out of place over time. */
+.pet-alive .pet-eye-open { animation: eyeOpen 5.4s infinite; }
+.pet-alive .pet-eye-shut { animation: eyeShut 5.4s infinite; }
+.pet-eye-shut { opacity: 0; }
+@keyframes eyeOpen { 0%, 95%, 100% { opacity: 1; } 96.5%, 98.5% { opacity: 0; } }
+@keyframes eyeShut { 0%, 95%, 100% { opacity: 0; } 96.5%, 98.5% { opacity: 1; } }
+
+.pet-munch { animation: munch .42s ease-in-out infinite; transform-origin: center; }
+@keyframes munch { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.45); } }
+
+/* A single hop when she does something the axolotl likes. */
+.pet-react { animation: petHop .62s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes petHop {
+  0%   { transform: translateY(0)    scale(1); }
+  35%  { transform: translateY(-14px) scale(1.04, .96); }
+  60%  { transform: translateY(0)    scale(.97, 1.03); }
+  100% { transform: translateY(0)    scale(1); }
+}
+
+/* Tapping the pet should feel like a thing you can do. */
+.pet-tappable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.pet-tappable:active { transform: scale(.97); }
+
+/* ---------- Floating reaction effects ---------- */
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+.fx {
+  position: absolute;
+  font-size: 1.5rem;
+  line-height: 1;
+  animation: fxFloat 1.5s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes fxFloat {
+  0%   { opacity: 0; transform: translate(0, 0) scale(.5) rotate(0deg); }
+  18%  { opacity: 1; transform: translate(0, -14px) scale(1.15) rotate(-6deg); }
+  100% { opacity: 0; transform: translate(var(--fx-dx, 0), -86px) scale(.85) rotate(var(--fx-rot, 10deg)); }
+}
+/* Bubbles drift and wobble rather than shooting straight up. */
+.fx-bubble { animation: fxBubble 1.8s ease-in forwards; }
+@keyframes fxBubble {
+  0%   { opacity: 0; transform: translate(0, 0) scale(.4); }
+  15%  { opacity: .95; }
+  100% { opacity: 0; transform: translate(var(--fx-dx, 0), -100px) scale(1.1); }
+}
+/* Crumbs fall instead. */
+.fx-crumb { animation: fxCrumb 1.1s ease-in forwards; font-size: 1rem; }
+@keyframes fxCrumb {
+  0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--fx-dx, 0), 42px) scale(.7) rotate(140deg); }
+}
+
+/* ---------- Interaction buttons ---------- */
+
+.play-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+.play-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 92px;
+  padding: 12px 8px;
+  border: none;
+  border-radius: var(--r-lg);
+  font-family: var(--font);
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .14);
+}
+.play-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .14); }
+.play-btn .emoji { font-size: 1.9rem; line-height: 1; }
+.play-btn small { font-weight: 800; font-size: .72rem; opacity: .95; }
+/* Out of treats is a quiet "not right now", never a warning. */
+.play-btn[disabled] { opacity: .45; box-shadow: none; pointer-events: none; }
+
+.treat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #ffd6e2, #f7a8c6);
+  color: #8a3f59;
+  font-weight: 900;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 3px 0 #e08aab;
+}
+
+
 /* ---------- Collection book ---------- */
 
 .book-grid {

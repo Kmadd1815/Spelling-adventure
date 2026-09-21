@@ -426,6 +426,10 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       kind, firstTryCorrect, attempted, mastered: masteredThisSession.length,
     });
 
+    const treats = attempted > 0
+      ? pet.earnTreats(1 + masteredThisSession.length * 2, kind)
+      : 0;
+
     update(state => {
       state.progress.sessionsCompleted += 1;
       if (kind === 'practiceTest' || kind === 'fullTest') state.progress.testsCompleted += 1;
@@ -442,10 +446,10 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     if (attempted > 0 && firstTryCorrect === attempted) confetti(48);
 
     releaseLayout();
-    mount(container, resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones }));
+    mount(container, resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones, treats }));
   }
 
-  function resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones }) {
+  function resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones, treats }) {
     const petInfo = pet.pet();
     const headline = firstTryCorrect === attempted ? 'Every single one!'
       : firstTryCorrect >= attempted / 2 ? 'Nice work!' : 'Good effort — you tried them all.';
