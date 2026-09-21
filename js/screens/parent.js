@@ -52,7 +52,17 @@ export default function parentScreen(container) {
         el('div', { class: 'muted', text: '›' })
       );
 
-    const body = el('div', { class: 'stack' },
+    const body = el('div', { class: 'stack' });
+
+    if (!getState().child.setupComplete) {
+      body.append(el('div', { class: 'card', style: { background: '#e7f3ea' } },
+        el('h3', { text: '\u{1F44B} Setting up before she starts' }),
+        el('p', { class: 'tiny', text:
+          'Add this week\u2019s spelling list and pick the voice now. When you are done, go back to the welcome screen and she can enter her name and choose her axolotl herself.' })
+      ));
+    }
+
+    body.append(
       el('div', { class: 'stat-grid' },
         stat(s.total, 'Words'),
         stat(s.active, 'Active'),
@@ -80,8 +90,10 @@ export default function parentScreen(container) {
       item('\u{1F4BE}', 'Backup & reset', 'Save a copy, restore, or start over', () => show({ name: 'data' }))
     ));
 
-    body.append(button('Back to the game', { cls: 'btn btn-primary btn-block', emoji: '\u{1F3E0}',
-      onClick: () => navigate('/') }));
+    const ready = getState().child.setupComplete;
+    body.append(button(ready ? 'Back to the game' : 'Back to the welcome screen', {
+      cls: 'btn btn-primary btn-block', emoji: ready ? '\u{1F3E0}' : '\u{1F44B}',
+      onClick: () => navigate(ready ? '/' : '/setup') }));
 
     return body;
   }
@@ -567,7 +579,18 @@ export default function parentScreen(container) {
       el('div', { class: 'card' },
         el('h3', { text: 'Start over' }),
         el('p', { class: 'muted tiny', text:
-          'Clearing progress keeps every word and list but wipes mastery, stars, streaks and treasures.' }),
+          'Three kinds of reset, from gentlest to most drastic. None of them touch backup files you have already saved.' }),
+
+        el('div', { class: 'card card-tight', style: { background: '#fdf2e3', marginBottom: '14px' } },
+          el('h3', { text: '\u{1F381} Handing it over to her' }),
+          el('p', { class: 'muted tiny', text:
+            'Use this once you have finished setting things up and testing. It clears everything your testing created \u2014 progress, stars, streaks, treasures, her name and her pet \u2014 and drops the app back on the very first welcome screen. Your word lists, voice choice, mastery rules and PIN are all kept, so she opens a game that is already set up for her.' }),
+          button('Fresh start for her', { cls: 'btn btn-primary btn-block', emoji: '\u2728',
+            style: { marginTop: '10px' }, onClick: freshStartForChild })
+        ),
+
+        el('p', { class: 'muted tiny', text:
+          'Clearing progress keeps every word, list and setting, and keeps her name and pet, but wipes mastery, stars, streaks and treasures.' }),
         button('Clear progress, keep words', { cls: 'btn btn-quiet btn-block', onClick: async () => {
           const ok = await confirmDialog({ title: 'Clear all progress?',
             message: 'Words and lists stay. Mastery, stars, streaks, treasures and history are erased. This cannot be undone.',
@@ -601,6 +624,41 @@ export default function parentScreen(container) {
         } })
       )
     );
+  }
+
+  /* The handover reset.
+
+     After a parent has set the app up and poked around to check it works,
+     this clears every trace of that testing and returns the app to its
+     welcome screen — while keeping the things they just spent time on:
+     word lists, the chosen voice, mastery rules and the PIN. */
+  async function freshStartForChild() {
+    const ok = await confirmDialog({
+      title: 'Fresh start for her?',
+      message: 'Progress, stars, streaks, treasures, her name and her pet are all cleared, and the app goes back to the welcome screen. Your word lists, voice and settings are kept.',
+      confirmLabel: 'Fresh start',
+    });
+    if (!ok) return;
+
+    update(st => {
+      st.words.forEach(w => {
+        w.attempts = 0; w.correctCount = 0; w.incorrectCount = 0;
+        w.creditSessions = []; w.recent = []; w.masteredAt = null;
+        w.firstSeen = null; w.lastSeen = null; w.lastCorrect = null; w.lastMissed = null;
+      });
+      st.progress = storage.defaultState().progress;
+      st.collection.items = [];
+      st.sessions = [];
+      st.child.name = '';
+      st.child.petName = '';
+      st.child.petCoat = storage.defaultState().child.petCoat;
+      st.child.setupComplete = false;
+    });
+
+    unlocked = false;             // relock, since she is the next one to open it
+    flushNow();
+    toast('Ready for her first time');
+    navigate('/setup', { replace: true });
   }
 
   function downloadBackup() {

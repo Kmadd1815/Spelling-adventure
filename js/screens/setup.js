@@ -29,7 +29,16 @@ export default function setupScreen(container) {
       ),
       el('div', { class: 'card' }, field('My name is', input)),
       button('Next', { cls: 'btn btn-primary btn-lg btn-block',
-        onClick: () => { step = 1; render(); } })
+        onClick: () => { step = 1; render(); } }),
+
+      /* A grown-up needs to add the spelling list and pick the voice before
+         the app is any use, and that has to be reachable before the child
+         has ever opened it. It is PIN-gated, so it is safe to show here. */
+      el('div', { style: { height: '18px' } }),
+      button('Parent setup', { cls: 'btn btn-quiet btn-block', emoji: '\u2699\uFE0F',
+        onClick: () => navigate('/parent') }),
+      el('p', { class: 'center tiny muted', text:
+        'Grown-ups: add this week\u2019s words and choose the voice.' })
     );
   }
 

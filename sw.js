@@ -4,7 +4,7 @@
    old copy. The app shell is cached up front so it opens with no network
    at all; everything is same-origin and there are no third-party requests. */
 
-const CACHE = 'spelling-adventure-v2';
+const CACHE = 'spelling-adventure-v3';
 
 const SHELL = [
   './',

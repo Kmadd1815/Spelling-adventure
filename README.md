@@ -24,12 +24,32 @@ Recents and reopen it.
 
 ---
 
-## First run
+## First run — set it up before she ever opens it
 
-The app asks for her name, a pet, and a pet name. Then it will say there
-are no words yet.
+The welcome screen has a **Parent setup** button under the name field.
+Tap that first, before anyone enters a name.
 
-**Parent Area → PIN `1234`.** Change it inside, under *Spelling rules*.
+**PIN `1234`.** Change it inside, under *Spelling rules*.
+
+Add this week's list and choose the voice, then tap **Back to the welcome
+screen**. She can now open the app, put in her name and pick her axolotl,
+and go straight into a game that is already set up for her.
+
+### Testing it yourself first
+
+Feel free to run through the whole app to check it works — do the wizard,
+play a practice round, earn some stars. When you are done:
+
+*Parent Area → Backup & reset → **Fresh start for her**.*
+
+That clears everything your testing created — progress, stars, streaks,
+treasures, her name and her pet — and drops the app back on the welcome
+screen, **while keeping your word lists, voice choice, mastery rules and
+PIN**. It is the button to use when you hand the tablet over.
+
+The other two resets are blunter: *Clear progress* keeps her name and pet
+but wipes mastery and stars, and *Erase everything* deletes the word lists
+too and returns the app to a completely blank first run.
 
 ### Adding a week's words
 

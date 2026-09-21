@@ -47,7 +47,10 @@ on('state:changed', paintStars);
 on('stars:awarded', ({ amount }) => { if (amount > 0) toast(`+${amount} stars`, { gold: true }); });
 on('milestone:earned', m => toast(`${m.emoji}  ${m.title}`, { gold: true, ms: 4200 }));
 
-document.getElementById('backBtn').addEventListener('click', () => router.goBack('/'));
+// Before the child has finished setup, "back" belongs on the welcome screen
+// rather than a hub she has not reached yet.
+document.getElementById('backBtn').addEventListener('click', () =>
+  router.goBack(getState().child.setupComplete ? '/' : '/setup'));
 document.getElementById('starCount').addEventListener('click', () => router.navigate('/progress'));
 
 /* ---------- Speech unlock ----------

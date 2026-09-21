@@ -44,6 +44,10 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* A class that sets `display` outbids the browser's own [hidden] rule, which
+   silently left the star counter on screens that ask to hide it. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   height: 100%;
