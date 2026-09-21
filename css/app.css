@@ -1,0 +1,688 @@
+/* ==========================================================================
+   Spelling Adventure — global styles
+   Cozy, warm, high-contrast, large touch targets. Tuned for an Android
+   tablet in landscape or portrait, installed to the home screen.
+   ========================================================================== */
+
+:root {
+  /* Surfaces */
+  --bg:          #fdf6ec;
+  --bg-deep:     #f6e9d8;
+  --surface:     #fffdf9;
+  --surface-alt: #fdf2e3;
+
+  /* Ink */
+  --ink:         #4a3b32;
+  --ink-soft:    #8a7568;
+  --ink-faint:   #b8a595;
+
+  /* Brand + accents */
+  --primary:     #ef9345;
+  --primary-dark:#d97830;
+  --gold:        #f6c453;
+  --green:       #64bd80;
+  --green-dark:  #4a9b63;
+  --blue:        #6fb3d9;
+  --purple:      #a78bc9;
+  --pink:        #ef9a9a;
+
+  /* Seasonal tint — set at runtime on <body data-season> */
+  --season-sky:  #dcecf7;
+  --season-land: #d6ecc8;
+
+  /* Geometry */
+  --r-sm: 12px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --shadow: 0 4px 0 rgba(122, 96, 77, .16);
+  --shadow-soft: 0 8px 24px rgba(122, 96, 77, .14);
+  --tap: 56px;
+
+  --font: "Nunito", "Quicksand", "Segoe UI Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 18px;
+  line-height: 1.45;
+  /* Stop long-press text selection popups mid-game */
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--bg-deep);
+  flex: 0 0 auto;
+}
+
+.topbar-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.icon-btn:active { transform: translateY(2px); }
+
+.star-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #ffe8a8, #f6c453);
+  color: #7a5a14;
+  font-weight: 900;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 3px 0 #dda93c;
+  font-size: 1.05rem;
+}
+.star-chip-icon { font-size: 1.1rem; }
+.star-chip.bump { animation: bump .45s ease; }
+@keyframes bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Screen container ---------- */
+
+.screen {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 16px 32px;
+  outline: none;
+}
+
+.screen-pad-sm { padding: 12px; }
+
+.stack   { display: flex; flex-direction: column; gap: 14px; }
+.stack-sm{ display: flex; flex-direction: column; gap: 8px; }
+.row     { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.row-tight { display: flex; align-items: center; gap: 8px; }
+.grow    { flex: 1 1 auto; }
+.center  { text-align: center; }
+.muted   { color: var(--ink-soft); }
+.tiny    { font-size: .85rem; }
+.hidden  { display: none !important; }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 14px 22px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform .06s ease;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(122,96,77,.16); }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+
+.btn-primary { background: linear-gradient(180deg, #f9a961, var(--primary)); color: #fff; box-shadow: 0 4px 0 var(--primary-dark); }
+.btn-green   { background: linear-gradient(180deg, #7fd096, var(--green)); color: #fff; box-shadow: 0 4px 0 var(--green-dark); }
+.btn-blue    { background: linear-gradient(180deg, #8ac6e6, var(--blue)); color: #fff; box-shadow: 0 4px 0 #4f93ba; }
+.btn-purple  { background: linear-gradient(180deg, #bda3d8, var(--purple)); color: #fff; box-shadow: 0 4px 0 #866aa8; }
+.btn-quiet   { background: var(--surface-alt); box-shadow: none; font-weight: 700; }
+.btn-danger  { background: #f6dede; color: #9b4b4b; box-shadow: 0 4px 0 #e0bcbc; }
+.btn-block   { width: 100%; }
+.btn-lg      { font-size: 1.2rem; padding: 18px 26px; min-height: 68px; }
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+.card-tight { padding: 12px 14px; border-radius: var(--r-md); }
+.card h2 { margin: 0 0 10px; font-size: 1.15rem; }
+.card h3 { margin: 0 0 6px; font-size: 1rem; }
+
+.section-title {
+  font-size: .8rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 18px 4px 8px;
+}
+
+/* ---------- Home hub ---------- */
+
+.hub-hero {
+  background: linear-gradient(180deg, var(--season-sky) 0%, var(--season-sky) 58%, var(--season-land) 58%, var(--season-land) 100%);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  justify-content: flex-end;
+}
+.hub-hero .pet-stage { width: 230px; max-width: 62vw; }
+.pet-speech {
+  background: #fff;
+  border-radius: var(--r-md);
+  padding: 10px 16px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  max-width: 88%;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.hero-season-chip {
+  position: absolute;
+  top: 12px; left: 12px;
+  background: rgba(255,255,255,.85);
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-weight: 800;
+  font-size: .85rem;
+  z-index: 2;
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.hub-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.hub-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 120px;
+  padding: 16px 10px;
+  border: none;
+  border-radius: var(--r-lg);
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(0,0,0,.14);
+  transition: transform .06s ease;
+}
+.hub-tile:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.14); }
+.hub-tile .emoji { font-size: 2.2rem; line-height: 1; }
+.hub-tile small { font-weight: 700; font-size: .78rem; opacity: .92; }
+
+.hub-tile-sm { min-height: 86px; font-size: .92rem; }
+.hub-tile-sm .emoji { font-size: 1.6rem; }
+
+.t-orange { background: linear-gradient(180deg, #f9a961, #ef9345); box-shadow: 0 5px 0 #d97830; }
+.t-green  { background: linear-gradient(180deg, #7fd096, #64bd80); box-shadow: 0 5px 0 #4a9b63; }
+.t-blue   { background: linear-gradient(180deg, #8ac6e6, #6fb3d9); box-shadow: 0 5px 0 #4f93ba; }
+.t-purple { background: linear-gradient(180deg, #bda3d8, #a78bc9); box-shadow: 0 5px 0 #866aa8; }
+.t-pink   { background: linear-gradient(180deg, #f5b3b3, #ef9a9a); box-shadow: 0 5px 0 #cf7a7a; }
+.t-gold   { background: linear-gradient(180deg, #ffd980, #f6c453); box-shadow: 0 5px 0 #dda93c; color: #7a5a14; }
+
+/* ---------- Spelling stage ---------- */
+
+/* The stage fills exactly the space below the top bar: the keyboard must
+   never fall below the fold, because the Check key lives on it. */
+.spell-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 10px;
+}
+
+.spell-progress {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pip {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--bg-deep);
+}
+.pip.done    { background: var(--green); }
+.pip.missed  { background: var(--primary); }
+.pip.current { background: var(--ink-soft); transform: scale(1.3); }
+
+/* Speak button, answer tiles and helpers travel together, centred in
+   whatever room is left above the keyboard. */
+.spell-middle {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.listen-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.spell-progress, .feedback, .keyboard { flex: 0 0 auto; }
+
+/* While feedback is up, it owns the screen — the listen controls it
+   replaces are repeated inside it. */
+.spell-stage.showing-feedback .listen-zone,
+.spell-stage.showing-feedback .help-row { display: none; }
+/* Keep her answer sitting right on top of the explanation of it. */
+.spell-stage.showing-feedback .spell-middle { justify-content: flex-end; }
+
+.speak-btn {
+  width: 128px; height: 128px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(180deg, #8ac6e6, #6fb3d9);
+  box-shadow: 0 6px 0 #4f93ba;
+  color: #fff;
+  font-size: 3.2rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.speak-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #4f93ba; }
+.speak-btn.speaking { animation: pulse 1s ease infinite; }
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.06); }
+}
+
+/* Letter tiles the child has typed */
+.answer-tiles {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 62px;
+  align-items: center;
+}
+.tile {
+  width: 46px; height: 58px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 3px var(--bg-deep);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.7rem; font-weight: 900;
+  text-transform: lowercase;
+}
+.tile.empty { box-shadow: inset 0 0 0 3px var(--bg-deep); background: var(--surface-alt); }
+.tile.caret { box-shadow: inset 0 0 0 3px var(--primary); }
+.tile.good  { background: #dff3e4; box-shadow: inset 0 0 0 3px var(--green); }
+.tile.bad   { background: #fdeadb; box-shadow: inset 0 0 0 3px var(--primary); }
+.answer-tiles.shake { animation: shake .4s ease; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* In-app keyboard. Deliberate: Gboard's suggestion strip would spell
+   the word for her, so the app never uses the system keyboard. */
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 8px;
+}
+.kb-row { display: flex; gap: 6px; justify-content: center; }
+
+/* The QWERTY rows sit on a 24 half-column grid. That is what lets the home
+   row sit half a key right of the top row and the bottom row a key and a
+   half right of that — the stagger her fingers will meet on a real
+   keyboard. Each letter spans 2, Backspace 4, Check 3, the shifts 3 and 7. */
+.kb-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 6px;
+}
+.kb-grid .key { max-width: none; }
+
+/* Shift is drawn as a landmark for her hands, not as a working key. */
+.key-shift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-alt);
+  box-shadow: none;
+  color: var(--ink-faint);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* When a Bluetooth keyboard is in use the on-screen letters step aside,
+   and the word recentres in the space they leave behind. */
+.spell-stage.physical-kb .keyboard { display: none; }
+.spell-stage.physical-kb .spell-middle { justify-content: center; padding-bottom: 0; }
+.key {
+  flex: 1 1 0;
+  max-width: 92px;
+  min-width: 0;
+  height: 56px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--bg-deep);
+  font-family: var(--font);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.key:active { transform: translateY(3px); box-shadow: none; }
+.key-wide { flex: 1.6 1 0; max-width: 150px; font-size: 1.05rem; text-transform: none; }
+.key-enter {
+  background: linear-gradient(180deg, #7fd096, var(--green));
+  color: #fff;
+  box-shadow: 0 3px 0 var(--green-dark);
+  text-transform: none;
+  font-size: 1.05rem;
+}
+.key-del { background: var(--surface-alt); text-transform: none; }
+
+/* Feedback panel */
+.feedback {
+  border-radius: var(--r-lg);
+  padding: 18px;
+  text-align: center;
+  font-weight: 800;
+}
+.feedback-good   { background: #dff3e4; color: #2f6b44; }
+.feedback-almost { background: #fdeadb; color: #9a5a22; }
+.feedback .big { font-size: 1.5rem; display: block; margin-bottom: 6px; }
+.correct-spelling {
+  font-size: 2rem;
+  letter-spacing: .12em;
+  font-weight: 900;
+  margin: 8px 0;
+}
+.your-try {
+  font-size: 1.1rem;
+  letter-spacing: .08em;
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+/* ---------- Word list rows ---------- */
+
+.word-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+}
+.word-row .w-text { font-weight: 800; font-size: 1.05rem; flex: 1 1 auto; }
+.word-row .w-meta { font-size: .8rem; color: var(--ink-soft); }
+
+.badge {
+  font-size: .72rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.badge-new        { background: #e7eef5; color: #4a6b7a; }
+.badge-learning   { background: #fdeadb; color: #9a5a22; }
+.badge-practicing { background: #ece3f6; color: #6b4e90; }
+.badge-mastered   { background: #fff2cc; color: #7a5a14; }
+
+.mastery-dots { display: inline-flex; gap: 4px; }
+.mdot { width: 10px; height: 10px; border-radius: 50%; background: var(--bg-deep); }
+.mdot.on { background: var(--gold); }
+
+/* ---------- Forms ---------- */
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-weight: 800; font-size: .9rem; }
+.field .hint { font-size: .8rem; color: var(--ink-soft); }
+
+input[type="text"], input[type="number"], input[type="password"], select, textarea {
+  font-family: var(--font);
+  font-size: 1.05rem;
+  padding: 14px 16px;
+  border: 3px solid var(--bg-deep);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  min-height: var(--tap);
+  width: 100%;
+  -webkit-user-select: text;
+  user-select: text;
+}
+textarea { min-height: 160px; line-height: 1.6; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+
+input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
+
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; padding: 12px 0;
+}
+
+.seg { display: flex; gap: 8px; }
+.seg button {
+  flex: 1 1 0;
+  min-height: var(--tap);
+  border: 3px solid var(--bg-deep);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  font-family: var(--font); font-weight: 800; font-size: .95rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: #fdeadb;
+  color: var(--ink);
+}
+
+/* ---------- Stats ---------- */
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stat {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.stat .n { font-size: 1.9rem; font-weight: 900; line-height: 1.1; }
+.stat .l { font-size: .8rem; color: var(--ink-soft); font-weight: 700; }
+
+.bar { height: 16px; background: var(--bg-deep); border-radius: var(--r-pill); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, #7fd096, var(--green)); border-radius: var(--r-pill); transition: width .5s ease; }
+.bar.gold > i { background: linear-gradient(90deg, #ffd980, var(--gold)); }
+
+/* ---------- Toasts ---------- */
+
+.toast-layer {
+  position: fixed;
+  left: 0; right: 0; bottom: 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+  z-index: 60;
+}
+.toast {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 800;
+  padding: 12px 22px;
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-soft);
+  animation: toastIn .3s ease, toastOut .3s ease 2.2s forwards;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast-gold { background: linear-gradient(180deg, #ffd980, #f6c453); color: #7a5a14; }
+@keyframes toastIn  { from { opacity: 0; transform: translateY(14px); } }
+@keyframes toastOut { to   { opacity: 0; transform: translateY(-8px); } }
+
+/* ---------- Modal ---------- */
+
+.modal-back {
+  position: fixed; inset: 0;
+  background: rgba(74, 59, 50, .45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-soft);
+}
+.modal h2 { margin-top: 0; }
+
+/* ---------- Celebration ---------- */
+
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 14px;
+  top: -20px;
+  z-index: 70;
+  pointer-events: none;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  to { transform: translateY(105vh) rotate(720deg); opacity: .9; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ---------- Wider tablets ---------- */
+@media (min-width: 720px) {
+  body { font-size: 19px; }
+  .screen { padding: 22px 28px 36px; max-width: 900px; margin: 0 auto; width: 100%; }
+  .hub-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .key { max-width: 84px; }
+}
+
+
+/* ==========================================================================
+   Landscape
+   The tablet sits sideways for typing practice, which trades height for
+   width. Everything vertical gets tighter so the keyboard always fits
+   without scrolling.
+   ========================================================================== */
+
+@media (orientation: landscape) and (max-height: 840px) {
+  .topbar { padding: 6px 14px; }
+  .topbar-title { font-size: 1.02rem; }
+  .icon-btn { min-width: 46px; min-height: 46px; font-size: 1.3rem; }
+  .star-chip { padding: 6px 14px; font-size: .98rem; }
+
+  .screen { padding: 10px 18px 14px; }
+
+  .spell-stage { gap: 7px; }
+  .spell-middle { gap: 10px; justify-content: flex-end; padding-bottom: 6px; }
+  .listen-zone { gap: 6px; }
+  .speak-btn { width: 88px; height: 88px; font-size: 2.2rem; }
+
+  .answer-tiles { min-height: 52px; gap: 6px; }
+  .tile { width: 40px; height: 50px; font-size: 1.45rem; }
+
+  .keyboard { gap: 5px; padding-top: 4px; }
+  .kb-row, .kb-grid { gap: 5px; }
+  .key { height: 46px; font-size: 1.15rem; }
+  .key-wide { font-size: .95rem; }
+
+  .feedback { padding: 12px 14px; }
+  .feedback .big { font-size: 1.18rem; margin-bottom: 2px; }
+  .correct-spelling { font-size: 1.6rem; margin: 4px 0; }
+  .your-try { font-size: 1rem; }
+
+  .btn { min-height: 48px; padding: 10px 18px; }
+  .hub-hero { min-height: 0; }
+  .hub-hero .pet-stage { width: 180px; }
+  .hub-tile { min-height: 96px; }
+  .hub-tile .emoji { font-size: 1.8rem; }
+}
+
+/* Short landscape (phone-sized height) — trim further still. */
+@media (orientation: landscape) and (max-height: 620px) {
+  .speak-btn { width: 68px; height: 68px; font-size: 1.7rem; }
+  .tile { width: 34px; height: 44px; font-size: 1.25rem; }
+  .key { height: 40px; font-size: 1.05rem; }
+  .spell-middle { gap: 7px; }
+}
