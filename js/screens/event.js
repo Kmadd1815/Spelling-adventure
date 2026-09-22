@@ -101,6 +101,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
   let busy = false;
   let sentHome = 0;
   const missed = [];
+  const earnedThisRound = [];
 
   /* ---------- Drawing ---------- */
 
@@ -237,7 +238,10 @@ export default function eventScreen(container, { preview = '' } = {}) {
       drawTrack();
       drawField();
 
-      if (result.earned.length) wait(() => showPrize(result.earned), 700);
+      if (result.earned.length) {
+        earnedThisRound.push(...result.earned);
+        wait(() => showPrize(result.earned), 700);
+      }
 
       wait(() => {
         busy = false;
@@ -288,7 +292,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
     mount(spellBox, el('div', { class: 'ev-prize center' },
       el('div', { class: 'ev-prize-art', html: itemSVG(item, { size: 96 }) }),
       el('div', { class: 'ev-prize-name', text: `You found the ${item.name}!` }),
-      el('div', { class: 'tiny muted', text: 'It is yours to keep, even after Halloween.' })
+      el('div', { class: 'tiny muted', text: 'Yours to keep, even after the event ends.' })
     ));
   }
 
@@ -330,6 +334,21 @@ export default function eventScreen(container, { preview = '' } = {}) {
         ),
         payout.repeat ? el('p', { class: 'tiny muted', style: { marginTop: '8px' },
           text: `The first round each day earns the most — but the ${event.unitMany} are still here.` }) : null
+      ));
+    }
+
+    if (earnedThisRound.length) {
+      body2.append(el('div', { class: 'card' },
+        el('h3', { text: earnedThisRound.length === 1 ? 'You found something!' : 'You found things!' }),
+        el('p', { class: 'muted tiny', text: 'Yours to keep, even after the event ends.' }),
+        el('div', { class: 'stack-sm' }, earnedThisRound.map(id => {
+          const item = itemById(id);
+          return el('div', { class: 'word-row' },
+            el('div', { class: 'ev-next-art', html: itemSVG(item, { size: 40 }) }),
+            el('div', { class: 'w-text grow', text: item?.name || '' }),
+            el('div', { class: 'badge badge-mastered', text: '\u2728 New' })
+          );
+        }))
       ));
     }
 
