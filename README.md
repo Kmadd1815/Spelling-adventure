@@ -578,6 +578,32 @@ These are deliberate and should survive future changes:
 
 ---
 
+## Checking a change
+
+There are around 260 checks in `tests/`, and they have caught nine real
+bugs that looked fine on screen. Running them needs a computer — Node and a
+headless browser — so they are not something to do from the tablet:
+
+```
+cd tests && npm install     # once
+node tests/run.mjs          # from the project root
+```
+
+One line per suite, non-zero exit if anything failed. `tests/README.md`
+says what each one holds down.
+
+None of it is part of the app: the app itself still has no dependencies and
+no build step, and nothing in `tests/` is ever served to her tablet.
+
+The thing worth repeating from that file: **most of the real bugs in this
+project were found by rendering something and looking at it**, not by an
+assertion. Invisible wearables, five hats clipped off the top of the canvas,
+a door hanging in mid-air, snowflakes that fell thirteen pixels, a bench
+standing in a pond. Every one of those passed a green sweep. The suites take
+screenshots into `tests/screenshots/` for exactly this reason.
+
+---
+
 ## Code layout
 
 ```
@@ -588,6 +614,8 @@ js/core/version.js      THE version — sw.js imports it, so the cache name
                         and the number shown in the app cannot drift apart
 js/core/updates.js      checks for new versions, refreshes at a safe moment
 manifest.webmanifest    home-screen install
+tests/                  checks. Not part of the app and never served to
+                        the tablet — see tests/README.md
 
 js/app.js               bootstrap: routes, speech unlock, star counter
 

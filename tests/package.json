@@ -1,0 +1,11 @@
+{
+  "name": "spelling-adventure-tests",
+  "private": true,
+  "description": "Checks for Spelling Adventure. The app itself has no dependencies and no build step; this folder is the only place anything is installed, and nothing in it is served to the tablet.",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

@@ -1,0 +1,6 @@
+# Nothing in here belongs in the repository.
+node_modules/
+
+# Screenshots the suites take. Looking at them is how most of the real bugs
+# in this project were found, but they are output, not source.
+tests/screenshots/
