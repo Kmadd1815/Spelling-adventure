@@ -452,12 +452,24 @@ export default function parentScreen(container) {
       el('div', { class: 'card' },
         el('h2', { text: 'Mastery' }),
         el('p', { class: 'muted tiny', text:
-          'How many times in a row she has to spell a word correctly before it counts as mastered and leaves the practice pool. Only one correct answer counts per day, so this really means three different days \u2014 learning the word, rather than copying letters she is still looking at. Missing it starts the count over.' }),
+          'How many times in a row she has to spell a word correctly before it counts as mastered and leaves the practice pool. Missing it starts the count over.' }),
         segmented([
           { value: 2, label: '2 in a row' },
           { value: 3, label: '3 in a row' },
           { value: 5, label: '5 in a row' },
         ], s.masteryThreshold, v => { update(st => { st.settings.masteryThreshold = v; }); toast('Saved'); })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'What counts as "in a row"' }),
+        el('p', { class: 'muted tiny', text:
+          'Every correct answer counts, so three in a row can happen in one sitting. She is never shown a word before she spells it, so there is nothing on screen to copy \u2014 but a word spelled right three times in ten minutes is a weaker claim than one spelled right on three separate days.' }),
+        segmented([
+          { value: false, label: 'Every time' },
+          { value: true,  label: 'Once a day' },
+        ], !!s.oneCreditPerDay, v => { update(st => { st.settings.oneCreditPerDay = v; }); toast('Saved'); }),
+        el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+          'Once a day is the stronger test and much the slower one: three in a row becomes three different days, whatever else she does in between. Either way, the second look at a word she has just missed never counts.' })
       ),
 
       el('div', { class: 'card' },

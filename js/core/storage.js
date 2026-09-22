@@ -22,7 +22,13 @@ export function defaultState() {
 
     settings: {
       /* Spelling */
-      masteryThreshold: 3,      // correct answers in a row, max one a day
+      masteryThreshold: 3,      // correct answers in a row
+      /* Whether those have to be on different days. Off by default: three
+         in a row is what a parent means by "three in a row", and a word is
+         never shown before she spells it, so there is nothing on screen to
+         copy. On, it becomes three separate days, which is a stronger claim
+         and a much slower one. */
+      oneCreditPerDay: false,
       practiceSize: 8,          // words in Today's Practice
       practiceTestSize: 10,     // words in a practice test
       includeMasteredInPractice: false,

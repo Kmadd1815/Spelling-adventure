@@ -139,9 +139,13 @@ touch the tablet's storage.
 ## How mastery works
 
 - A word is **mastered** after being spelled correctly **N times in a row**
-  (default 3, configurable), and **only one correct answer counts per day**.
-  So three in a row really means three different days — she learned the word,
-  rather than copying letters she was still looking at.
+  (default 3, configurable). Every correct answer counts, so three in a row
+  can happen in one afternoon across three sittings — a word only comes up
+  once per session, and she is never shown it before she spells it, so there
+  is nothing on screen to copy.
+- *Parent Area → Spelling rules → **What counts as "in a row"*** can change
+  that to **once a day**, which makes three in a row mean three separate
+  days whatever else she does in between. A stronger claim, and much slower.
 - **Missing a word starts the count over.**
 - A correct answer sometimes earns **no new dot** — because today is
   already counted, or because it was the second look at one she just
@@ -289,8 +293,8 @@ number on it is something to work towards; a shut door without one is a bug.
 
 Twenty rather than twenty-five, which already has a milestone of its own:
 two celebrations landing on the same word would bury each other. At three
-correct answers on three different days per word, it is roughly a couple of
-months of real work.
+correct answers per word, and a word coming up once a session, it is a good
+few weeks of real work.
 
 ### What is out there
 

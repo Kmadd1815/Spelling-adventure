@@ -355,14 +355,18 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
        anything about it today anyway. */
     if (isRetry) {
       return el('div', { class: 'center tiny muted', style: { marginTop: '6px' },
-        text: 'Try it again tomorrow to start your days.' });
+        text: words.oncePerDay()
+          ? 'Try it again tomorrow to start your days.'
+          : 'Next time you get it right, it counts again.' });
     }
 
     const wrap = el('div', { class: 'mastery-dots', style: { justifyContent: 'center', marginTop: '6px' } });
     for (let i = 0; i < need; i++) wrap.append(el('div', { class: i < have ? 'mdot on' : 'mdot' }));
 
-    const caption = have >= need ? 'Mastered!'
-      : creditedNow ? `${have} of ${need} days in a row`
+    const caption = creditedNow
+      ? words.progressLabel(word)
+      /* Only reachable with one-a-day counting on, and then it is the whole
+         explanation for a dot that did not move. */
       : `Today is already counted — ${have} of ${need} days so far.`;
 
     return el('div', { class: 'center' },

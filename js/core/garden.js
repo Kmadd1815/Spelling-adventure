@@ -2,9 +2,9 @@
 
    The garden is the one part of the app she has to earn. Everything else is
    hers from the first launch and she decorates it with stars; this is a
-   second place to be, and it opens at twenty mastered words — a couple of
-   months of real work for a third grader, since a word needs three correct
-   answers on three different days.
+   second place to be, and it opens at twenty mastered words — a good few
+   weeks of real work for a third grader, since a word needs three correct
+   answers in a row and only comes up once a session.
 
    Twenty rather than twenty-five: twenty-five already has a milestone of
    its own, and two celebrations landing on the same word would bury each

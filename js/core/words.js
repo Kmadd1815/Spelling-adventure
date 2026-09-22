@@ -64,6 +64,26 @@ export function threshold() {
   return Math.max(1, settings().masteryThreshold || 3);
 }
 
+/** Do the correct answers have to land on different days? */
+export function oncePerDay() {
+  return !!settings().oneCreditPerDay;
+}
+
+/**
+ * How far along a word is, in words.
+ *
+ * Here rather than in a screen because it appears in three places and they
+ * must never disagree: a list saying "times" beside a session saying "days"
+ * is worse than either.
+ */
+export function progressLabel(word) {
+  const have = credits(word);
+  const need = threshold();
+  if (have >= need) return 'Mastered!';
+  const unit = oncePerDay() ? (need === 1 ? 'day' : 'days') : (need === 1 ? 'time' : 'times');
+  return `${have} of ${need} ${unit} in a row`;
+}
+
 /** Today, as a date key. Mastery counts at most one correct answer a day. */
 export function dayKey(d = new Date()) {
   const pad = x => String(x).padStart(2, '0');
@@ -249,8 +269,10 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
 
     if (countsForMastery) {
       if (wasCorrect) {
-        // One credit a day, so the streak measures days she knew it.
-        if (word.lastCreditDay !== today) {
+        /* Normally every correct answer counts. With `oneCreditPerDay` on,
+           at most one a day does, so the streak measures days she knew it
+           rather than times she got it right. */
+        if (!settings().oneCreditPerDay || word.lastCreditDay !== today) {
           word.streak = (word.streak || 0) + 1;
           word.lastCreditDay = today;
           creditedNow = true;

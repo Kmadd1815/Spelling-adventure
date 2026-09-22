@@ -65,13 +65,12 @@ export default function wordsScreen(container, params) {
 
     /* Labelled, because a row of dots does not say what it is counting.
        "1 of 3" next to a word she has just spelled right twice looks like a
-       broken counter; "1 of 3 days" is the whole explanation. */
+       broken counter; saying what the dots are is the whole explanation. */
     const dots = el('div', { class: 'mastery-dots' });
     for (let i = 0; i < need; i++) dots.append(el('div', { class: i < have ? 'mdot on' : 'mdot' }));
     const progress = el('div', { class: 'mastery-line' },
       dots,
-      el('span', { class: 'w-meta',
-        text: `${have} of ${need} ${need === 1 ? 'day' : 'days'}` })
+      el('span', { class: 'w-meta', text: words.progressLabel(word) })
     );
 
     return el('div', { class: 'word-row' },

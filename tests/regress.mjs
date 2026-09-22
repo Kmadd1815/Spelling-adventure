@@ -104,7 +104,11 @@ await page.click('.hub-tile:has-text("Practice")'); await page.waitForTimeout(90
 await play();
 console.log('   extra payout:', (await payout()).join(' | '));
 ok('extra practice paid 2 (all correct)', (await save()).progress.stars - beforeExtra === 2);
-ok('the daily cap held: still 1 credit each', (await save()).words.every(w => w.streak === 1));
+/* Every correct answer counts, so a second sitting on the same day is a
+   second credit. Turning on "Once a day" in the Parent Area is what makes
+   this stay at 1 — the mastery suite covers that half. */
+ok('a second sitting the same day counts too: 2 credits each',
+   (await save()).words.every(w => w.streak === 2));
 
 // ---- 3. practice test ----
 await page.click('button:has-text("Go home")'); await page.waitForTimeout(600);
@@ -113,8 +117,24 @@ await page.click('.hub-tile:has-text("Take a Test")'); await page.waitForTimeout
 await page.click('button:has-text("Practice Test")'); await page.waitForTimeout(900);
 ok('practice test gives no feedback panel', await page.locator('.feedback').count() === 0);
 await play();
-console.log('   practice test payout:', (await payout()).join(' | '));
-ok('practice test = 10 base + 6 = 16', (await save()).progress.stars - beforePT === 16);
+const ptRows = await payout();
+console.log('   practice test payout:', ptRows.join(' | '));
+/* The third correct answer of the afternoon, so every word masters here:
+   10 base + 6 first-try + 5 each for six words mastered. That a test can
+   finish the job is the point of counting every time rather than once a
+   day — and the reason this number moved when that changed. */
+const ptSum = ptRows.reduce((n, r) => n + Number((r.match(/\+(\d+)/) || [0, 0])[1]), 0);
+ok('practice test = 10 base + 6 first-try + 30 for six mastered = 46',
+   ptSum === 46, ptRows.join(' | '));
+
+/* Mastering the lot also finishes the list, and milestone stars are paid
+   outside the itemised rows — so the purse moves by more than the payout
+   says, on purpose. */
+const earned = (await save()).progress.milestonesEarned;
+ok('...and finishing the list fires its milestones on top',
+   earned.includes('first_word') && earned.includes('first_list') &&
+   (await save()).progress.stars - beforePT > ptSum,
+   earned.join(', '));
 
 // ---- 4. full spelling test ----
 await page.click('button:has-text("Go home")'); await page.waitForTimeout(600);

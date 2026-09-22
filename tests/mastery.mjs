@@ -1,17 +1,17 @@
-/* Days in a row.
+/* What "in a row" counts.
 
-   The heart of the app: a word is mastered after N correct answers on N
-   DIFFERENT days, because three in a row in five minutes only proves she
-   can copy letters she is still looking at.
+   A word is mastered after N correct answers in a row. By default every
+   correct answer counts, so three in a row can happen in one afternoon
+   across three sittings — she is never shown a word before she spells it,
+   so there is nothing on screen to copy.
 
-   That rule means a correct answer sometimes earns nothing — she already
-   has today's credit, or it was a second look at one she just missed — and
-   a right answer that moves no dot is indistinguishable from a broken
-   counter unless the screen says so. So this suite checks both: that the
-   counting is right, and that it explains itself when it does not move.
+   A grown-up can turn on "Once a day", which makes it three separate days
+   instead: a stronger claim, and a much slower one.
 
-   It is the only suite that spans more than one day, which is why it exists
-   separately from `regress`.
+   Both modes are checked here, because the difference is the whole point
+   and the wording has to follow it — a list saying "times" beside a
+   session saying "days" is worse than either. So is a correct answer that
+   earns no dot and does not say why.
 */
 
 import { chromium, BASE, ok } from './lib/harness.mjs';
@@ -20,7 +20,7 @@ const WORDS = ['train', 'paint', 'afraid'];
 const errs = [];
 const browser = await chromium.launch();
 
-const SEED = rows => {
+const SEED = ({ rows, settings = {} }) => {
   const now = Date.now();
   localStorage.clear();
   localStorage.setItem('spelling-adventure:v1', JSON.stringify({
@@ -31,6 +31,7 @@ const SEED = rows => {
       hint: '', tags: [], attempts: 0, correctCount: 0, incorrectCount: 0, streak: 0,
       lastCreditDay: null, lastDailyDay: null, recent: [], firstSeen: null, lastSeen: null,
       lastCorrect: null, lastMissed: null, masteredAt: null, createdAt: now })),
+    settings: { masteryThreshold: 3, oneCreditPerDay: false, ...settings },
     progress: { stars: 0, milestonesEarned: [] },
     equipped: { wallpaper: 'wall_plain', flooring: 'floor_wood' },
     collection: { items: [] } }));
@@ -103,12 +104,22 @@ async function play(page, { missFirst = false, max = 20 } = {}) {
   return said;
 }
 
+/* Always via home. Asking for a hash the browser is already on fires no
+   hashchange, so the previous session's results screen just sits there —
+   which looks exactly like a session that refused to start. */
+async function startSession(page, route) {
+  await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(250);
+  await page.goto(BASE + route, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(500);
+}
+
 const streaks = page => page.evaluate(async () => {
   const { getState } = await import('./js/core/state.js');
   return Object.fromEntries(getState().words.map(w => [w.text, w.streak]));
 });
 
-async function open(day, save) {
+async function open(day, save, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 820, height: 1200 } });
   await ctx.addInitScript(hooks(day));
   const page = await ctx.newPage();
@@ -116,7 +127,7 @@ async function open(day, save) {
   page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
   await page.goto(BASE, { waitUntil: 'networkidle' });
   if (save) await page.evaluate(s => localStorage.setItem('spelling-adventure:v1', s), save);
-  else await page.evaluate(SEED, WORDS);
+  else await page.evaluate(SEED, { rows: WORDS, settings: opts });
   await page.reload({ waitUntil: 'networkidle' });
   await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
@@ -125,14 +136,100 @@ async function open(day, save) {
 
 const keep = page => page.evaluate(() => localStorage.getItem('spelling-adventure:v1'));
 
-/* ---------- right on three different days is three dots ---------- */
+/* ---------- the default: every correct answer counts ---------- */
+
+{
+  const { ctx, page } = await open('2026-09-21', null);
+
+  await startSession(page, '#/daily');
+  const first = await play(page);
+  const after1 = await streaks(page);
+
+  /* Today's Practice closes once every word has had its turn, so the
+     second and third goes are extra Practice — which is what she would
+     reach for anyway. */
+  await startSession(page, '#/practice');
+  const second = await play(page);
+  const after2 = await streaks(page);
+
+  await startSession(page, '#/practice');
+  await play(page);
+  const after3 = await streaks(page);
+
+  ok('every correct answer adds one, same day or not',
+     after1.train === 1 && after2.train === 2,
+     `${after1.train} then ${after2.train}`);
+  ok('...so three in a row masters it without waiting for tomorrow',
+     after3.train === 3, `streak ${after3.train}`);
+  ok('...and the screen counts times, not days',
+     second.some(x => /of 3 times in a row/.test(x.text)),
+     second[0]?.text.slice(0, 64));
+
+  await page.goto(BASE + '#/words', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.word-row')]
+    .map(r => r.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean));
+  ok('My Words agrees with the session about what it is counting',
+     rows.every(t => !/days/.test(t)), rows[0]?.slice(0, 60));
+  await ctx.close();
+}
+
+/* ---------- a second look at one she missed still never counts ---------- */
+
+{
+  const { ctx, page } = await open('2026-09-21', null);
+  await startSession(page, '#/daily');
+  const said = await play(page, { missFirst: true });
+  const after = await streaks(page);
+
+  const missedWord = said[0].word;
+  ok('missing a word starts it over', after[missedWord] === 0,
+     `${missedWord}: ${after[missedWord]}`);
+
+  const retry = said.find(x => /remembered it/i.test(x.text));
+  ok('getting the second look right is praised', !!retry, retry?.text.slice(0, 40));
+  /* A scoreboard reading zero under "You remembered it!" is unkind and she
+     can do nothing about it in that moment. */
+  ok('...without showing her a scoreboard on nought',
+     !!retry && retry.dots === 0 && /counts again/i.test(retry.text),
+     retry ? `${retry.dots} dots — ${retry.text.slice(-44)}` : '(no retry)');
+  await ctx.close();
+}
+
+/* ---------- with "Once a day" turned on ---------- */
+
+{
+  const { ctx, page } = await open('2026-09-21', null, { oneCreditPerDay: true });
+  await startSession(page, '#/daily');
+  await play(page);
+  const after1 = await streaks(page);
+
+  await startSession(page, '#/practice');
+  const said = await play(page);
+  const after2 = await streaks(page);
+
+  ok('once a day means twice in one day is still one',
+     after1.train === 1 && after2.train === 1,
+     `${after1.train} then ${after2.train}`);
+  ok('...and the screen says why the dot did not move',
+     said.some(x => /already counted/i.test(x.text)),
+     said[0]?.text.slice(0, 64));
+  ok('...and counts days rather than times',
+     said.some(x => /of 3 days/.test(x.text)) ||
+       (await page.goto(BASE + '#/words', { waitUntil: 'networkidle' }),
+        await page.waitForTimeout(500),
+        (await page.evaluate(() => document.body.textContent)).includes('of 3 days')),
+     'label');
+  await ctx.close();
+}
+
+/* ---------- three separate days, with the day rule on ---------- */
 
 let save = null;
 const seen = [], asked = [];
 for (const [i, day] of ['2026-09-21', '2026-09-22', '2026-09-23'].entries()) {
-  const { ctx, page } = await open(day, save);
-  await page.goto(BASE + '#/daily', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
+  const { ctx, page } = await open(day, save, { oneCreditPerDay: true });
+  await startSession(page, '#/daily');
   const said = await play(page);
   asked.push([...new Set(said.map(x => x.word))]);
   if (process.env.DEBUG) console.log(`  day ${i + 1} ${day}:`,
@@ -142,78 +239,10 @@ for (const [i, day] of ['2026-09-21', '2026-09-22', '2026-09-23'].entries()) {
   await ctx.close();
 }
 ok('every word gets its turn every day',
-   asked.every(day => day.length === WORDS.length),
-   asked.map(d => d.length).join(', '));
+   asked.every(day => day.length === WORDS.length), asked.map(d => d.length).join(', '));
 ok('a right answer on a new day adds a day',
    seen[0].train === 1 && seen[1].train === 2, JSON.stringify(seen.map(s => s.train)));
-ok('...three days running masters it',
-   seen[2].train === 3, `streak ${seen[2].train}`);
-
-/* ---------- twice in one day is still one day ---------- */
-
-{
-  const { ctx, page } = await open('2026-09-21', null);
-  await page.goto(BASE + '#/daily', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
-  await play(page);
-  const after1 = await streaks(page);
-
-  /* Today's Practice is finished for the day, so a second go has to be
-     extra Practice — which is exactly what she would reach for. */
-  await page.goto(BASE + '#/practice', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
-  const said = await play(page);
-  const after2 = await streaks(page);
-
-  ok('spelling it right twice in one day is still one day',
-     after1.train === 1 && after2.train === 1,
-     `${after1.train} then ${after2.train}`);
-
-  /* The bug that was reported was this one looking broken. */
-  const explained = said.some(s => /already counted/i.test(s.text));
-  ok('...and the screen says why the dot did not move',
-     explained, said[0]?.text.slice(0, 70) || '(nothing said)');
-  await ctx.close();
-}
-
-/* ---------- a second look at one she missed ---------- */
-
-{
-  const { ctx, page } = await open('2026-09-21', null);
-  await page.goto(BASE + '#/daily', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
-  const said = await play(page, { missFirst: true });
-  const after = await streaks(page);
-
-  const missedWord = said[0].word;
-  ok('missing a word puts its days back to none',
-     after[missedWord] === 0, `${missedWord}: ${after[missedWord]}`);
-
-  const retry = said.find(s => /remembered it/i.test(s.text));
-  ok('getting the second look right is praised', !!retry, retry?.text.slice(0, 40));
-  /* A scoreboard reading zero under "You remembered it!" is unkind, and
-     there is nothing she can do about it today anyway. */
-  ok('...without showing her a scoreboard on nought',
-     !!retry && retry.dots === 0 && /tomorrow/i.test(retry.text),
-     retry ? `${retry.dots} dots — ${retry.text.slice(-46)}` : '(no retry)');
-  await ctx.close();
-}
-
-/* ---------- and the list says what it is counting ---------- */
-
-{
-  const { ctx, page } = await open('2026-09-21', null);
-  await page.goto(BASE + '#/daily', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(500);
-  await play(page);
-  await page.goto(BASE + '#/words', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(600);
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.word-row')]
-    .map(r => r.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean));
-  ok('My Words says the dots are days, not tries',
-     rows.some(t => /1 of 3 days/.test(t)), rows[0]?.slice(0, 60));
-  await ctx.close();
-}
+ok('...three days running masters it', seen[2].train === 3, `streak ${seen[2].train}`);
 
 console.log('\n--- PAGE ERRORS ---');
 console.log(errs.length ? errs.join('\n') : 'none');
