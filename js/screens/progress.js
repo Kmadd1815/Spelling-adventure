@@ -12,6 +12,7 @@ import * as rewards from '../core/rewards.js';
 import * as items from '../core/items.js';
 import { itemSVG } from '../ui/item-art.js';
 import { getState } from '../core/state.js';
+import { gardenOpen, mastered, GARDEN_AT } from '../core/garden.js';
 
 export default function progressScreen(container, params) {
   let tab = params.tab === 'collection' ? 'collection' : 'progress';
@@ -59,6 +60,18 @@ export default function progressScreen(container, params) {
         bar(pct),
         el('p', { class: 'tiny muted', style: { marginTop: '8px' },
           text: `${next.have} of ${next.goal} words mastered` })
+      ));
+    }
+
+    /* The garden is the one thing in the app she cannot reach yet, so it
+       gets a bar of its own until she can. Once it is open it disappears
+       from here — a finished goal on a progress screen is clutter. */
+    if (!gardenOpen()) {
+      body.append(el('div', { class: 'card' },
+        el('h3', { text: '\u{1F333} Next: The Garden Gate' }),
+        bar(mastered() / GARDEN_AT),
+        el('p', { class: 'tiny muted', style: { marginTop: '8px' },
+          text: `${mastered()} of ${GARDEN_AT} words mastered. Then the door in your room opens onto a garden.` })
       ));
     }
 

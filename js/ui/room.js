@@ -11,8 +11,8 @@
    The season lives in here too, but it stays where it belongs: this is
    indoors, so the weather falls OUTSIDE, seen through the window and
    nowhere else. The room itself only takes the wash of the day's light.
-   (An outdoor scene would want the weather across the whole picture —
-   that is what weatherLayer is for, and why it takes its own sizing.)
+   (The garden, being outdoors, runs the same weather layer across its whole
+   picture instead — see ui/weather.js.)
 
    Both are decoration only — nothing she owns or can buy changes with the
    season.
@@ -22,6 +22,7 @@ import { el } from './dom.js';
 import { decorSVG, surfaceStyle, WINDOW_GLASS } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
+import { weatherLayer } from './weather.js';
 
 /** Where the wall stops and the floor starts, as a percentage of height. */
 const HORIZON = 56;
@@ -75,41 +76,6 @@ function place(node, spec) {
   if (spec.footGap) node.style.marginBottom = `${-spec.footGap * spec.width / 100}%`;
   node.style.zIndex = String(spec.depth);
   return node;
-}
-
-/* What is in the air this time of year. Each piece carries its own timing
-   and drift so the fall never looks stamped out, and the whole layer is
-   hidden rather than frozen when motion is turned down — a frozen snowfall
-   is a row of dots stuck near the ceiling.
-
-   The sizing is a parameter because the same layer has two jobs: a few
-   pieces falling briskly across a window pane, and — when there is an
-   outdoor scene to put it in — a whole skyful drifting slowly across it.
-   A drift of thirty pixels reads as a breeze across a room and as a gale
-   across a pane of glass. */
-function weatherLayer(season, { pieces, dur = [9, 20], drift = 30 } = {}) {
-  const layer = el('div', { class: `room-weather weather-${season.weather}` });
-  const n = pieces ?? season.pieces;
-  for (let i = 0; i < n; i++) {
-    /* The delay is negative on purpose: a positive one would park every
-       piece above the ceiling until its turn came round, so the view would
-       open empty and only start snowing a quarter of a minute later. A
-       negative delay starts each piece part-way through its own fall, so
-       the weather is already in the air the moment she opens the app. */
-    const d = dur[0] + Math.random() * (dur[1] - dur[0]);
-    layer.append(el('span', {
-      class: 'wx',
-      style: {
-        left: `${Math.random() * 100}%`,
-        '--wx-delay': `${(-Math.random() * d).toFixed(2)}s`,
-        '--wx-dur': `${d.toFixed(2)}s`,
-        '--wx-drift': `${(Math.random() * drift * 2 - drift).toFixed(1)}px`,
-        '--wx-spin': `${Math.round(Math.random() * 540 - 270)}deg`,
-        '--wx-size': `${(0.55 + Math.random() * 0.6).toFixed(2)}`,
-      },
-    }));
-  }
-  return layer;
 }
 
 /* The window, and the piece of outdoors behind it.
@@ -177,9 +143,11 @@ function piece(itemId, spec, extraClass = '') {
  * @param {object} opts
  * @param {string} opts.petHTML   the pet's SVG, already drawn
  * @param {object} [opts.petProps] extra props for the pet node (onClick etc.)
+ * @param {Function} [opts.onDoor]  called when she taps the door, if given
  * @returns {HTMLElement}
  */
-export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason() } = {}) {
+export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(),
+                            onDoor = null } = {}) {
   const worn = items.equipped();
 
   const room = el('div', { class: 'room' });
@@ -198,7 +166,23 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
      nowhere else. She always has one — window_plain is a starter — so there
      is no season she cannot see. */
   if (worn.window) room.append(windowPiece(worn.window, PLACES.window, season));
-  if (worn.door)   room.append(piece(worn.door, PLACES.door));
+  /* The door is the way out to the garden, so it is the one piece of
+     furniture that does something. Whether it opens is the screen's
+     business; the room just makes it tappable when asked. */
+  if (worn.door) {
+    const d = piece(worn.door, PLACES.door, 'room-door');
+    if (d && onDoor) {
+      d.classList.add('room-door-live');
+      d.setAttribute('role', 'button');
+      d.setAttribute('tabindex', '0');
+      d.setAttribute('aria-label', 'The door to the garden');
+      d.addEventListener('click', onDoor);
+      d.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDoor(); }
+      });
+    }
+    room.append(d);
+  }
 
   (worn.wallDecor || []).forEach((id, i) => {
     const spec = PLACES.wallDecor[i];

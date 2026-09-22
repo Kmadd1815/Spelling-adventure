@@ -15,6 +15,7 @@ import { itemSVG } from '../ui/item-art.js';
 import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
+import { gardenOpen, gateLine } from '../core/garden.js';
 
 export default function petScreen(container) {
   let mood = 'calm';
@@ -40,6 +41,12 @@ export default function petScreen(container) {
         class: 'room-pet pet-tappable', role: 'button', tabindex: '0',
         'aria-label': `Pet ${info.name}`,
         onClick: () => interact('pet'),
+      },
+      /* The same door as the home screen: it is the same room. */
+      onDoor: () => {
+        if (gardenOpen()) { navigate('/garden'); return; }
+        const b = container.querySelector('.room-speech');
+        if (b) b.textContent = gateLine();
       },
     });
 

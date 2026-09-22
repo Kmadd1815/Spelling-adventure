@@ -609,6 +609,56 @@ export const SURFACES = {
     backgroundColor: '#eceaf0',
     backgroundImage: 'repeating-linear-gradient(56deg, rgba(150,148,165,.26) 0 2px, transparent 2px 9px, rgba(150,148,165,.14) 9px 10px, transparent 10px 44px)',
   },
+  /* ---- The garden: sky ----
+     These fill the top band of the garden, so they are drawn as if seen
+     from the ground: lighter towards the horizon, whatever is up there
+     placed high enough that a tree does not grow through it. */
+  sky_day: {
+    backgroundColor: '#8fc9ec',
+    backgroundImage: 'radial-gradient(circle at 76% 22%, #fff6cf 5%, rgba(255,246,207,.55) 8%, transparent 13%), linear-gradient(180deg, #7dbfe8 0%, #a9d8f0 55%, #d8eefa 100%)',
+  },
+  sky_sunset: {
+    backgroundColor: '#f3a97a',
+    backgroundImage: 'radial-gradient(circle at 70% 76%, #fff1c0 6%, rgba(255,222,150,.5) 11%, transparent 18%), linear-gradient(180deg, #8f7ab5 0%, #e8899a 42%, #f6b884 72%, #fbdcae 100%)',
+  },
+  sky_night: {
+    backgroundColor: '#2c3563',
+    backgroundImage: 'radial-gradient(circle at 78% 24%, #fdf3cf 4%, rgba(253,243,207,.35) 6%, transparent 10%), radial-gradient(#fff8d8 1.2px, transparent 1.6px), radial-gradient(#e8ecff 1px, transparent 1.4px), linear-gradient(180deg, #232c58 0%, #3a4577 60%, #6a6f9c 100%)',
+    backgroundSize: 'auto, 70px 70px, 47px 47px, auto',
+    backgroundPosition: '0 0, 0 0, 23px 31px, 0 0',
+  },
+  sky_rainbow: {
+    backgroundColor: '#9fd2ee',
+    backgroundImage: 'radial-gradient(circle at 50% 132%, transparent 56%, rgba(203,180,228,.85) 56% 59%, rgba(168,207,239,.85) 59% 62%, rgba(182,224,176,.85) 62% 65%, rgba(247,231,160,.85) 65% 68%, rgba(248,207,154,.85) 68% 71%, rgba(246,176,176,.85) 71% 74%, transparent 74%), linear-gradient(180deg, #8ac6e8, #cfe9f7)',
+  },
+
+  /* ---- The garden: ground ---- */
+  ground_grass: {
+    backgroundColor: '#8cc472',
+    backgroundImage: 'repeating-linear-gradient(98deg, rgba(74,132,66,.34) 0 3px, transparent 3px 12px), linear-gradient(180deg, rgba(60,115,55,.22), transparent 38%)',
+  },
+  ground_sand: {
+    backgroundColor: '#e9d29c',
+    backgroundImage: 'repeating-linear-gradient(94deg, rgba(196,163,106,.32) 0 2px, transparent 2px 15px), radial-gradient(rgba(186,152,98,.38) 16%, transparent 18%), linear-gradient(180deg, rgba(170,135,80,.20), transparent 36%)',
+    backgroundSize: 'auto, 20px 20px, auto',
+  },
+  /* Flagstones laid over the grass rather than scattered pebbles: the two
+     offset layers interlock, so the green only shows in the joints. */
+  ground_path: {
+    backgroundColor: '#6f9a5c',
+    backgroundImage: 'radial-gradient(ellipse 47% 45% at 50% 50%, #d5cdbc 97%, transparent 100%), radial-gradient(ellipse 47% 45% at 50% 50%, #c6bda9 97%, transparent 100%)',
+    backgroundSize: '58px 42px, 58px 42px',
+    backgroundPosition: '0 0, 29px 21px',
+  },
+  /* Flowers scattered through grass, not confetti: small heads, spread far
+     enough apart that the green still reads as the surface. */
+  ground_meadow: {
+    backgroundColor: '#8fc873',
+    backgroundImage: 'radial-gradient(#f7c9db 5%, transparent 7%), radial-gradient(#fbe08a 4%, transparent 6%), radial-gradient(#cdb5e8 4%, transparent 6%), repeating-linear-gradient(98deg, rgba(74,132,66,.28) 0 3px, transparent 3px 12px)',
+    backgroundSize: '96px 82px, 74px 96px, 118px 88px, auto',
+    backgroundPosition: '0 0, 37px 41px, 68px 19px, 0 0',
+  },
+
   floor_petals: {
     backgroundColor: '#f6d6de',
     backgroundImage: 'radial-gradient(ellipse 60% 40% at 30% 40%, #f5aec0 40%, transparent 42%), radial-gradient(ellipse 50% 35% at 70% 70%, #fbc6d3 40%, transparent 42%)',
@@ -1452,6 +1502,177 @@ const DECOR = {
     <rect x="42" y="56" width="16" height="7" rx="2" fill="#c9922c"/>
     <circle cx="24" cy="54" r="7" fill="#c9a3e0" stroke="#8a6fa8" stroke-width="2.5"/>
     <circle cx="76" cy="54" r="7" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2.5"/>`,
+  /* ===================== The garden =====================
+
+     Outdoors, so these are drawn standing in the open rather than against
+     a wall. Two conventions:
+
+       trees and uprights  stand on y = 96, and may fill the box upwards
+       ponds               lie flat, an ellipse seen at an angle
+       fences              run edge to edge, x = 0 to x = 100, because the
+                           garden tiles four of them across the back — a
+                           rail that stops short leaves a gap at every join
+  */
+
+  /* ---- Trees ---- */
+  tree_apple: () => `
+    <path d="M 46 96 V 58 q -1 -8 -8 -12 M 54 96 V 62 q 1 -7 8 -11" fill="none" stroke="#8a6340" stroke-width="7" stroke-linecap="round"/>
+    <rect x="43" y="58" width="14" height="38" rx="4" fill="#a2764e" stroke="#7d5a3a" stroke-width="3.5"/>
+    <circle cx="50" cy="34" r="25" fill="#69ab5c" stroke="#4b8244" stroke-width="4"/>
+    <circle cx="30" cy="46" r="17" fill="#74b566" stroke="#4b8244" stroke-width="4"/>
+    <circle cx="70" cy="46" r="17" fill="#5f9e53" stroke="#4b8244" stroke-width="4"/>
+    ${[[36, 40], [58, 30], [66, 50], [46, 52], [26, 50], [60, 62]].map(([x, y]) =>
+      `<circle cx="${x}" cy="${y}" r="4.6" fill="#e05a4e" stroke="#a83c33" stroke-width="1.8"/>`).join('')}`,
+
+  tree_blossom: () => `
+    <rect x="44" y="56" width="12" height="40" rx="4" fill="#9c7350" stroke="#7a583c" stroke-width="3.5"/>
+    <path d="M 50 70 L 34 56 M 50 66 L 66 52" fill="none" stroke="#9c7350" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="50" cy="32" r="24" fill="#f7bdd2" stroke="#dd91ad" stroke-width="4"/>
+    <circle cx="30" cy="44" r="16" fill="#fbd0e0" stroke="#dd91ad" stroke-width="4"/>
+    <circle cx="70" cy="44" r="16" fill="#f3aec8" stroke="#dd91ad" stroke-width="4"/>
+    ${[[40, 28], [58, 24], [64, 42], [34, 48], [52, 46]].map(([x, y]) =>
+      `<circle cx="${x}" cy="${y}" r="3" fill="#fff4f8"/>`).join('')}`,
+
+  tree_pine: () => `
+    <rect x="45" y="76" width="10" height="20" rx="3" fill="#8a6340" stroke="#6d4d31" stroke-width="3"/>
+    <path d="M 50 8 L 72 40 H 28 Z"  fill="#4e8f56" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 50 26 L 78 60 H 22 Z" fill="#59a061" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 50 46 L 84 80 H 16 Z" fill="#4e8f56" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>`,
+
+  /* Strands first, canopy last: the canopy has to cap where they start,
+     or a willow looks like a jellyfish. */
+  tree_willow: () => `
+    <path d="M 50 96 V 50" stroke="#9a7a52" stroke-width="11" stroke-linecap="round"/>
+    <path d="M 50 62 q -9 -7 -15 -15 M 50 57 q 9 -6 16 -13" fill="none" stroke="#9a7a52" stroke-width="5" stroke-linecap="round"/>
+    ${[20, 26, 32, 38, 44, 56, 62, 68, 74, 80].map((x, i) => {
+      const end = 66 + (i % 4) * 7;
+      const bow = x < 50 ? -5 : 5;
+      return `<path d="M ${x} 34 q ${bow} ${(end - 34) / 2} ${bow / 2} ${end - 34}" fill="none"
+                    stroke="${i % 2 ? '#6fae5f' : '#88c477'}" stroke-width="3.6" stroke-linecap="round"/>`;
+    }).join('')}
+    <ellipse cx="50" cy="36" rx="33" ry="18" fill="#7cb86a" stroke="#548c4c" stroke-width="4"/>
+    <ellipse cx="38" cy="30" rx="12" ry="6" fill="#8ec87c" opacity=".7"/>`,
+
+  /* ---- Water. Flat on the ground, seen at an angle. ---- */
+  pond_small: () => `
+    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#8a9c72" stroke="#6d7f5a" stroke-width="4"/>
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#7fc3dd"/>
+    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#9ad6e9"/>
+    <path d="M 24 56 h 18 M 56 68 h 16 M 40 72 h 12" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".65"/>`,
+
+  pond_lily: () => `
+    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#8a9c72" stroke="#6d7f5a" stroke-width="4"/>
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#6fb9a8"/>
+    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#8acdba"/>
+    <path d="M 26 54 h 14 M 60 70 h 14" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    ${[[34, 58, 11], [64, 66, 9], [52, 50, 8]].map(([x, y, r]) =>
+      `<path d="M ${x} ${y} m ${-r} 0 a ${r} ${r * 0.62} 0 1 1 ${r * 2} 0 a ${r} ${r * 0.62} 0 1 1 ${-r * 2} 0 z"
+             fill="#5aa05f" stroke="#3f7a46" stroke-width="2.4"/>`).join('')}
+    <circle cx="64" cy="64" r="4.6" fill="#f7bdd2" stroke="#dd91ad" stroke-width="1.8"/>
+    <circle cx="64" cy="64" r="1.8" fill="#fff3c9"/>`,
+
+  pond_stars: () => `
+    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#6b7358" stroke="#545c44" stroke-width="4"/>
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#3f4a7e"/>
+    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#4d5a96"/>
+    ${[[34, 54, 3.4], [58, 52, 2.4], [46, 66, 2.8], [68, 64, 2.2], [26, 62, 2]].map(([x, y, r]) => {
+      let d = '';
+      for (let i = 0; i < 10; i++) {
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        const rr = i % 2 ? r * 0.42 : r;
+        d += `${i ? 'L' : 'M'} ${n2(x + Math.cos(a) * rr)} ${n2(y + Math.sin(a) * rr * 0.72)} `;
+      }
+      return `<path d="${d}Z" fill="#fdf3cf"/>`;
+    }).join('')}
+    <path d="M 28 68 h 16" stroke="#aeb8e8" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>`,
+
+  /* ---- Fences. Edge to edge: the garden tiles four across the back. ---- */
+  fence_picket: () => `
+    <path d="M 0 60 h 100 M 0 78 h 100" stroke="#d8cbb4" stroke-width="7" stroke-linecap="butt"/>
+    ${[4, 28, 52, 76].map(x =>
+      `<path d="M ${x} 96 V 48 l 10 -12 l 10 12 V 96 z" fill="#f4ede0" stroke="#bfae92" stroke-width="4" stroke-linejoin="round"/>`).join('')}
+    <path d="M 0 61 h 100 M 0 79 h 100" stroke="#bfae92" stroke-width="2.5"/>`,
+
+  fence_hedge: () => `
+    <rect x="0" y="52" width="100" height="44" fill="#5d9a53" stroke="#43753d" stroke-width="4"/>
+    ${[6, 24, 42, 60, 78, 96].map(x =>
+      `<circle cx="${x}" cy="52" r="11" fill="#69ab5c" stroke="#43753d" stroke-width="3.5"/>`).join('')}
+    <path d="M 0 70 q 14 -6 26 0 t 26 0 t 26 0 t 26 0" fill="none" stroke="#74b566" stroke-width="4" opacity=".65"/>`,
+
+  fence_stone: () => `
+    <rect x="0" y="54" width="100" height="42" fill="#c9c2b4" stroke="#9a9182" stroke-width="4"/>
+    ${[[0, 58, 26], [26, 58, 24], [50, 58, 26], [76, 58, 24],
+       [-8, 76, 26], [18, 76, 26], [44, 76, 24], [68, 76, 26], [94, 76, 20]].map(([x, y, w]) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="18" rx="5" fill="#d6d0c2" stroke="#9a9182" stroke-width="3"/>`).join('')}
+    ${[[12, 52], [58, 52], [86, 52]].map(([x, y]) =>
+      `<circle cx="${x}" cy="${y}" r="6" fill="#7fb06a" opacity=".75"/>`).join('')}`,
+
+  /* ---- Everything else in the garden ---- */
+  mushrooms: () => `
+    <rect x="44" y="66" width="12" height="28" rx="5" fill="#fbf1e2" stroke="#c9b79c" stroke-width="3"/>
+    <path d="M 22 68 a 28 22 0 0 1 56 0 z" fill="#e05a4e" stroke="#a83c33" stroke-width="4" stroke-linejoin="round"/>
+    ${[[36, 58], [50, 52], [64, 59], [44, 64], [58, 65]].map(([x, y]) =>
+      `<ellipse cx="${x}" cy="${y}" rx="5" ry="3.6" fill="#fff4ea"/>`).join('')}
+    <rect x="18" y="80" width="8" height="16" rx="3.5" fill="#fbf1e2" stroke="#c9b79c" stroke-width="2.6"/>
+    <path d="M 6 82 a 16 12 0 0 1 32 0 z" fill="#e8756a" stroke="#a83c33" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="16" cy="76" rx="3.4" ry="2.4" fill="#fff4ea"/><ellipse cx="28" cy="78" rx="3" ry="2.2" fill="#fff4ea"/>`,
+
+  stepping_stones: () => `
+    ${[[22, 82, 20, 9], [50, 70, 19, 8.6], [76, 58, 17, 8]].map(([x, y, rx, ry]) =>
+      `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#cfc7b8" stroke="#9a9182" stroke-width="4"/>
+       <ellipse cx="${x - 3}" cy="${y - 2}" rx="${rx * 0.5}" ry="${ry * 0.42}" fill="#ded7ca"/>`).join('')}`,
+
+  birdhouse: () => `
+    <rect x="46" y="52" width="9" height="44" rx="3" fill="#a2764e" stroke="#7d5a3a" stroke-width="3"/>
+    <rect x="28" y="24" width="45" height="34" rx="4" fill="#f0dfc4" stroke="#b08f68" stroke-width="4"/>
+    <path d="M 22 26 L 50 6 L 78 26 z" fill="#d4594f" stroke="#a83c33" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="50" cy="38" r="8" fill="#5f4a36"/>
+    <rect x="47" y="46" width="6" height="12" rx="3" fill="#a2764e"/>
+    <circle cx="50" cy="38" r="8" fill="none" stroke="#b08f68" stroke-width="2.5"/>`,
+
+  flower_bed: () => `
+    <path d="M 8 92 q 42 -12 84 0 v 4 H 8 z" fill="#8a6340" stroke="#6d4d31" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 10 88 q 40 -10 80 0" fill="none" stroke="#a2764e" stroke-width="4"/>
+    ${[[20, 62, '#f2849f'], [38, 52, '#ffd980'], [56, 56, '#c9a3e0'], [74, 64, '#f7a8c6'],
+       [29, 72, '#fbe08a'], [65, 74, '#a8d6f0']].map(([x, y, c]) =>
+      `<path d="M ${x} 88 V ${y + 8}" stroke="#5f9e53" stroke-width="4" stroke-linecap="round"/>
+       <circle cx="${x}" cy="${y}" r="8" fill="${c}" stroke="rgba(120,80,100,.30)" stroke-width="2"/>
+       <circle cx="${x}" cy="${y}" r="3" fill="#fff6e8"/>`).join('')}`,
+
+  wheelbarrow: () => `
+    <path d="M 16 46 h 62 l -10 30 H 30 z" fill="#5d8fb5" stroke="#3f6b8c" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 18 52 h 58" stroke="#7fabca" stroke-width="4"/>
+    ${[[30, 42, '#e08a3c'], [44, 38, '#e3ae4c'], [58, 42, '#c96a2c'], [50, 46, '#e08a3c']].map(([x, y, c]) =>
+      `<path d="M ${x} ${y} q 8 -7 14 0 q -8 8 -14 0 z" fill="${c}" stroke="#8a4a20" stroke-width="2"/>`).join('')}
+    <path d="M 78 48 l 14 10 M 30 76 l -4 14" stroke="#7d5a3a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="40" cy="84" r="11" fill="#5f4a36" stroke="#3f3226" stroke-width="4"/>
+    <circle cx="40" cy="84" r="3.5" fill="#c9c2b4"/>`,
+
+  garden_bench: () => `
+    <path d="M 14 58 h 72 M 14 68 h 72" stroke="#b98e5e" stroke-width="9" stroke-linecap="round"/>
+    <rect x="10" y="74" width="80" height="10" rx="4" fill="#cfa06e" stroke="#8a6340" stroke-width="3.5"/>
+    <path d="M 18 84 v 12 M 82 84 v 12" stroke="#7d8a92" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 18 58 v 26 M 82 58 v 26" stroke="#7d8a92" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 14 59 h 72 M 14 69 h 72" stroke="#8a6340" stroke-width="2.5"/>`,
+
+  lamp_post: () => `
+    <ellipse cx="50" cy="94" rx="16" ry="5" fill="#9a9182" opacity=".5"/>
+    <rect x="45" y="34" width="10" height="60" rx="4" fill="#4d5560" stroke="#343b44" stroke-width="3.5"/>
+    <path d="M 36 34 h 28" stroke="#343b44" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 34 34 L 50 6 L 66 34 z" fill="#ffe9a8" stroke="#343b44" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="50" cy="26" r="7" fill="#fff6d0"/>
+    <path d="M 40 90 h 20" stroke="#343b44" stroke-width="5" stroke-linecap="round"/>`,
+
+  /* A free-standing frame, not a rope over a branch. She can put this
+     anywhere in the garden, and a swing hanging from thin air three feet
+     from the nearest tree reads as a bug. */
+  rope_swing: () => `
+    <path d="M 14 96 L 30 30 M 86 96 L 70 30" stroke="#a2764e" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 22 28 h 56" stroke="#8a6340" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 34 32 V 70 M 66 32 V 70" stroke="#b89a6f" stroke-width="5" stroke-linecap="round"/>
+    <rect x="28" y="68" width="44" height="10" rx="4" fill="#cfa06e" stroke="#8a6340" stroke-width="3.5"/>
+    <path d="M 30 73 h 40" stroke="#8a6340" stroke-width="2" opacity=".5"/>
+    <circle cx="34" cy="70" r="3.2" fill="#b08f68"/><circle cx="66" cy="70" r="3.2" fill="#b08f68"/>`,
 };
 
 /* ---------- What each window is a window ONTO ----------

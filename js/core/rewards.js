@@ -107,6 +107,16 @@ export const MILESTONES = [
     item: 'blossom_lamp',
     test: s => s.mastered >= 10 },
 
+  /* The one milestone that is not a keepsake: it opens the garden. It sits
+     at twenty rather than twenty-five so it gets a moment of its own —
+     see core/garden.js, which works out whether the gate is open from her
+     mastered words rather than from this flag. This just fires the
+     celebration, once. */
+  { id: 'garden_gate', title: 'The Garden Gate',      emoji: '\u{1F333}',
+    blurb: 'Twenty words mastered — the door in your room opens onto a garden!',
+    stars: 40,
+    test: s => s.mastered >= 20 },
+
   { id: 'master_25',   title: '25 Words Mastered',    emoji: '\u{1F31F}',
     blurb: 'Twenty-five words! That is a lot of practice.', stars: 50,
     item: 'star_rug',

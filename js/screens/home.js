@@ -11,6 +11,8 @@ import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import * as events from '../core/events.js';
+import { gardenOpen, gateLine } from '../core/garden.js';
+import { speak } from '../core/speech.js';
 
 export default function homeScreen(container) {
   const season = currentSeason();
@@ -51,7 +53,17 @@ export default function homeScreen(container) {
     },
   };
 
-  const room = buildRoom({ petHTML: drawPet('happy'), petProps });
+  /* Tapping the door either goes outside or says how far off it is. It is
+     never just refused: a shut door with a number on it is something to
+     work towards, a shut door without one is a bug. */
+  const room = buildRoom({
+    petHTML: drawPet('happy'), petProps,
+    onDoor: () => {
+      if (gardenOpen()) { navigate('/garden'); return; }
+      bubble.textContent = gateLine();
+      speak(bubble.textContent);
+    },
+  });
 
   const hero = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
     el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),

@@ -35,7 +35,19 @@ export const SLOTS = {
   floorDecor: { max: 3, label: 'On the floor', group: 'furniture' },
   hat:        { max: 1, label: 'Hat',          group: 'pet' },
   accessory:  { max: 1, label: 'Accessory',    group: 'pet' },
+
+  /* Outdoors. A bed on the grass would look like a bug rather than a
+     choice, so the garden has its own slots and nothing crosses over. */
+  sky:        { max: 1, label: 'Sky',            group: 'garden' },
+  ground:     { max: 1, label: 'Ground',         group: 'garden' },
+  tree:       { max: 1, label: 'Tree',           group: 'garden' },
+  water:      { max: 1, label: 'Water',          group: 'garden' },
+  fence:      { max: 1, label: 'Fence',          group: 'garden' },
+  gardenDecor:{ max: 3, label: 'In the garden',  group: 'garden' },
 };
+
+/** The slots that belong outdoors, in the order the garden draws them. */
+export const GARDEN_SLOTS = ['sky', 'ground', 'fence', 'tree', 'water', 'gardenDecor'];
 
 export const isMulti = slot => (SLOTS[slot]?.max ?? 1) > 1;
 
@@ -45,6 +57,10 @@ export const SHOP_TABS = [
   { key: 'room',   label: 'Room',    emoji: '\u{1F6AA}', slots: ['wallpaper', 'flooring', 'window', 'door'] },
   { key: 'furn',   label: 'Furniture', emoji: '\u{1FA91}', slots: ['bed', 'rug', 'floorDecor'] },
   { key: 'walls',  label: 'Wall art', emoji: '\u{1F5BC}\uFE0F', slots: ['wallDecor'] },
+  /* Hidden until the gate opens — see screens/shop.js. A tab full of things
+     for a place she cannot visit yet would only be a tease. */
+  { key: 'garden', label: 'Garden',  emoji: '\u{1F333}',
+    slots: ['sky', 'ground', 'tree', 'water', 'fence', 'gardenDecor'] },
 ];
 
 /* ---------- The catalogue ----------
@@ -117,6 +133,44 @@ export const CATALOG = [
   { id: 'clock',         name: 'Wall Clock',      category: 'wallDecor', price: 110, blurb: 'Always says tea time.' },
   { id: 'bunting',       name: 'Bunting',         category: 'wallDecor', price: 130, blurb: 'Strung corner to corner.' },
   { id: 'lantern',       name: 'Paper Lantern',   category: 'wallDecor', price: 280, blurb: 'Sways gently.', season: 'fall' },
+
+  /* ---- The garden: sky ---- */
+  { id: 'sky_day',       name: 'Blue Sky',        category: 'sky', price: 0,   blurb: 'A good day to be outside.' },
+  { id: 'sky_sunset',    name: 'Sunset',          category: 'sky', price: 150, blurb: 'The whole sky goes orange.' },
+  { id: 'sky_night',     name: 'Starry Night',    category: 'sky', price: 260, blurb: 'Quiet, and full of stars.', season: 'winter' },
+  { id: 'sky_rainbow',   name: 'Rainbow Sky',     category: 'sky', price: 340, blurb: 'It must have just rained.', season: 'spring' },
+
+  /* ---- The garden: ground ---- */
+  { id: 'ground_grass',  name: 'Green Grass',     category: 'ground', price: 0,   blurb: 'Soft and a bit tickly.' },
+  { id: 'ground_sand',   name: 'Sandy Shore',     category: 'ground', price: 120, blurb: 'Warm under your feet.', season: 'summer' },
+  { id: 'ground_path',   name: 'Stone Path',      category: 'ground', price: 140, blurb: 'Winds off somewhere.' },
+  { id: 'ground_meadow', name: 'Wildflower Meadow', category: 'ground', price: 190, blurb: 'Flowers everywhere at once.', season: 'spring' },
+
+  /* ---- The garden: trees ---- */
+  { id: 'tree_pine',     name: 'Pine Tree',       category: 'tree', price: 180, blurb: 'Green all winter long.', season: 'winter' },
+  { id: 'tree_apple',    name: 'Apple Tree',      category: 'tree', price: 200, blurb: 'Six apples, if you count.', season: 'fall' },
+  { id: 'tree_blossom',  name: 'Blossom Tree',    category: 'tree', price: 270, blurb: 'Pink for a few weeks a year.', season: 'spring' },
+  { id: 'tree_willow',   name: 'Willow',          category: 'tree', price: 330, blurb: 'Leans over the water.', season: 'summer' },
+
+  /* ---- The garden: water ---- */
+  { id: 'pond_small',    name: 'Little Pond',     category: 'water', price: 150, blurb: 'Just deep enough.' },
+  { id: 'pond_lily',     name: 'Lily Pond',       category: 'water', price: 240, blurb: 'Lily pads to sit on.', season: 'summer' },
+  { id: 'pond_stars',    name: 'Wishing Pool',    category: 'water', price: 360, blurb: 'It holds the sky.' },
+
+  /* ---- The garden: fences ---- */
+  { id: 'fence_picket',  name: 'Picket Fence',    category: 'fence', price: 110, blurb: 'Neat and white.' },
+  { id: 'fence_hedge',   name: 'Hedge',           category: 'fence', price: 160, blurb: 'Trimmed flat on top.' },
+  { id: 'fence_stone',   name: 'Stone Wall',      category: 'fence', price: 230, blurb: 'Old, and covered in moss.', season: 'fall' },
+
+  /* ---- The garden: everything else ---- */
+  { id: 'mushrooms',     name: 'Toadstools',      category: 'gardenDecor', price: 50,  blurb: 'Red with white spots.', season: 'fall' },
+  { id: 'stepping_stones', name: 'Stepping Stones', category: 'gardenDecor', price: 70,  blurb: 'Hop, hop, hop.' },
+  { id: 'birdhouse',     name: 'Birdhouse',       category: 'gardenDecor', price: 90,  blurb: 'Somebody lives here.' },
+  { id: 'flower_bed',    name: 'Flower Bed',      category: 'gardenDecor', price: 105, blurb: 'Planted in tidy rows.', season: 'spring' },
+  { id: 'wheelbarrow',   name: 'Wheelbarrow',     category: 'gardenDecor', price: 125, blurb: 'Full of leaves.', season: 'fall' },
+  { id: 'garden_bench',  name: 'Garden Bench',    category: 'gardenDecor', price: 145, blurb: 'For sitting and thinking.' },
+  { id: 'lamp_post',     name: 'Lamp Post',       category: 'gardenDecor', price: 195, blurb: 'Comes on by itself.', season: 'winter' },
+  { id: 'rope_swing',    name: 'Rope Swing',      category: 'gardenDecor', price: 220, blurb: 'Goes surprisingly high.', season: 'summer' },
 
   /* ---- On the floor ---- */
   { id: 'pebbles',       name: 'Pretty Pebbles',  category: 'floorDecor', price: 35,  blurb: 'Smooth river stones.' },

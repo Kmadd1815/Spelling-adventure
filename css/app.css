@@ -744,7 +744,9 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 8;                 /* above the furniture, below nothing that matters */
+  /* Above EVERYTHING in the scene. At 8 it sat under the two things in the
+     front corners, which then stayed in full daylight under a night sky. */
+  z-index: 10;
 }
 
 /* Frozen weather is worse than none: a row of dots stuck near the ceiling.
@@ -753,7 +755,57 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   .room-weather { display: none; }
 }
 
+/* ---------- The garden ----------
+
+   The same box as the room, so every place in it can be a percentage and
+   the two scenes stay the same size wherever they are used. The sky and the
+   ground are surfaces exactly like wallpaper and flooring; the hills are
+   not, because a garden with nothing behind it is a stage set and she
+   should not have to buy a horizon. */
+
+.garden-sky    { position: absolute; inset: 0 0 auto 0; }
+.garden-ground { position: absolute; inset: auto 0 0 0; }
+
+.garden-hills {
+  position: absolute;
+  left: 0; right: 0;
+  /* Taller than the fence that stands in front of it, or the distance is
+     drawn and then covered up. */
+  height: 26%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.garden-hills .hill {
+  position: absolute;
+  bottom: 0;
+  height: 200%;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+/* Two ridges, the far one paler and higher, which is all it takes to read
+   as distance. Both run off the edges of the picture: a ridge that starts
+   and stops inside the frame reads as a rectangle, not a hill. */
+.hill-far  { left: -24%; width: 96%; background: #8fae9c; opacity: .8; }
+.hill-near { left: 36%;  width: 104%; background: #74a07f; opacity: .9; }
+
+.garden .room-pet { cursor: pointer; }
+
 .room-piece { line-height: 0; pointer-events: none; }
+
+/* The one piece of furniture that does something. It takes pointer events
+   back, and leans very slightly when pressed so a tap feels answered even
+   when the answer is "not yet". */
+.room-door-live {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform .12s ease;
+}
+.room-door-live:active { transform: scale(.97); }
+.room-door-live:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
 .room-piece svg { width: 100%; height: auto; display: block; }
 
 .room-pet { line-height: 0; }

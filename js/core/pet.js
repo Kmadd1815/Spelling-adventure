@@ -190,7 +190,22 @@ const MASTERED_LINES = [
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
+/* Things to say outdoors. Kept apart from the indoor greetings on purpose:
+   the garden is a different place, and an axolotl that says "welcome back to
+   my room" while standing under a tree gives the game away. */
+const OUTDOOR_LINES = [
+  'It is nice out here!',
+  'I could stay outside all day.',
+  'Listen — you can hear birds.',
+  'The garden is my favourite place.',
+  'Thank you for opening the door.',
+  'Shall we look at the sky for a bit?',
+  'Everything smells green out here.',
+  'I found a very good stick earlier.',
+];
+
 export const greeting       = () => pick(GREETINGS);
+export const outdoorLine    = () => pick(OUTDOOR_LINES);
 export const praiseCorrect  = () => pick(CORRECT_LINES);
 export const praiseAlmost   = () => pick(ALMOST_LINES);
 export const praiseMastered = () => pick(MASTERED_LINES);

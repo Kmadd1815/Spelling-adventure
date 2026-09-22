@@ -268,9 +268,56 @@ If the tablet has "reduce motion" turned on, the weather layer is removed
 rather than frozen: a dozen snowflakes stuck in the corner of a window look
 broken, where a still view out of it does not.
 
-*(When there is a second, outdoor room, the weather can come out from behind
-the glass and fall across the whole picture — the layer already takes its own
-sizing for that.)*
+Out in **the garden** the same weather runs across the whole picture instead
+— see below.
+
+## The garden
+
+The one thing in the app she has to earn. Everything else is hers from the
+first launch and she decorates it with stars; **the door in her bedroom opens
+onto a garden once she has mastered twenty words.**
+
+Until then the door is not a dead end. Tapping it makes the axolotl say
+exactly how far off it is — *"Nearly! 2 more mastered words and we can go
+outside."* — and the Progress screen counts down to it. A shut door with a
+number on it is something to work towards; a shut door without one is a bug.
+
+Twenty rather than twenty-five, which already has a milestone of its own:
+two celebrations landing on the same word would bury each other. At three
+correct answers on three different days per word, it is roughly a couple of
+months of real work.
+
+### What is out there
+
+**The weather.** Indoors it falls beyond the window; outdoors it falls across
+the whole picture, which is the reason the garden exists at all. Same snow,
+same leaves, same season.
+
+Its own slots, so nothing crosses over — a bed on the grass would look like
+a bug rather than a choice:
+
+| | | |
+|---|---|---|
+| ☁️ **Sky** | 4 | Blue Sky (free), Sunset, Starry Night, Rainbow Sky |
+| 🌿 **Ground** | 4 | Green Grass (free), Sandy Shore, Stone Path, Wildflower Meadow |
+| 🚧 **Fence** | 3 | Picket Fence, Hedge, Stone Wall |
+| 🌳 **Tree** | 4 | Pine, Apple, Blossom, Willow |
+| 💧 **Water** | 3 | Little Pond, Lily Pond, Wishing Pool |
+| 🍄 **In the garden** | 8, three out at once | Toadstools, Stepping Stones, Birdhouse, Flower Bed, Wheelbarrow, Garden Bench, Lamp Post, Rope Swing |
+
+That is twenty-four new things to save for, which roughly doubles what the
+shop sells. The sky and the ground are free, so the first thing she sees out
+there is a garden rather than an empty box.
+
+The **Starry Night** sky darkens the whole garden, not just the top of it.
+
+Both places are arranged from the same *Decorate* screen, which grows a
+**My Room / The Garden** switch once the gate is open; the shop grows a
+**Garden** tab at the same moment. Neither shows up before then — a tab full
+of things for a place she cannot visit yet is only a tease.
+
+The spelling, the games and the events all stay indoors. The garden is
+somewhere to be, not another thing to do.
 
 ## Seasonal events
 
@@ -558,6 +605,7 @@ js/core/                systems — no DOM in here
   discovery.js          what the axolotl finds, and how rarely
   safety.js             persistent storage, and noticing when a backup
                         is overdue
+  garden.js             whether the garden gate is open, and how far off
   season.js             the four seasons: light, weather, glass and
                         what the axolotl says about the weather
   bus.js                tiny pub/sub
@@ -568,6 +616,9 @@ js/ui/                  reusable pieces
   item-art.js  every item, plus the wallpaper and floor surfaces
   room.js      the room: wall, floor, the season's weather and light,
                and where each slot sits
+  garden.js    the garden: sky, ground, hills, and where each slot sits
+  weather.js   what is in the air, indoors behind glass or outdoors
+               across the whole picture
   keyboard.js  THE on-screen keyboard, shared by spelling and games
   buddy.js     the axolotl's seat in every mini-game
   discovery.js the little ceremony around opening what it found

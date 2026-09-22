@@ -120,6 +120,16 @@ export function defaultState() {
       accessory: null,
       wallDecor: [],    // up to 2
       floorDecor: [],   // up to 3
+
+      /* The garden. Sky and ground are starters, like wallpaper and
+         flooring, so the first thing she sees out there is a garden rather
+         than a blank box. */
+      sky: 'sky_day',
+      ground: 'ground_grass',
+      tree: null,
+      water: null,
+      fence: null,
+      gardenDecor: [],  // up to 3
     },
   };
 }
@@ -151,6 +161,15 @@ function migrate(state) {
   /* A room needs a window: indoors, it is the only place the weather
      shows. Saves made before there was a starter one get it here. */
   if (state.equipped && !state.equipped.window) state.equipped.window = 'window_plain';
+
+  /* Saves made before there was a garden get its sky and ground, and the
+     empty lists the slots expect. */
+  if (state.equipped) {
+    const e = state.equipped;
+    if (!e.sky) e.sky = 'sky_day';
+    if (!e.ground) e.ground = 'ground_grass';
+    if (!Array.isArray(e.gardenDecor)) e.gardenDecor = [];
+  }
 
   // Mastery used to be counted as a list of session ids. It is now a streak
   // of correct answers capped at one a day, so carry the old count across as

@@ -16,14 +16,21 @@ import { itemSVG } from '../ui/item-art.js';
 import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
 import { currentSeason } from '../core/season.js';
+import { gardenOpen } from '../core/garden.js';
 
 export default function shopScreen(container) {
-  let tab = items.SHOP_TABS[0].key;
+  /* The Garden tab is hidden until the gate opens. A tab full of things for
+     a place she cannot visit yet would be a tease, and the garden screen
+     links straight here with ?tab=garden once it is hers. */
+  const tabs = () => items.SHOP_TABS.filter(t => t.key !== 'garden' || gardenOpen());
+
+  const wanted = new URLSearchParams(location.hash.split('?')[1] || '').get('tab');
+  let tab = tabs().some(t => t.key === wanted) ? wanted : tabs()[0].key;
 
   function render() {
     const stars = rewards.stars();
     const season = currentSeason();
-    const activeTab = items.SHOP_TABS.find(t => t.key === tab) || items.SHOP_TABS[0];
+    const activeTab = tabs().find(t => t.key === tab) || tabs()[0];
     /* Things that suit the time of year come first in their tab and wear a
        little leaf. Nothing is ever withheld because of the date — an item
        she was saving up for quietly vanishing in December would punish her
@@ -48,7 +55,7 @@ export default function shopScreen(container) {
       /* Ten slots would be ten tabs, so they are grouped the way a person
          would shop: things to wear, the room itself, furniture, wall art. */
       segmented(
-        items.SHOP_TABS.map(t => ({ value: t.key, label: `${t.emoji} ${t.label}` })),
+        tabs().map(t => ({ value: t.key, label: `${t.emoji} ${t.label}` })),
         tab,
         v => { tab = v; render(); }
       ),
