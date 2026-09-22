@@ -1,6 +1,8 @@
 /* Minimal DOM helpers. Screens build their markup with these rather than
    with innerHTML, so text from word lists can never be mistaken for markup. */
 
+import { on } from '../core/bus.js';
+
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
 
@@ -121,7 +123,17 @@ export function modal(titleText, bodyNodes, { dismissable = true } = {}) {
   }
   document.body.append(back);
 
-  function close() { back.remove(); }
+  /* A modal is appended to <body>, not to #screen, so the router clearing
+     the screen does not touch it. Left alone it would hang over whatever
+     came next and swallow every tap — which is exactly what happened when
+     the axolotl turned up with a discovery and she pressed Back instead of
+     closing it. */
+  const offRoute = on('route:before', () => close());
+
+  function close() {
+    offRoute();
+    back.remove();
+  }
   return close;
 }
 
