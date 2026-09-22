@@ -223,28 +223,44 @@ still Fall, it just also has a Haunted Spelling Hunt in it. When one is
 running, a banner appears on the home screen above Today's Practice — above
 it, never instead of it.
 
-### Haunted Spelling Hunt — 1–31 October 2026
+### The calendar
 
-Friendly ghosts have got lost in the dark. She taps one, hears a word, and
-spells it; the ghost lights up and drifts off home. Nothing in it is scary:
-the ghosts are round and smiling and *lost* rather than haunting, and a
-missed word means the ghost waits a moment and moves somewhere else. Nothing
-is ever lost.
+| | Runs | She taps | Earns |
+|---|---|---|---|
+| 🎃 **Haunted Spelling Hunt** | 1–31 Oct 2026 | lost ghosts, helped home | Pumpkin Lantern, Witch Hat, Bat Garland, Candy Bucket, Ghost Friend |
+| 🎂 **Birthday Week** | 3 days either side of her birthday, **every year** | candles, lit | Birthday Cake, Balloons, Banner, Sash |
+| 🍂 **Gathering Week** | 20–30 Nov 2026 | blown leaves, gathered | Pumpkin Pie, Acorn Cap, Leaf Wreath, Harvest Basket |
+| 🎄 **Trim the Tree** | 1–26 Dec 2026 | ornaments, hung up | Holiday Tree, Stocking, Holiday Hat, Snow Globe |
+| 🎆 **Midnight Sparklers** | 27 Dec 2026 – 4 Jan 2027 | sparklers, lit | Jar of Sparklers, Party Horn, Star Garland, Midnight Clock |
+| 🐰 **Spring Egg Hunt** | 22–29 Mar 2027 | hidden eggs, found | Basket of Eggs, Bunny Ears, Pot of Tulips, Spring Wreath |
 
-Ghosts helped home accumulate across the whole month, and crossing a
-threshold earns a collectible:
+All six play the same way: something is scattered across a scene, she taps
+one, hears a word, and spells it. The thing does a happy little exit and the
+track at the top fills a bit more. What differs between them is data in
+`core/events.js` — the sprite, the backdrop, what the things are called and
+what happens to them — so a seventh event is an entry in a list, not a new
+screen.
 
-| Ghosts | Earns |
-|---|---|
-| 2 | Pumpkin Lantern |
-| 5 | Little Witch Hat |
-| 9 | Bat Garland |
-| 14 | Candy Bucket |
-| 20 | Little Ghost Friend |
+Because she spells a whole word from memory with nothing to copy, every
+event **can add to a mastery streak and can never break one**, the same rule
+Crossword and Tic Tac Toe follow.
 
-The hunt asks her to spell a whole word from memory with nothing to copy, so
-like Crossword and Tic Tac Toe it **can add to a mastery streak and can never
-break one**.
+Nothing in any of them is frightening or punishing. The Halloween ghosts are
+round and smiling and *lost* rather than haunting, and getting a word wrong
+anywhere means the thing waits a moment and drifts somewhere else.
+
+### Her birthday
+
+Birthday Week is the only event that comes back every year, and the only one
+whose dates are a **setting** rather than a fixed date — a birthday belongs
+to the child, not the calendar. Set it in the Parent Area under *Events and
+surprises*; the week runs three days either side, and the app works that out
+by walking days outward, so it stays right across a month or a year boundary.
+
+The collectibles are hers from the first birthday. Every year after that
+there is still a party, and still a **present of 50 stars** — handed over
+whole, not counted against any daily allowance, because a present is a
+present.
 
 ### The rules events follow
 
@@ -257,7 +273,11 @@ break one**.
   what a day is worth.
 * **Each year is its own entry.** `halloween_2026` only ever runs in 2026.
   Adding `halloween_2027` with a different set of collectibles leaves
-  everything she earned this year untouched.
+  everything she earned this year untouched. Birthday Week is the deliberate
+  exception: it recurs, so its items are earned once and the party is annual.
+* **A window may run over the turn of the year.** Midnight Sparklers starts
+  on 27 December 2026 and ends on 4 January 2027; `year` is the year it
+  starts in.
 
 The Parent Area lists what is running and what is coming, and can **preview**
 an event before it opens. A preview plays the real thing but banks nothing —

@@ -232,6 +232,37 @@ export const CATALOG = [
   { id: 'bat_garland',     name: 'Bat Garland',        category: 'wallDecor',  price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
   { id: 'candy_bucket',    name: 'Candy Bucket',       category: 'floorDecor', price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
   { id: 'ghost_friend',    name: 'Little Ghost Friend', category: 'floorDecor', price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
+
+  /* Birthday Week. The only event that comes back every year, so these are
+     hers from the first one and the party happens regardless after that. */
+  { id: 'birthday_cake',  name: 'Birthday Cake',       category: 'floorDecor', price: null, blurb: 'Your birthday week.' },
+  { id: 'balloon_bunch',  name: 'Bunch of Balloons',   category: 'floorDecor', price: null, blurb: 'Your birthday week.' },
+  { id: 'party_banner',   name: 'Birthday Banner',     category: 'wallDecor',  price: null, blurb: 'Your birthday week.' },
+  { id: 'birthday_sash',  name: 'Birthday Sash',       category: 'accessory',  price: null, blurb: 'Your birthday week.' },
+
+  /* Gathering Week, 2026 */
+  { id: 'pumpkin_pie',    name: 'Pumpkin Pie',         category: 'floorDecor', price: null, blurb: 'Gathering Week, 2026.' },
+  { id: 'acorn_hat',      name: 'Acorn Cap',           category: 'hat',        price: null, blurb: 'Gathering Week, 2026.' },
+  { id: 'leaf_wreath',    name: 'Leaf Wreath',         category: 'wallDecor',  price: null, blurb: 'Gathering Week, 2026.' },
+  { id: 'cornucopia',     name: 'Harvest Basket',      category: 'floorDecor', price: null, blurb: 'Gathering Week, 2026.' },
+
+  /* Trim the Tree, 2026 */
+  { id: 'holiday_tree',   name: 'Little Holiday Tree', category: 'floorDecor', price: null, blurb: 'Trim the Tree, 2026.' },
+  { id: 'stocking',       name: 'Stocking',            category: 'wallDecor',  price: null, blurb: 'Trim the Tree, 2026.' },
+  { id: 'santa_hat',      name: 'Holiday Hat',         category: 'hat',        price: null, blurb: 'Trim the Tree, 2026.' },
+  { id: 'snow_globe',     name: 'Snow Globe',          category: 'floorDecor', price: null, blurb: 'Trim the Tree, 2026.' },
+
+  /* Midnight Sparklers, into 2027 */
+  { id: 'sparkler_jar',   name: 'Jar of Sparklers',    category: 'floorDecor', price: null, blurb: 'Midnight Sparklers, 2027.' },
+  { id: 'party_horn',     name: 'Party Horn',          category: 'accessory',  price: null, blurb: 'Midnight Sparklers, 2027.' },
+  { id: 'star_garland',   name: 'Star Garland',        category: 'wallDecor',  price: null, blurb: 'Midnight Sparklers, 2027.' },
+  { id: 'midnight_clock', name: 'Midnight Clock',      category: 'wallDecor',  price: null, blurb: 'Midnight Sparklers, 2027.' },
+
+  /* Spring Egg Hunt, 2027 */
+  { id: 'egg_basket',     name: 'Basket of Eggs',      category: 'floorDecor', price: null, blurb: 'Spring Egg Hunt, 2027.' },
+  { id: 'bunny_ears',     name: 'Bunny Ears',          category: 'hat',        price: null, blurb: 'Spring Egg Hunt, 2027.' },
+  { id: 'tulip_pot',      name: 'Pot of Tulips',       category: 'floorDecor', price: null, blurb: 'Spring Egg Hunt, 2027.' },
+  { id: 'spring_wreath',  name: 'Spring Wreath',       category: 'wallDecor',  price: null, blurb: 'Spring Egg Hunt, 2027.' },
 ];
 
 const BY_ID = new Map(CATALOG.map(i => [i.id, i]));

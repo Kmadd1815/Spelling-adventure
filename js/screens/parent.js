@@ -14,7 +14,7 @@ import { on as onBus } from '../core/bus.js';
 import { APP_VERSION, BUILD_DATE } from '../core/version.js';
 import { checkNow, updateWaiting } from '../core/updates.js';
 import * as events from '../core/events.js';
-import { monthName } from './event.js';
+import { monthName, whenText } from './event.js';
 import * as discovery from '../core/discovery.js';
 import { setQueue } from './spell.js';
 
@@ -507,7 +507,7 @@ export default function parentScreen(container) {
      an event works before the day it opens. */
   function eventsCard() {
     const live = events.liveEvent();
-    const soon = events.upcoming().slice(0, 3);
+    const soon = events.upcoming().slice(0, 6);
     const found = discovery.POOL.length - discovery.stillOutThere().length;
 
     return el('div', { class: 'card' },
@@ -527,8 +527,7 @@ export default function parentScreen(container) {
       ...soon.map(e => el('div', { class: 'ev-row' },
         el('div', { class: 'grow' },
           el('b', { text: `${e.emoji} ${e.name}` }),
-          el('div', { class: 'tiny muted',
-            text: `${monthName(e.from[0])} ${e.from[1]} \u2013 ${monthName(e.to[0])} ${e.to[1]}, ${e.year}` })),
+          el('div', { class: 'tiny muted', text: whenText(e) })),
         button('Preview', { cls: 'btn btn-quiet',
           onClick: () => navigate(`/event?preview=${e.id}`) })
       )),
@@ -536,9 +535,51 @@ export default function parentScreen(container) {
       el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
         `A preview plays the real thing but banks nothing \u2014 no stars, no progress, no items \u2014 so the event is still new on the day.` }),
 
+      el('div', { class: 'section-title', text: 'Her birthday' }),
+      el('p', { class: 'muted tiny', text:
+        'Birthday Week runs three days either side of this date, every year. It is the only event that comes back \u2014 the collectibles are hers from the first one, and after that there is still a party and a present of stars each year.' }),
+      birthdayPicker(),
+
       el('div', { class: 'section-title', text: 'Pet discoveries' }),
       el('p', { class: 'muted tiny', text:
         `After a spelling session the axolotl sometimes turns up with something it found. At most one a day, never required for anything, and each one can only be found once. ${found} of ${discovery.POOL.length} found so far.` })
+    );
+  }
+
+  /* A birthday belongs to the child, not to the calendar, so it is a
+     setting rather than a date baked into the event list. */
+  function birthdayPicker() {
+    const current = settings().birthday || events.DEFAULT_BIRTHDAY;
+    const [mm, dd] = current.split('-');
+
+    const month = el('select', { class: 'sel' });
+    for (let m = 1; m <= 12; m++) {
+      month.append(el('option', { value: String(m).padStart(2, '0'),
+        text: monthName(m), selected: String(m).padStart(2, '0') === mm }));
+    }
+    const day = el('select', { class: 'sel' });
+    for (let d = 1; d <= 31; d++) {
+      day.append(el('option', { value: String(d).padStart(2, '0'),
+        text: String(d), selected: String(d).padStart(2, '0') === dd }));
+    }
+
+    const note = el('div', { class: 'tiny muted' });
+    const paint = () => {
+      const [from, to] = events.windowOf(events.byId('birthday'));
+      note.textContent = `Birthday Week: ${monthName(from[0])} ${from[1]} \u2013 ${monthName(to[0])} ${to[1]}`;
+    };
+    const save = () => {
+      update(st => { st.settings.birthday = `${month.value}-${day.value}`; });
+      paint();
+      toast('Saved');
+    };
+    month.addEventListener('change', save);
+    day.addEventListener('change', save);
+    paint();
+
+    return el('div', { class: 'stack-sm' },
+      el('div', { class: 'row row-tight' }, month, day),
+      note
     );
   }
 

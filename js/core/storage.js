@@ -38,6 +38,11 @@ export function defaultState() {
       /* Mini-games */
       gamesAfterDaily: false,   // when on, games wait until practice is done
 
+      /* Her birthday, as MM-DD. Birthday Week runs three days either side
+         of it. A birthday belongs to the child, not to the calendar, so it
+         is a setting rather than a date baked into the event list. */
+      birthday: '11-07',
+
       /* Rewards.
          Every activity pays a flat base for finishing it, plus one star for
          each word spelled right on the first try. The base is what pays for

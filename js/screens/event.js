@@ -1,12 +1,19 @@
-/* The Haunted Spelling Hunt — and the frame any later event will reuse.
+/* Every seasonal event, played the same way.
 
-   Ghosts have got lost in the dark. She taps one, hears a word, and spells
-   it; the ghost lights up and drifts off home, and the lantern at the top
-   fills a little more. Cross a threshold and something is hers for good.
+   There is one mechanic and six costumes. Something is scattered across a
+   scene; she taps one, hears a word, and spells it; the thing does a happy
+   little exit and the track at the top fills a bit more. Cross a threshold
+   and a collectible is hers for good.
 
-   Nothing here is scary. The ghosts are round and smiling, they are lost
-   rather than haunting, and getting a word wrong means the ghost waits a
-   moment and moves somewhere else — never that anything is lost.
+   What changes between events is data in core/events.js — the sprite, the
+   backdrop, what the things are called and what happens to them. Ghosts get
+   helped home, leaves get gathered, ornaments get hung up, sparklers light
+   the sky, eggs get found, candles get lit.
+
+   Nothing in any of them is frightening or punishing. The Halloween ghosts
+   are round and smiling and lost rather than haunting, and getting a word
+   wrong anywhere means the thing waits a moment and moves somewhere else.
+   Nothing is ever taken away.
 */
 
 import { el, mount, clear, button } from '../ui/dom.js';
@@ -54,7 +61,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
     container.style.overflow = '';
   };
 
-  const buddy = createBuddy({ layout: 'voice', greeting: 'Tap a ghost and help it home!' });
+  const buddy = createBuddy({ layout: 'voice', greeting: event.greeting });
   const timers = [];
   const wait = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
 
@@ -64,7 +71,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
   const spellBox = el('div', { class: 'ev-spell', hidden: true });
   const keyboard = el('div', { class: 'keyboard keyboard-sm' });
 
-  const body = el('div', { class: 'game-body ev-wrap scene-haunted' },
+  const body = el('div', { class: `game-body ev-wrap scene-${event.scene}` },
     track, field, spellBox, el('div', { class: 'ev-foot' }, buddy.node)
   );
 
@@ -80,7 +87,11 @@ export default function eventScreen(container, { preview = '' } = {}) {
 
   /* ---------- State ---------- */
 
-  const ghosts = queue.map((word, i) => ({
+  /* A sprite may be a single drawing or a function of its index, so an egg
+     hunt gets five different eggs rather than five copies of one. */
+  const spriteArt = SPRITES[event.sprite] || SPRITES.ghost;
+  const spriteFor = i => (typeof spriteArt === 'function' ? spriteArt(i) : spriteArt);
+  const things = queue.map((word, i) => ({
     word, i, home: false,
     x: 12 + (i % 3) * 30 + Math.random() * 10,
     y: 16 + Math.floor(i / 3) * 36 + Math.random() * 12,
@@ -100,7 +111,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
 
     track.append(el('div', { class: 'ev-count' },
       el('span', { class: 'ev-count-n', text: String(count) }),
-      el('span', { class: 'tiny', text: ` ${count === 1 ? event.unitOne : event.unitMany} helped home` })
+      el('span', { class: 'tiny', text: ` ${count === 1 ? event.unitOne : event.unitMany} ${event.verb}` })
     ));
 
     if (next) {
@@ -132,22 +143,22 @@ export default function eventScreen(container, { preview = '' } = {}) {
 
   function drawField() {
     clear(field);
-    ghosts.forEach(g => {
+    things.forEach(g => {
       if (g.home) return;
       const node = el('button', {
         class: `ev-ghost${active === g ? ' ev-ghost-on' : ''}`,
         type: 'button',
         style: { left: `${g.x}%`, top: `${g.y}%`, animationDelay: `${(g.i % 5) * 0.4}s` },
-        'aria-label': 'A lost ghost',
+        'aria-label': `A ${event.unitOne}`,
         onClick: () => pick(g),
-      }, el('span', { class: 'ev-ghost-art', html: GHOST_SVG }));
+      }, el('span', { class: 'ev-ghost-art', html: spriteFor(g.i) }));
       field.append(node);
     });
 
-    if (ghosts.every(g => g.home)) {
+    if (things.every(g => g.home)) {
       field.append(el('div', { class: 'ev-clear center' },
         el('div', { style: { fontSize: '2rem' }, text: '\u{1F31F}' }),
-        el('div', { text: 'Every ghost is home!' })
+        el('div', { text: `Every ${event.unitOne} ${event.verb}!` })
       ));
     }
   }
@@ -234,7 +245,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
         spellBox.hidden = true;
         clear(spellBox);
         drawField();
-        if (ghosts.every(x => x.home)) finish();
+        if (things.every(x => x.home)) finish();
       }, result.earned.length ? 2600 : 1200);
       return;
     }
@@ -257,7 +268,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
       )
     );
 
-    // The ghost drifts somewhere new and waits. Nothing is lost.
+    // It drifts somewhere new and waits. Nothing is lost.
     wait(() => {
       g.x = 8 + Math.random() * 76;
       g.y = 12 + Math.random() * 58;
@@ -297,9 +308,10 @@ export default function eventScreen(container, { preview = '' } = {}) {
     const body2 = el('div', { class: 'stack' },
       el('div', { class: 'card center' },
         el('div', { style: { fontSize: '2.4rem' }, text: event.emoji }),
-        el('h2', { text: sentHome === ghosts.length ? 'Every ghost is home!' : 'Good hunting!' }),
+        el('h2', { text: sentHome === things.length
+          ? `Every ${event.unitOne} ${event.verb}!` : 'Well played!' }),
         el('p', { class: 'muted', text:
-          `${sentHome} of ${ghosts.length} ${ghosts.length === 1 ? event.unitOne : event.unitMany} this round` +
+          `${sentHome} of ${things.length} ${things.length === 1 ? event.unitOne : event.unitMany} this round` +
           (isPreview ? '' : ` · ${count} altogether`) })
       )
     );
@@ -317,7 +329,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
           el('div', { text: `★ ${payout.total}` })
         ),
         payout.repeat ? el('p', { class: 'tiny muted', style: { marginTop: '8px' },
-          text: 'The first hunt each day earns the most — but the ghosts still need helping.' }) : null
+          text: `The first round each day earns the most — but the ${event.unitMany} are still here.` }) : null
       ));
     }
 
@@ -352,7 +364,7 @@ export default function eventScreen(container, { preview = '' } = {}) {
     }
 
     body2.append(el('div', { class: 'row' },
-      button('Hunt again', { cls: 'btn btn-green grow', emoji: '\u{1F50E}', onClick: rerender }),
+      button('Play again', { cls: 'btn btn-green grow', emoji: '\u{1F501}', onClick: rerender }),
       button('Go home', { cls: 'btn btn-primary grow', emoji: '\u{1F3E0}', onClick: () => navigate('/') })
     ));
 
@@ -388,10 +400,11 @@ export default function eventScreen(container, { preview = '' } = {}) {
   };
 }
 
-/* A ghost that is lost, not haunting: round, smiling, and pleased to see
-   her. Drawn once here rather than sitting in the item catalogue, because
-   it is scenery rather than something she can own. */
-const GHOST_SVG = `
+/* What she taps, one per event. These are scenery rather than anything she
+   can own, so they live here instead of in the item catalogue. The
+   Halloween ghost is round and smiling and lost, not haunting. */
+const SPRITES = {
+  ghost: `
 <svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
   <path d="M 50 10 Q 80 10 80 44 L 80 92 Q 72 82 64 92 Q 56 82 50 92 Q 44 82 36 92 Q 28 82 20 92 L 20 44 Q 20 10 50 10 Z"
         fill="#fbf7f2" stroke="#b9b0c4" stroke-width="3" stroke-linejoin="round"/>
@@ -400,16 +413,86 @@ const GHOST_SVG = `
   <ellipse cx="31" cy="54" rx="5.4" ry="3.6" fill="#f4b8c6" opacity=".75"/>
   <ellipse cx="69" cy="54" rx="5.4" ry="3.6" fill="#f4b8c6" opacity=".75"/>
   <path d="M 43 55 Q 50 62 57 55" fill="none" stroke="#4a3b52" stroke-width="3" stroke-linecap="round"/>
+</svg>`,
+
+  candle: `
+<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
+  <path d="M 50 12 Q 60 24 56 32 Q 53 38 50 38 Q 47 38 44 32 Q 40 24 50 12 Z"
+        fill="#ffd35c" stroke="#e0a63a" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M 50 20 Q 55 27 52 32 Q 50 35 48 32 Q 45 27 50 20 Z" fill="#fff4cf"/>
+  <rect x="38" y="38" width="24" height="58" rx="8" fill="#f7dbe8" stroke="#c98da8" stroke-width="3"/>
+  <path d="M 38 54 q 12 7 24 0 M 38 70 q 12 7 24 0" fill="none" stroke="#f4a8c6" stroke-width="3.4" stroke-linecap="round"/>
+</svg>`,
+
+  leaf: i => {
+    const tones = [['#e08a3c', '#8a4a20'], ['#c96a2c', '#7a3a18'], ['#e3ae4c', '#96682a'],
+                   ['#d2762f', '#82401c'], ['#b5552a', '#6e3216']];
+    const [fill, edge] = tones[i % tones.length];
+    return `
+<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
+  <path d="M 50 8 C 82 26 86 62 50 98 C 14 62 18 26 50 8 Z"
+        fill="${fill}" stroke="${edge}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M 50 14 L 50 94" stroke="${edge}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 50 34 L 30 30 M 50 34 L 70 30 M 50 54 L 26 52 M 50 54 L 74 52 M 50 74 L 34 74 M 50 74 L 66 74"
+        stroke="${edge}" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
 </svg>`;
+  },
+
+  ornament: i => {
+    const balls = [['#e2566f', '#a23b50'], ['#5fa97a', '#3d7a56'], ['#6fb3d9', '#3f7d9e'],
+                   ['#c9a3e0', '#8a6fa8'], ['#f7b955', '#c98d34']];
+    const [fill, edge] = balls[i % balls.length];
+    return `
+<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
+  <path d="M 50 4 Q 50 14 50 18" stroke="#b9a68f" stroke-width="3" stroke-linecap="round"/>
+  <rect x="42" y="16" width="16" height="10" rx="4" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.4"/>
+  <circle cx="50" cy="62" r="34" fill="${fill}" stroke="${edge}" stroke-width="3"/>
+  <path d="M 18 54 Q 50 44 82 54" fill="none" stroke="#ffe08a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 20 74 Q 50 84 80 74" fill="none" stroke="#ffe08a" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="38" cy="48" rx="7" ry="5" fill="#fff" opacity=".45"/>
+</svg>`;
+  },
+
+  firework: `
+<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
+  <path d="M 50 62 L 50 100" stroke="#8a7f74" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="50" cy="50" r="10" fill="#ffe98a"/>
+  ${[0, 45, 90, 135, 180, 225, 270, 315].map(a => {
+    const r = Math.PI * a / 180;
+    const x1 = 50 + Math.cos(r) * 16, y1 = 50 + Math.sin(r) * 16;
+    const x2 = 50 + Math.cos(r) * 34, y2 = 50 + Math.sin(r) * 34;
+    return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)}"
+              stroke="#ffd35c" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="3.4" fill="#fff4cf"/>`;
+  }).join('')}
+</svg>`,
+
+  egg: i => {
+    const shells = [
+      ['#a8d8ea', '#4f7f9b'], ['#f4a8c6', '#b3596e'], ['#ffe08a', '#c9922c'],
+      ['#b9e3c0', '#4f9b6d'], ['#c9a3e0', '#8a6fa8'],
+    ];
+    const bands = ['#fdf2f6', '#f4a8c6', '#ffe08a', '#a8d8ea', '#fff'];
+    const [fill, edge] = shells[i % shells.length];
+    const b1 = bands[(i + 1) % bands.length], b2 = bands[(i + 3) % bands.length];
+    return `
+<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden="true">
+  <ellipse cx="50" cy="58" rx="34" ry="44" fill="${fill}" stroke="${edge}" stroke-width="3"/>
+  <path d="M 17 50 q 33 12 66 0" fill="none" stroke="${b1}" stroke-width="7"/>
+  <path d="M 19 70 q 31 12 62 0" fill="none" stroke="${b2}" stroke-width="7"/>
+  <path d="M 24 34 q 26 10 52 0" fill="none" stroke="${b1}" stroke-width="6"/>
+  ${[[36, 60], [50, 66], [64, 60]].map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="3.4" fill="#fff" opacity=".8"/>`).join('')}
+</svg>`;
+  },
+};
 
 function nothingOn() {
   const next = events.upcoming()[0];
   return el('div', { class: 'card center stack' },
     el('div', { style: { fontSize: '2.4rem' }, text: '\u{1F5D3}️' }),
     el('h2', { text: 'No event right now' }),
-    el('p', { class: 'muted', text: next
-      ? `${next.emoji} ${next.name} starts on ${monthName(next.from[0])} ${next.from[1]}.`
-      : 'Check back another time.' }),
+    el('p', { class: 'muted', text: next ? whenText(next) : 'Check back another time.' }),
     button('Go home', { cls: 'btn btn-primary', onClick: () => navigate('/') })
   );
 }
@@ -417,3 +500,15 @@ function nothingOn() {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'];
 export const monthName = m => MONTHS[m - 1] || '';
+
+/* Never read event.from directly: the birthday has no fixed dates, it is
+   worked out from the parent setting. windowOf() is the only way to ask. */
+export function whenText(event) {
+  const [from, to] = events.windowOf(event);
+  const span = `${monthName(from[0])} ${from[1]} \u2013 ${monthName(to[0])} ${to[1]}`;
+  if (!event.year) return `${event.emoji} ${event.name}: ${span}, every year`;
+  // A window that runs over the turn of the year ends in the year after.
+  const wraps = (to[0] * 100 + to[1]) < (from[0] * 100 + from[1]);
+  const years = wraps ? `${event.year}\u2013${event.year + 1}` : String(event.year);
+  return `${event.emoji} ${event.name}: ${span}, ${years}`;
+}

@@ -1748,6 +1748,77 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
     linear-gradient(180deg, #2f2746, #4a3d63);
 }
 
+/* One backdrop per event, stacked gradients like the rest of the app. */
+
+/* Birthday Week — warm, bright, confetti in the air. */
+.scene-party {
+  background-color: #fff0dc;
+  background-image:
+    radial-gradient(circle at  9% 16%, rgba(239,143,159,.8) 0 11px, transparent 12px),
+    radial-gradient(circle at 24% 46%, rgba(255,217,128,.75) 0 8px, transparent 9px),
+    radial-gradient(circle at  7% 74%, rgba(143,196,224,.7) 0 10px, transparent 11px),
+    radial-gradient(circle at 91% 22%, rgba(201,163,224,.75) 0 12px, transparent 13px),
+    radial-gradient(circle at 78% 62%, rgba(168,216,176,.7) 0 9px, transparent 10px),
+    radial-gradient(circle at 94% 84%, rgba(239,143,159,.7) 0 11px, transparent 12px),
+    radial-gradient(circle at 44% 92%, rgba(255,217,128,.7) 0 10px, transparent 11px),
+    linear-gradient(180deg, #fff7ec, #ffe4c4);
+}
+
+/* Gathering Week — late autumn light and leaves on the ground. */
+.scene-harvest {
+  background-color: #f6e2c4;
+  background-image:
+    radial-gradient(70% 24% at 22% 106%, #cf9a52 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(80% 26% at 82% 110%, #c08843 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 14% 24%, rgba(224,138,60,.55) 0 9px, transparent 10px),
+    radial-gradient(circle at 84% 18%, rgba(201,106,44,.5) 0 7px, transparent 8px),
+    radial-gradient(circle at 66% 40%, rgba(227,174,76,.5) 0 8px, transparent 9px),
+    linear-gradient(180deg, #fbeed6 0%, #f3ddb8 68%);
+}
+
+/* Trim the Tree — a cold blue evening with snow coming down. */
+.scene-snowy {
+  background-color: #cfe2f2;
+  background-image:
+    radial-gradient(80% 22% at 50% 106%, #f2f7fb 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.95) 0 5px, transparent 6px),
+    radial-gradient(circle at 32% 36%, rgba(255,255,255,.85) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 14%, rgba(255,255,255,.9) 0 5.5px, transparent 6.5px),
+    radial-gradient(circle at 78% 34%, rgba(255,255,255,.8) 0 4.5px, transparent 5.5px),
+    radial-gradient(circle at 90% 12%, rgba(255,255,255,.9) 0 4px, transparent 5px),
+    radial-gradient(circle at 22% 58%, rgba(255,255,255,.75) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 68% 62%, rgba(255,255,255,.75) 0 4px, transparent 5px),
+    linear-gradient(180deg, #a9c9e8, #dceaf6);
+}
+
+/* Midnight Sparklers — the darkest scene, lit from below. */
+.scene-midnight {
+  background-color: #2b2f58;
+  background-image:
+    radial-gradient(64% 26% at 50% 108%, rgba(120,96,164,.85) 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 18% 20%, rgba(255,255,255,.8) 0 2.6px, transparent 3.2px),
+    radial-gradient(circle at 36% 12%, rgba(255,255,255,.65) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 58% 24%, rgba(255,255,255,.75) 0 2.8px, transparent 3.4px),
+    radial-gradient(circle at 74% 10%, rgba(255,255,255,.6) 0 2.2px, transparent 2.8px),
+    radial-gradient(circle at 88% 30%, rgba(255,255,255,.7) 0 2.4px, transparent 3px),
+    radial-gradient(circle at 28% 44%, rgba(255,255,255,.5) 0 2px, transparent 2.6px),
+    linear-gradient(180deg, #232647, #3c4270);
+}
+
+/* Spring Egg Hunt — a garden with the blossom out. */
+.scene-spring {
+  background-color: #eaf6e4;
+  background-image:
+    radial-gradient(66% 28% at 18% 106%, #a8d894 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(74% 30% at 84% 110%, #97ce82 0 100%, rgba(0,0,0,0) 100%),
+    radial-gradient(circle at 12% 14%, rgba(255,255,255,.9) 0 22px, transparent 23px),
+    radial-gradient(circle at 20% 17%, rgba(255,255,255,.9) 0 15px, transparent 16px),
+    radial-gradient(circle at 76% 22%, rgba(244,168,198,.55) 0 11px, transparent 12px),
+    radial-gradient(circle at 86% 34%, rgba(255,240,150,.5) 0 8px, transparent 9px),
+    radial-gradient(circle at 62% 12%, rgba(244,168,198,.45) 0 9px, transparent 10px),
+    linear-gradient(180deg, #ddf0fb 0%, #eef8e8 74%);
+}
+
 /* ---------- The hunt ---------- */
 
 .ev-wrap { gap: 8px; }
@@ -1800,8 +1871,10 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .ev-clear {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff4e4; font-weight: 900;
+  color: var(--ink); font-weight: 900;
 }
+/* The two night scenes need the opposite ink. */
+.scene-haunted .ev-clear, .scene-midnight .ev-clear { color: #fff4e4; }
 
 .ev-spell {
   flex: 0 0 auto;
@@ -1815,6 +1888,22 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .ev-prize-art { line-height: 0; }
 .ev-prize-name { font-weight: 900; color: var(--primary-dark); margin-top: 4px; }
 .ev-foot { flex: 0 0 auto; display: flex; justify-content: center; }
+
+/* The birthday pickers. */
+.sel {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--surface-alt);
+  box-shadow: inset 0 0 0 2px var(--bg-deep);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ink);
+  padding: 0 10px;
+}
 
 /* The parent's list of what is running and what is coming. */
 .ev-row {

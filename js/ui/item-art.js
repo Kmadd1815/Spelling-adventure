@@ -90,6 +90,63 @@ const HATS = {
       <circle cx="${n(quillX)}" cy="${n(quillY)}" r="${n(g.hrx * 0.075)}" fill="#ffd980" stroke="#c98d34" stroke-width="1.8"/>`;
   },
 
+  /* Gathering Week. The cap of an acorn, textured rather than smooth. */
+  acorn_hat: g => {
+    const y = g.hy - g.hry * 0.20, w = g.hrx * 0.95, dome = g.hry * 0.72;
+    return `
+      <path d="M ${n(g.hx - w)} ${n(y)}
+               Q ${n(g.hx)} ${n(y - dome * 1.9)} ${n(g.hx + w)} ${n(y)} Z"
+            fill="#b07f4e" stroke="#7d5730" stroke-width="2.6" stroke-linejoin="round"/>
+      ${[0.34, 0.62].map(k => `
+        <path d="M ${n(g.hx - w * (1 - k * 0.55))} ${n(y - dome * k * 0.9)}
+                 Q ${n(g.hx)} ${n(y - dome * (k * 0.9 + 0.30))} ${n(g.hx + w * (1 - k * 0.55))} ${n(y - dome * k * 0.9)}"
+              fill="none" stroke="#8d6238" stroke-width="2.2" stroke-linecap="round" opacity=".65"/>`).join('')}
+      <path d="M ${n(g.hx - w * 1.04)} ${n(y)} Q ${n(g.hx)} ${n(y + g.hry * 0.22)} ${n(g.hx + w * 1.04)} ${n(y)}"
+            fill="none" stroke="#c9975f" stroke-width="${n(g.hry * 0.18)}" stroke-linecap="round"/>
+      <path d="M ${n(g.hx)} ${n(y - dome * 1.24)} v ${n(-g.hry * 0.20)}"
+            stroke="#7d5730" stroke-width="3.4" stroke-linecap="round"/>`;
+  },
+
+  /* Trim the Tree. The point flops forward, which keeps it inside the
+     canvas and looks friendlier than a spike. */
+  santa_hat: g => {
+    const y = g.hy - g.hry * 0.44, w = g.hrx * 0.82, dome = g.hry * 0.72;
+    const tipX = g.hx - w * 1.02, tipY = y - dome * 0.58;
+    return `
+      <path d="M ${n(g.hx - w)} ${n(y)}
+               Q ${n(g.hx - w * 0.30)} ${n(y - dome * 1.5)} ${n(g.hx + w * 0.30)} ${n(y - dome * 1.26)}
+               Q ${n(g.hx + w * 0.86)} ${n(y - dome * 0.9)} ${n(g.hx + w)} ${n(y)} Z"
+            fill="#e2566f" stroke="#a23b50" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M ${n(g.hx - w * 0.72)} ${n(y - dome * 1.16)}
+               Q ${n(g.hx - w * 1.20)} ${n(y - dome * 1.20)} ${n(tipX)} ${n(tipY)}"
+            fill="none" stroke="#e2566f" stroke-width="${n(g.hry * 0.30)}" stroke-linecap="round"/>
+      <path d="M ${n(g.hx - w * 1.06)} ${n(y)} Q ${n(g.hx)} ${n(y + g.hry * 0.26)} ${n(g.hx + w * 1.06)} ${n(y)}"
+            fill="none" stroke="#fffdf9" stroke-width="${n(g.hry * 0.24)}" stroke-linecap="round"/>
+      <circle cx="${n(tipX)}" cy="${n(tipY)}" r="${n(g.hrx * 0.15)}"
+              fill="#fffdf9" stroke="#d9cbb6" stroke-width="2"/>`;
+  },
+
+  /* Spring Egg Hunt. Long ears on a band, leaning apart so both stay clear
+     of the gills. */
+  bunny_ears: g => {
+    const y = g.hy - g.hry * 0.50;
+    const ear = side => {
+      const cx = g.hx + side * g.hrx * 0.36;
+      const cy = y - g.hry * 0.34;
+      const rx = g.hrx * 0.175, ry = g.hry * 0.46;
+      const rot = side * 15;
+      const spin = `rotate(${rot} ${n(cx)} ${n(cy)})`;
+      return `
+        <ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}"
+                 fill="#fdf2f6" stroke="#c9a3b4" stroke-width="2.4" transform="${spin}"/>
+        <ellipse cx="${n(cx)}" cy="${n(cy + ry * 0.06)}" rx="${n(rx * 0.48)}" ry="${n(ry * 0.64)}"
+                 fill="#f7c8d8" transform="${spin}"/>`;
+    };
+    return `${ear(-1)}${ear(1)}
+      <path d="M ${n(g.hx - g.hrx * 0.66)} ${n(y + g.hry * 0.10)} Q ${n(g.hx)} ${n(y + g.hry * 0.36)} ${n(g.hx + g.hrx * 0.66)} ${n(y + g.hry * 0.10)}"
+            fill="none" stroke="#f4a8c6" stroke-width="${n(g.hry * 0.17)}" stroke-linecap="round"/>`;
+  },
+
   flower_crown: g => {
     const y = g.hy - g.hry * 0.80, r = g.hrx * 0.115;
     const colours = ['#f2849f', '#ffd980', '#c9a3e0', '#8fd3a8', '#f7a8c6'];
@@ -235,6 +292,36 @@ const ACCESSORIES = {
                L ${n(g.hx + w)} ${n(y + w * 0.62)} Z"
             fill="#e2566f" stroke="#a23b50" stroke-width="2" stroke-linejoin="round"/>
       <circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.24)}" fill="#f0778c" stroke="#a23b50" stroke-width="1.8"/>`;
+  },
+
+  /* Birthday Week. A sash across the chest, following the body rather than
+     sitting on top of it, so it fits every growth stage. */
+  birthday_sash: g => {
+    const x1 = g.bx - g.brx * 0.86, y1 = g.by - g.bry * 0.72;
+    const x2 = g.bx + g.brx * 0.64, y2 = g.by + g.bry * 0.60;
+    return `
+      <path d="M ${n(x1)} ${n(y1)} Q ${n(g.bx)} ${n(g.by - g.bry * 0.05)} ${n(x2)} ${n(y2)}"
+            fill="none" stroke="#e2566f" stroke-width="${n(g.brx * 0.30)}" stroke-linecap="round"/>
+      <path d="M ${n(x1)} ${n(y1)} Q ${n(g.bx)} ${n(g.by - g.bry * 0.05)} ${n(x2)} ${n(y2)}"
+            fill="none" stroke="#f7a8bb" stroke-width="${n(g.brx * 0.10)}" stroke-linecap="round"/>
+      <circle cx="${n(x2 - g.brx * 0.06)}" cy="${n(y2 - g.bry * 0.06)}" r="${n(g.brx * 0.20)}"
+              fill="#ffe08a" stroke="#d8ae4c" stroke-width="2"/>
+      <circle cx="${n(x2 - g.brx * 0.06)}" cy="${n(y2 - g.bry * 0.06)}" r="${n(g.brx * 0.08)}" fill="#fffdf9"/>`;
+  },
+
+  /* Midnight Sparklers. A blower held up beside the cheek, uncurling away
+     from the face so it never covers the smile. */
+  party_horn: g => {
+    const x = g.hx + g.hrx * 0.68, y = g.hy + g.hry * 0.42;
+    const tipX = x + g.hrx * 0.86, tipY = y - g.hry * 0.30;
+    return `
+      <path d="M ${n(x)} ${n(y)} L ${n(tipX)} ${n(tipY - g.hry * 0.16)} L ${n(tipX)} ${n(tipY + g.hry * 0.20)} Z"
+            fill="#6fb3d9" stroke="#3f7d9e" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M ${n(tipX)} ${n(tipY + g.hry * 0.02)}
+               q ${n(g.hrx * 0.24)} ${n(-g.hry * 0.26)} ${n(g.hrx * 0.34)} ${n(g.hry * 0.02)}
+               q ${n(g.hrx * 0.08)} ${n(g.hry * 0.22)} ${n(-g.hrx * 0.10)} ${n(g.hry * 0.18)}"
+            fill="none" stroke="#f2849f" stroke-width="2.8" stroke-linecap="round"/>
+      <circle cx="${n(x)}" cy="${n(y)}" r="${n(g.hrx * 0.10)}" fill="#ffd980" stroke="#c9922c" stroke-width="2"/>`;
   },
 
   scarf: g => {
@@ -530,6 +617,203 @@ export const surfaceStyle = id => SURFACES[id] || SURFACES.wall_plain;
    Each draws inside a 0 0 100 100 box, standing on y = 92. */
 
 const DECOR = {
+  /* ---- Birthday Week ---- */
+
+  birthday_cake: () => `
+    <ellipse cx="50" cy="90" rx="34" ry="6" fill="#e8dcc9" opacity=".7"/>
+    <rect x="18" y="62" width="64" height="27" rx="6" fill="#f7d9e6" stroke="#c98da8" stroke-width="3"/>
+    <rect x="26" y="42" width="48" height="22" rx="6" fill="#fdeef5" stroke="#c98da8" stroke-width="3"/>
+    <path d="M 18 66 q 8 8 16 0 q 8 8 16 0 q 8 8 16 0 q 8 8 16 0" fill="none" stroke="#f4a8c6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 26 46 q 8 7 16 0 q 8 7 16 0 q 8 7 16 0" fill="none" stroke="#f4a8c6" stroke-width="3.4" stroke-linecap="round"/>
+    ${[34, 50, 66].map(x => `
+      <rect x="${x - 2.6}" y="26" width="5.2" height="16" rx="2.4" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2"/>
+      <ellipse cx="${x}" cy="22" rx="3.4" ry="5" fill="#ffd980" stroke="#e0a63a" stroke-width="1.8"/>`).join('')}`,
+
+  balloon_bunch: () => {
+    const balloon = (x, y, r, fill, edge) => `
+      <ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 1.18}" fill="${fill}" stroke="${edge}" stroke-width="2.6"/>
+      <path d="M ${x - 3} ${y + r * 1.18} l 3 4 l 3 -4 z" fill="${edge}"/>
+      <ellipse cx="${x - r * 0.34}" cy="${y - r * 0.4}" rx="${r * 0.22}" ry="${r * 0.3}" fill="#fff" opacity=".55"/>`;
+    return `
+      <path d="M 30 42 Q 44 66 50 88" fill="none" stroke="#b9a68f" stroke-width="2.2"/>
+      <path d="M 50 40 Q 51 64 50 88" fill="none" stroke="#b9a68f" stroke-width="2.2"/>
+      <path d="M 70 44 Q 58 68 50 88" fill="none" stroke="#b9a68f" stroke-width="2.2"/>
+      ${balloon(30, 30, 15, '#ef8f9f', '#b3596e')}
+      ${balloon(70, 32, 14, '#8fc4e0', '#4f7f9b')}
+      ${balloon(50, 22, 16, '#ffd980', '#c9922c')}
+      <circle cx="50" cy="89" r="4" fill="#c9a887" stroke="#8a6f54" stroke-width="2"/>`;
+  },
+
+  party_banner: () => {
+    const flags = ['#ef8f9f', '#ffd980', '#8fc4e0', '#a8d8b0', '#c9a3e0'];
+    return `
+      <path d="M 6 26 Q 50 46 94 26" fill="none" stroke="#b9a68f" stroke-width="3" stroke-linecap="round"/>
+      ${flags.map((c, i) => {
+        const t = (i + 0.5) / flags.length;
+        const x = 6 + t * 88;
+        const y = 26 + Math.sin(Math.PI * t) * 19;
+        return `<path d="M ${x - 8} ${y} L ${x + 8} ${y} L ${x} ${y + 21} Z"
+                      fill="${c}" stroke="#8a7f74" stroke-width="2" stroke-linejoin="round"/>`;
+      }).join('')}`;
+  },
+
+  /* ---- Gathering Week ---- */
+
+  pumpkin_pie: () => `
+    <ellipse cx="50" cy="86" rx="36" ry="7" fill="#e8dcc9" opacity=".7"/>
+    <path d="M 12 62 Q 50 50 88 62 L 84 78 Q 50 90 16 78 Z"
+          fill="#e8b98a" stroke="#a5754a" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="50" cy="62" rx="38" ry="13" fill="#d99a52" stroke="#a5754a" stroke-width="3"/>
+    <ellipse cx="50" cy="61" rx="30" ry="9" fill="#c8812f"/>
+    <path d="M 24 58 q 10 6 20 0 q 10 6 20 0 q 8 5 14 1" fill="none" stroke="#e8b98a" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="50" cy="52" r="6" fill="#fff6e8" stroke="#dcc9ae" stroke-width="2"/>`,
+
+  leaf_wreath: () => {
+    const leaf = (a) => {
+      const r = 30, x = 50 + Math.cos(a) * r, y = 50 + Math.sin(a) * r;
+      const deg = Math.round(a * 180 / Math.PI + 90);
+      const c = ['#e08a3c', '#c96a2c', '#e3ae4c', '#a8562a'][Math.abs(Math.round(a * 3)) % 4];
+      return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="8" ry="13" fill="${c}"
+                stroke="#8a4a20" stroke-width="2" transform="rotate(${deg} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
+    };
+    let out = `<circle cx="50" cy="50" r="30" fill="none" stroke="#9a7048" stroke-width="3"/>`;
+    for (let i = 0; i < 11; i++) out += leaf((i / 11) * Math.PI * 2);
+    return out + `<circle cx="50" cy="19" r="4.6" fill="#d94f5c" stroke="#9a3340" stroke-width="2"/>`;
+  },
+
+  cornucopia: () => `
+    <ellipse cx="50" cy="91" rx="32" ry="6" fill="#e8dcc9" opacity=".7"/>
+    <path d="M 26 54 Q 50 24 74 54" fill="none" stroke="#b9843f" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="33" cy="46" r="12" fill="#ef7f7f" stroke="#b34d4d" stroke-width="2.6"/>
+    <circle cx="66" cy="45" r="11" fill="#f7b955" stroke="#c98d34" stroke-width="2.6"/>
+    <ellipse cx="50" cy="39" rx="10" ry="13" fill="#b98fd6" stroke="#8a6fa8" stroke-width="2.6"/>
+    <path d="M 50 27 q 7 -8 13 -6 q -4 8 -13 6 Z" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 20 56 L 80 56 L 72 89 L 28 89 Z"
+          fill="#d9a35f" stroke="#9a6a30" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="15" y="50" width="70" height="11" rx="5" fill="#e8b98a" stroke="#9a6a30" stroke-width="3"/>
+    <path d="M 25 69 h 50 M 27 80 h 46" stroke="#b9843f" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 36 61 v 28 M 50 61 v 28 M 64 61 v 28" stroke="#b9843f" stroke-width="2" opacity=".55"/>`,
+
+  /* ---- Trim the Tree ---- */
+
+  holiday_tree: () => `
+    <rect x="44" y="76" width="12" height="14" rx="3" fill="#a5794f" stroke="#7a5836" stroke-width="2.5"/>
+    <path d="M 50 12 L 72 44 L 28 44 Z" fill="#5fa97a" stroke="#3d7a56" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 50 28 L 78 60 L 22 60 Z" fill="#6cb886" stroke="#3d7a56" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 50 44 L 84 78 L 16 78 Z" fill="#7fc99a" stroke="#3d7a56" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="40" cy="54" r="4" fill="#ef7f7f"/><circle cx="62" cy="52" r="3.6" fill="#6fb3d9"/>
+    <circle cx="34" cy="72" r="4" fill="#ffd980"/><circle cx="58" cy="70" r="3.6" fill="#c9a3e0"/>
+    <circle cx="70" cy="74" r="3.4" fill="#ef7f9f"/>
+    <path d="M 50 4 l 3.2 6.6 l 7.2 1 l -5.2 5 l 1.2 7.2 l -6.4 -3.4 l -6.4 3.4 l 1.2 -7.2 l -5.2 -5 l 7.2 -1 z"
+          fill="#ffe08a" stroke="#d8ae4c" stroke-width="2" stroke-linejoin="round"/>`,
+
+  stocking: () => `
+    <path d="M 20 16 h 44" stroke="#b9a68f" stroke-width="3" stroke-linecap="round"/>
+    <rect x="28" y="20" width="30" height="13" rx="6" fill="#fdf6ec" stroke="#c9b8a4" stroke-width="3"/>
+    <path d="M 32 33 L 32 60 Q 32 78 50 80 L 72 82 Q 84 82 84 72 Q 84 64 72 64 L 54 62 Q 54 46 54 33 Z"
+          fill="#e2566f" stroke="#a23b50" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 36 46 h 16" stroke="#f4a8b8" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M 36 54 h 16" stroke="#f4a8b8" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="74" cy="73" r="5" fill="#f4a8b8"/>`,
+
+  snow_globe: () => `
+    <path d="M 22 78 L 78 78 L 72 92 L 28 92 Z" fill="#a5794f" stroke="#7a5836" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="18" y="72" width="64" height="9" rx="4" fill="#c9a887" stroke="#7a5836" stroke-width="3"/>
+    <circle cx="50" cy="46" r="32" fill="#dff0fa" stroke="#7fa8bb" stroke-width="3" opacity=".95"/>
+    <path d="M 50 62 L 62 62 L 50 44 L 38 62 Z" fill="#6cb886" stroke="#3d7a56" stroke-width="2.4" stroke-linejoin="round"/>
+    <rect x="47" y="60" width="6" height="8" rx="2" fill="#a5794f"/>
+    ${[[34,32],[64,36],[42,56],[70,56],[54,26],[28,48]]
+      .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#fff"/>`).join('')}
+    <path d="M 30 30 a 28 28 0 0 1 16 -12" fill="none" stroke="#fff" stroke-width="4" opacity=".6" stroke-linecap="round"/>`,
+
+  /* ---- Midnight Sparklers ---- */
+
+  sparkler_jar: () => `
+    <rect x="30" y="52" width="40" height="38" rx="7" fill="#d9eef6" stroke="#7fa8bb" stroke-width="3" opacity=".94"/>
+    <rect x="26" y="48" width="48" height="8" rx="4" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
+    ${[[38, 20, -16], [50, 12, 0], [62, 20, 16]].map(([x, y, rot]) => `
+      <g transform="rotate(${rot} 50 60)">
+        <path d="M ${x} 50 L ${x} ${y + 10}" stroke="#8a7f74" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="${x}" cy="${y + 6}" r="5" fill="#ffe98a"/>
+        <path d="M ${x} ${y - 4} v 8 M ${x - 7} ${y + 6} h 14 M ${x - 5} ${y + 1} l 10 10 M ${x + 5} ${y + 1} l -10 10"
+              stroke="#ffd35c" stroke-width="2.4" stroke-linecap="round"/>
+      </g>`).join('')}
+    <path d="M 33 60 q -2 14 0 26" fill="none" stroke="#fff" stroke-width="4" opacity=".5" stroke-linecap="round"/>`,
+
+  star_garland: () => {
+    const star = (x, y, r) => {
+      let d = '';
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 ? r * 0.45 : r;
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        d += `${i ? 'L' : 'M'} ${(x + Math.cos(a) * rad).toFixed(1)} ${(y + Math.sin(a) * rad).toFixed(1)} `;
+      }
+      return `<path d="${d}Z" fill="#ffe08a" stroke="#d8ae4c" stroke-width="2" stroke-linejoin="round"/>`;
+    };
+    return `
+      <path d="M 6 28 Q 50 48 94 28" fill="none" stroke="#b9a68f" stroke-width="3" stroke-linecap="round"/>
+      ${star(22, 46, 11)}${star(50, 56, 13)}${star(78, 46, 11)}`;
+  },
+
+  midnight_clock: () => `
+    <circle cx="50" cy="52" r="34" fill="#f6e6c9" stroke="#8a6f54" stroke-width="4"/>
+    <circle cx="50" cy="52" r="27" fill="#fffdf9" stroke="#c9b8a4" stroke-width="2.4"/>
+    ${[0, 3, 6, 9].map(h => {
+      const a = (h / 12) * Math.PI * 2 - Math.PI / 2;
+      return `<circle cx="${(50 + Math.cos(a) * 21).toFixed(1)}" cy="${(52 + Math.sin(a) * 21).toFixed(1)}" r="2.4" fill="#8a6f54"/>`;
+    }).join('')}
+    <path d="M 50 52 L 50 34" stroke="#4a3b32" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M 50 52 L 50 32" stroke="#4a3b32" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="50" cy="52" r="3.4" fill="#4a3b32"/>
+    <path d="M 36 18 q 14 -8 28 0" fill="none" stroke="#8a6f54" stroke-width="3.4" stroke-linecap="round"/>`,
+
+  /* ---- Spring Egg Hunt ---- */
+
+  egg_basket: () => {
+    const egg = (x, y, fill, edge, band) => `
+      <ellipse cx="${x}" cy="${y}" rx="9" ry="11.5" fill="${fill}" stroke="${edge}" stroke-width="2.4"/>
+      <path d="M ${x - 8} ${y} q 8 4 16 0" fill="none" stroke="${band}" stroke-width="2.6"/>`;
+    return `
+      <ellipse cx="50" cy="90" rx="32" ry="6" fill="#e8dcc9" opacity=".7"/>
+      ${egg(34, 50, '#f4a8c6', '#b3596e', '#fff')}
+      ${egg(66, 50, '#a8d8ea', '#4f7f9b', '#fff')}
+      ${egg(50, 44, '#ffe08a', '#c9922c', '#fff')}
+      <path d="M 22 56 L 78 56 L 70 88 L 30 88 Z" fill="#d9a35f" stroke="#9a6a30" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="18" y="52" width="64" height="9" rx="4" fill="#e8b98a" stroke="#9a6a30" stroke-width="3"/>
+      <path d="M 30 62 h 40 M 32 72 h 36 M 34 82 h 32" stroke="#b9843f" stroke-width="2.4" stroke-linecap="round"/>`;
+  },
+
+  tulip_pot: () => {
+    const tulip = (x, top, c, e) => `
+      <path d="M ${x} 62 Q ${x - 2} ${top + 18} ${x} ${top + 12}" fill="none" stroke="#5fa97a" stroke-width="3.4"/>
+      <path d="M ${x - 9} ${top + 12} q 0 -12 9 -12 q 9 0 9 12 q -4 5 -9 5 q -5 0 -9 -5 Z"
+            fill="${c}" stroke="${e}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    return `
+      <path d="M 30 64 Q 18 54 16 40 Q 30 44 34 62 Z" fill="#7fc99a" stroke="#4f9b6d" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M 70 64 Q 82 54 84 40 Q 70 44 66 62 Z" fill="#7fc99a" stroke="#4f9b6d" stroke-width="2.4" stroke-linejoin="round"/>
+      ${tulip(34, 26, '#f4a8c6', '#b3596e')}
+      ${tulip(50, 16, '#ef7f7f', '#b34d4d')}
+      ${tulip(66, 26, '#ffd980', '#c9922c')}
+      <path d="M 30 64 L 70 64 L 65 90 L 35 90 Z" fill="#d98b62" stroke="#a5613f" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="28" y="59" width="44" height="10" rx="4" fill="#e8a17c" stroke="#a5613f" stroke-width="3"/>`;
+  },
+
+  spring_wreath: () => {
+    let out = `<circle cx="50" cy="52" r="29" fill="none" stroke="#6cb886" stroke-width="7"/>`;
+    const colours = ['#f4a8c6', '#fff3c4', '#c9a3e0', '#a8d8ea', '#ffd0dd', '#fff'];
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const x = 50 + Math.cos(a) * 29, y = 52 + Math.sin(a) * 29;
+      const c = colours[i % colours.length];
+      out += `<g>${[0, 1, 2, 3, 4].map(k => {
+        const b = (k / 5) * Math.PI * 2;
+        return `<circle cx="${(x + Math.cos(b) * 4.6).toFixed(1)}" cy="${(y + Math.sin(b) * 4.6).toFixed(1)}"
+                  r="3.8" fill="${c}" stroke="#d9b8c6" stroke-width="1.4"/>`;
+      }).join('')}<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#ffd980"/></g>`;
+    }
+    return out + `<path d="M 44 18 q 6 -6 12 0" fill="none" stroke="#f4a8c6" stroke-width="3.4" stroke-linecap="round"/>`;
+  },
+
   /* ---- Halloween 2026 ---- */
 
   pumpkin_lantern: () => `
