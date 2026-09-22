@@ -1,5 +1,10 @@
 /* Item artwork.
 
+   Windows are drawn with `var(--season-glass)` for their glass, so every
+   window she owns looks out on the same day without any of them knowing
+   what month it is. core/season.js sets it. The fallback keeps them honest
+   anywhere the variable is not set.
+
    Two kinds of drawing:
 
    WEARABLES are drawn onto the pet, so they take the pet's live geometry and
@@ -1017,19 +1022,19 @@ const DECOR = {
 
   /* ---- Windows. Drawn against the wall, so they show sky. ---- */
   window_round: () => `
-    <circle cx="50" cy="48" r="34" fill="#bfe6f5" stroke="#a5875f" stroke-width="7"/>
+    <circle cx="50" cy="48" r="34" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7"/>
     <circle cx="50" cy="48" r="34" fill="none" stroke="#d9c4a5" stroke-width="3"/>
     <path d="M 50 14 v 68 M 16 48 h 68" stroke="#d9c4a5" stroke-width="5"/>
     <circle cx="38" cy="34" r="7" fill="#fff" opacity=".55"/>`,
 
   window_cottage: () => `
-    <rect x="16" y="16" width="68" height="62" rx="4" fill="#bfe6f5" stroke="#a5875f" stroke-width="7"/>
+    <rect x="16" y="16" width="68" height="62" rx="4" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7"/>
     <path d="M 50 16 v 62 M 16 47 h 68" stroke="#d9c4a5" stroke-width="5"/>
     <rect x="10" y="76" width="80" height="8" rx="3" fill="#e8d3ba" stroke="#a5875f" stroke-width="3"/>
     <circle cx="33" cy="32" r="6" fill="#fff" opacity=".5"/>`,
 
   window_arch: () => `
-    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="#bfe6f5" stroke="#a5875f" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7" stroke-linejoin="round"/>
     <path d="M 50 18 v 64 M 20 56 h 60" stroke="#d9c4a5" stroke-width="5"/>
     <circle cx="36" cy="38" r="6" fill="#fff" opacity=".5"/>`,
 
@@ -1359,7 +1364,7 @@ const DECOR = {
   /* ================= More windows and doors ================= */
 
   window_flower: () => `
-    <rect x="18" y="12" width="64" height="54" rx="4" fill="#bfe6f5" stroke="#a5875f" stroke-width="6"/>
+    <rect x="18" y="12" width="64" height="54" rx="4" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="6"/>
     <path d="M 50 12 v 54 M 18 39 h 64" stroke="#d9c4a5" stroke-width="5"/>
     <path d="M 12 66 h 76 l -5 20 h -66 z" fill="#d98b62" stroke="#a5613f" stroke-width="3.5" stroke-linejoin="round"/>
     ${[24, 40, 56, 72].map((x, i) =>
@@ -1373,7 +1378,7 @@ const DECOR = {
       const r = i % 2 ? 18 : 42;
       d += `${i ? 'L' : 'M'} ${n2(50 + Math.cos(a) * r)} ${n2(48 + Math.sin(a) * r)} `;
     }
-    return `<path d="${d}Z" fill="#cfe6f5" stroke="#a5875f" stroke-width="6" stroke-linejoin="round"/>
+    return `<path d="${d}Z" fill="var(--season-glass, #cfe6f5)" stroke="#a5875f" stroke-width="6" stroke-linejoin="round"/>
             <path d="${d}Z" fill="none" stroke="#fff" stroke-width="2" opacity=".6"/>
             <circle cx="42" cy="38" r="5" fill="#fff" opacity=".7"/>`;
   },

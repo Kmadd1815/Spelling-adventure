@@ -15,14 +15,22 @@ import { navigate } from '../ui/router.js';
 import { itemSVG } from '../ui/item-art.js';
 import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
+import { currentSeason } from '../core/season.js';
 
 export default function shopScreen(container) {
   let tab = items.SHOP_TABS[0].key;
 
   function render() {
     const stars = rewards.stars();
+    const season = currentSeason();
     const activeTab = items.SHOP_TABS.find(t => t.key === tab) || items.SHOP_TABS[0];
-    const forSale = items.shopItems().filter(i => activeTab.slots.includes(i.category));
+    /* Things that suit the time of year come first in their tab and wear a
+       little leaf. Nothing is ever withheld because of the date — an item
+       she was saving up for quietly vanishing in December would punish her
+       for saving. */
+    const forSale = items.shopItems()
+      .filter(i => activeTab.slots.includes(i.category))
+      .sort((a, b) => (b.season === season.key) - (a.season === season.key));
     const cheapest = items.shopItems().filter(i => !items.owns(i.id))
       .reduce((lo, i) => (lo === null || i.price < lo ? i.price : lo), null);
 
@@ -45,9 +53,11 @@ export default function shopScreen(container) {
         v => { tab = v; render(); }
       ),
 
-      el('div', { class: 'shop-grid' }, forSale.map(card))
+      el('div', { class: 'shop-grid' }, forSale.map(item => card(item, season)))
     );
 
+    body.append(el('p', { class: 'center tiny muted', text:
+      `${season.emoji} marks what suits ${season.name}. Everything stays on the shelves all year.` }));
     body.append(el('p', { class: 'center tiny muted', text:
       'Special treasures are not sold here — those are earned.' }));
     body.append(button('Go home', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F3E0}',
@@ -56,15 +66,18 @@ export default function shopScreen(container) {
     mount(container, body);
   }
 
-  function card(item) {
+  function card(item, season = currentSeason()) {
     const owned = items.owns(item.id);
     const afford = rewards.stars() >= item.price;
+    const inSeason = item.season === season.key;
 
     return el('button', {
-      class: `shop-card${owned ? ' owned' : afford ? '' : ' cant-afford'}`,
+      class: `shop-card${owned ? ' owned' : afford ? '' : ' cant-afford'}${inSeason ? ' in-season' : ''}`,
       type: 'button',
       onClick: () => (owned ? alreadyOwned(item) : tryBuy(item)),
     },
+      inSeason ? el('span', { class: 'season-tag', title: `Suits ${season.name}`,
+        text: season.emoji }) : null,
       el('div', { class: 'shop-art', html: itemSVG(item, { size: 92 }) }),
       el('div', { class: 'shop-name', text: item.name }),
       owned

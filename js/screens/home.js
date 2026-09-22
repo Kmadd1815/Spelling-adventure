@@ -9,7 +9,7 @@ import * as words from '../core/words.js';
 import * as items from '../core/items.js';
 import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
-import { currentSeason, applySeasonTheme } from '../core/season.js';
+import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import * as events from '../core/events.js';
 
 export default function homeScreen(container) {
@@ -22,7 +22,11 @@ export default function homeScreen(container) {
   const leftToday = words.wordsLeftToday().length;
   const dailyDone = words.dailyPracticeDone();
 
-  const bubble = el('div', { class: 'room-speech', text: pet.greeting() });
+  /* Now and then the axolotl mentions the time of year rather than saying
+     one of its usual hellos. Often enough to notice, rarely enough that it
+     never feels like the weather report. */
+  const bubble = el('div', { class: 'room-speech',
+    text: Math.random() < 0.35 ? seasonLine(season) : pet.greeting() });
 
   const drawPet = mood => petSVG({
     coat: info.coat, stage: info.stage, mood,

@@ -7,11 +7,17 @@
 
    Positions are percentages of the room box, so the same arrangement holds
    from a phone-width hero to a full-screen decorating view.
+
+   The season lives in here too: whatever is drifting through the air this
+   time of year falls behind the furniture and in front of the wall, and a
+   faint wash of the day's light sits over the top. Both are decoration
+   only — nothing she owns or can buy changes with the season.
 */
 
 import { el } from './dom.js';
 import { decorSVG, surfaceStyle } from './item-art.js';
 import * as items from '../core/items.js';
+import { currentSeason } from '../core/season.js';
 
 /** Where the wall stops and the floor starts, as a percentage of height. */
 const HORIZON = 56;
@@ -54,6 +60,34 @@ function place(node, spec) {
   return node;
 }
 
+/* What is in the air this time of year. Each piece carries its own timing
+   and drift so the fall never looks stamped out, and the whole layer is
+   hidden rather than frozen when motion is turned down — a frozen snowfall
+   is a row of dots stuck near the ceiling. */
+function weatherLayer(season) {
+  const layer = el('div', { class: `room-weather weather-${season.weather}` });
+  for (let i = 0; i < season.pieces; i++) {
+    /* The delay is negative on purpose: a positive one would park every
+       piece above the ceiling until its turn came round, so the room would
+       open empty and only start snowing a quarter of a minute later. A
+       negative delay starts each piece part-way through its own fall, so
+       the weather is already in the air the moment she opens the app. */
+    const dur = 9 + Math.random() * 11;
+    layer.append(el('span', {
+      class: 'wx',
+      style: {
+        left: `${Math.random() * 100}%`,
+        '--wx-delay': `${(-Math.random() * dur).toFixed(2)}s`,
+        '--wx-dur': `${dur.toFixed(2)}s`,
+        '--wx-drift': `${(Math.random() * 60 - 30).toFixed(1)}px`,
+        '--wx-spin': `${Math.round(Math.random() * 540 - 270)}deg`,
+        '--wx-size': `${(0.55 + Math.random() * 0.6).toFixed(2)}`,
+      },
+    }));
+  }
+  return layer;
+}
+
 function piece(itemId, spec, extraClass = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
@@ -68,7 +102,7 @@ function piece(itemId, spec, extraClass = '') {
  * @param {object} [opts.petProps] extra props for the pet node (onClick etc.)
  * @returns {HTMLElement}
  */
-export function buildRoom({ petHTML = '', petProps = {} } = {}) {
+export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason() } = {}) {
   const worn = items.equipped();
 
   const room = el('div', { class: 'room' });
@@ -82,6 +116,7 @@ export function buildRoom({ petHTML = '', petProps = {} } = {}) {
   floor.style.height = `${100 - HORIZON}%`;
 
   room.append(wall, floor, el('div', { class: 'room-skirting', style: { top: `${HORIZON}%` } }));
+  room.append(weatherLayer(season));
 
   if (worn.window) room.append(piece(worn.window, PLACES.window));
   if (worn.door)   room.append(piece(worn.door, PLACES.door));
@@ -101,6 +136,10 @@ export function buildRoom({ petHTML = '', petProps = {} } = {}) {
 
   const pet = el('div', { class: 'room-pet', html: petHTML, ...petProps });
   room.append(place(pet, PLACES.pet));
+
+  /* The light goes on last so it falls across everything, and takes no
+     pointer events so it can never come between her and the axolotl. */
+  room.append(el('div', { class: 'room-light', style: { background: season.light } }));
 
   return room;
 }

@@ -610,6 +610,134 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   z-index: 0;
 }
 
+/* ---------- Weather in the room ----------
+
+   Whatever is in the air this time of year, drifting behind the furniture.
+   Every piece carries its own delay, duration, drift and spin as custom
+   properties, so a dozen of them never fall in step.
+
+   Each piece is really two things: a full-height track (.wx) that slides
+   from the ceiling to the floor, and the visible shape (::before) riding on
+   it. The track is full height on purpose — a percentage translate resolves
+   against the element's OWN box, so a 10px petal told to fall 135% falls
+   thirteen pixels and no weather ever crosses the room. Full height makes
+   100% mean the room. The drift and the spin live on the shape so that
+   tumbling never swings it around the middle of the track.
+
+   Positioned with `left` and animated with `transform`: the animation owns
+   the transform completely, which is the rule that keeps anything in this
+   app from leaping sideways mid-animation. */
+
+.room-weather {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;                 /* over the wall and floor, under the furniture */
+}
+
+.room-weather .wx {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 100%;
+  display: block;
+  animation: wx-fall var(--wx-dur, 12s) linear var(--wx-delay, 0s) infinite;
+  will-change: transform;
+}
+
+.room-weather .wx::before {
+  content: '';
+  position: absolute;
+  top: -13%;                  /* just above the ceiling, out of sight */
+  left: 0;
+  display: block;
+  animation: wx-sway var(--wx-dur, 12s) linear var(--wx-delay, 0s) infinite;
+}
+
+@keyframes wx-fall {
+  from { transform: translate3d(0, 0, 0); opacity: 0; }
+  8%   { opacity: 1; }
+  88%  { opacity: 1; }
+  to   { transform: translate3d(0, 116%, 0); opacity: 0; }
+}
+
+/* The sideways wander and the tumble, on the shape rather than the track. */
+@keyframes wx-sway {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to   { transform: translate3d(var(--wx-drift, 0px), 0, 0) rotate(var(--wx-spin, 0deg)); }
+}
+
+/* Spring — blossom, tumbling slowly. */
+.weather-petals .wx::before {
+  width: calc(11px * var(--wx-size, 1));
+  height: calc(8px * var(--wx-size, 1));
+  border-radius: 60% 40% 60% 40%;
+  background: #f7bdd2;
+  box-shadow: inset 0 0 0 1px rgba(190, 120, 150, .35);
+}
+
+/* Summer — warm motes hanging in a sunbeam. They rise instead of falling. */
+.weather-motes .wx {
+  animation-name: wx-rise;
+  animation-timing-function: ease-in-out;
+}
+.weather-motes .wx::before {
+  top: auto;
+  bottom: -10%;
+  width: calc(9px * var(--wx-size, 1));
+  height: calc(9px * var(--wx-size, 1));
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff3c4, #f0b429);
+  box-shadow: 0 0 6px rgba(236, 172, 52, .55);
+}
+@keyframes wx-rise {
+  from { transform: translate3d(0, 0, 0); opacity: 0; }
+  14%  { opacity: .9; }
+  80%  { opacity: .75; }
+  to   { transform: translate3d(0, -116%, 0); opacity: 0; }
+}
+
+/* Fall — leaves, which tumble more than they drift. */
+.weather-leaves .wx::before {
+  width: calc(13px * var(--wx-size, 1));
+  height: calc(10px * var(--wx-size, 1));
+  border-radius: 0 70% 0 70%;
+  background: #e08a3c;
+  box-shadow: inset 0 0 0 1px rgba(138, 74, 32, .45);
+}
+.weather-leaves .wx:nth-child(3n)::before   { background: #c96a2c; }
+.weather-leaves .wx:nth-child(3n+1)::before { background: #e3ae4c; }
+
+/* Winter — snow, soft and slow. */
+.weather-snow .wx::before {
+  width: calc(10px * var(--wx-size, 1));
+  height: calc(10px * var(--wx-size, 1));
+  border-radius: 50%;
+  background: #fff;
+  /* A rim as well as a glow: pure white snow on a cream wall is invisible. */
+  box-shadow: 0 0 6px rgba(120, 170, 215, .55), inset 0 0 0 1px rgba(138, 180, 220, .5);
+}
+
+/* The cast of the day's light, over everything and in the way of nothing.
+
+   A plain tinted wash rather than a blend mode: soft-light over a cream wall
+   moves the colour by about one shade, which is the same as not being there.
+   The gradients are strongest at the top and gone by the floor, so the
+   furniture below keeps its own colours. */
+.room-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;                 /* above the furniture, below nothing that matters */
+}
+
+/* Frozen weather is worse than none: a row of dots stuck near the ceiling.
+   When motion is turned down the layer goes away entirely. */
+@media (prefers-reduced-motion: reduce) {
+  .room-weather { display: none; }
+}
+
 .room-piece { line-height: 0; pointer-events: none; }
 .room-piece svg { width: 100%; height: auto; display: block; }
 
@@ -631,6 +759,17 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   background: #fff; border-radius: var(--r-md);
   padding: 8px 14px; font-weight: 800; font-size: .95rem;
   text-align: center; box-shadow: var(--shadow);
+}
+
+/* A seasonal line is longer than "Hello, friend!", and on a phone a centred
+   bubble that wide reaches back under the season chip. Below this width the
+   bubble gives up the middle and takes the space beside the chip instead. */
+@media (max-width: 560px) {
+  .room-speech {
+    left: auto; right: 10px; transform: none;
+    max-width: calc(100% - 150px);
+    font-size: .88rem;
+  }
 }
 
 .surface-swatch {
@@ -893,6 +1032,18 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 }
 .shop-card:active { transform: translateY(3px); }
 .shop-card .shop-art { line-height: 0; }
+.shop-card { position: relative; }
+/* A quiet mark, not a sale sticker: the item is no different, it just
+   happens to suit the month. */
+.season-tag {
+  position: absolute;
+  top: 6px; right: 8px;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: .9;
+}
+.shop-card.in-season { box-shadow: var(--shadow), inset 0 0 0 2px rgba(246, 196, 83, .55); }
+
 .shop-name { font-weight: 800; font-size: .95rem; text-align: center; }
 
 .shop-price {

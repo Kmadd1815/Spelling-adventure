@@ -56,20 +56,25 @@ export const SHOP_TABS = [
      price > 0     sold in the shop
      price === 0   a starter, owned from the very beginning
      price === null  earned only; there is no number to charge
+
+   `season` is a hint, never a gate. An item that suits the time of year is
+   pointed out in the shop and nothing more: everything stays buyable all
+   year, because a thing she was saving up for quietly vanishing in
+   December would be a punishment for saving.
 */
 
 export const CATALOG = [
   /* ---- Hats ---- */
   { id: 'bow',           name: 'Little Bow',      category: 'hat', price: 40,  blurb: 'A neat ribbon bow.' },
   { id: 'party_hat',     name: 'Party Hat',       category: 'hat', price: 65,  blurb: 'For celebrating a good spelling day.' },
-  { id: 'flower_crown',  name: 'Flower Crown',    category: 'hat', price: 110, blurb: 'Woven from spring flowers.' },
+  { id: 'flower_crown',  name: 'Flower Crown',    category: 'hat', price: 110, blurb: 'Woven from spring flowers.', season: 'spring' },
   { id: 'wizard_hat',    name: 'Wizard Hat',      category: 'hat', price: 190, blurb: 'Every good speller needs one.' },
   { id: 'gold_crown',    name: 'Golden Crown',    category: 'hat', price: 550, blurb: 'Heavy, shiny, and extremely fancy.' },
 
   /* ---- Accessories ---- */
   { id: 'bowtie',        name: 'Bow Tie',         category: 'accessory', price: 45,  blurb: 'Very smart.' },
-  { id: 'scarf',         name: 'Cozy Scarf',      category: 'accessory', price: 75,  blurb: 'Soft and stripy.' },
-  { id: 'goggles',       name: 'Swim Goggles',    category: 'accessory', price: 130, blurb: 'An axolotl is already good at swimming, but still.' },
+  { id: 'scarf',         name: 'Cozy Scarf',      category: 'accessory', price: 75,  blurb: 'Soft and stripy.', season: 'fall' },
+  { id: 'goggles',       name: 'Swim Goggles',    category: 'accessory', price: 130, blurb: 'An axolotl is already good at swimming, but still.', season: 'summer' },
   { id: 'cape',          name: 'Hero Cape',       category: 'accessory', price: 220, blurb: 'Swooshes when you walk.' },
   { id: 'star_glasses',  name: 'Star Glasses',    category: 'accessory', price: 300, blurb: 'The world looks sparklier through these.' },
 
@@ -78,7 +83,7 @@ export const CATALOG = [
   { id: 'wall_stripes',  name: 'Mint Stripes',    category: 'wallpaper', price: 80,  blurb: 'Fresh and tidy.' },
   { id: 'wall_dots',     name: 'Pink Polka',      category: 'wallpaper', price: 95,  blurb: 'Dotty in the best way.' },
   { id: 'wall_stars',    name: 'Starry Night',    category: 'wallpaper', price: 170, blurb: 'A whole sky indoors.' },
-  { id: 'wall_flowers',  name: 'Flower Garden',   category: 'wallpaper', price: 210, blurb: 'Climbing blossoms.' },
+  { id: 'wall_flowers',  name: 'Flower Garden',   category: 'wallpaper', price: 210, blurb: 'Climbing blossoms.', season: 'spring' },
 
   /* ---- Flooring ---- */
   { id: 'floor_wood',    name: 'Warm Wood',       category: 'flooring', price: 0,   blurb: 'Honest floorboards.' },
@@ -110,7 +115,7 @@ export const CATALOG = [
   { id: 'frame',         name: 'Picture Frame',   category: 'wallDecor', price: 70,  blurb: 'A painting of a pond.' },
   { id: 'clock',         name: 'Wall Clock',      category: 'wallDecor', price: 110, blurb: 'Always says tea time.' },
   { id: 'bunting',       name: 'Bunting',         category: 'wallDecor', price: 130, blurb: 'Strung corner to corner.' },
-  { id: 'lantern',       name: 'Paper Lantern',   category: 'wallDecor', price: 280, blurb: 'Sways gently.' },
+  { id: 'lantern',       name: 'Paper Lantern',   category: 'wallDecor', price: 280, blurb: 'Sways gently.', season: 'fall' },
 
   /* ---- On the floor ---- */
   { id: 'pebbles',       name: 'Pretty Pebbles',  category: 'floorDecor', price: 35,  blurb: 'Smooth river stones.' },
@@ -118,7 +123,7 @@ export const CATALOG = [
   { id: 'potted_plant',  name: 'Potted Plant',    category: 'floorDecor', price: 55,  blurb: 'A cheerful little fern.' },
   { id: 'lamp',          name: 'Toadstool Lamp',  category: 'floorDecor', price: 85,  blurb: 'Glows softly in the evening.' },
   { id: 'teddy',         name: 'Teddy Bear',      category: 'floorDecor', price: 120, blurb: 'A friend for your friend.' },
-  { id: 'bookshelf',     name: 'Book Nook',       category: 'floorDecor', price: 240, blurb: 'Full of stories.' },
+  { id: 'bookshelf',     name: 'Book Nook',       category: 'floorDecor', price: 240, blurb: 'Full of stories.', season: 'fall' },
   { id: 'little_tree',   name: 'Little Tree',     category: 'floorDecor', price: 420, blurb: 'It might grow. Nobody is sure.' },
   { id: 'fish_tank',     name: 'Fish Tank',       category: 'floorDecor', price: 650, blurb: 'Three fish. They have names.' },
   { id: 'castle',        name: 'Castle Playset',  category: 'floorDecor', price: 900, blurb: 'A whole tiny kingdom.' },
@@ -132,8 +137,8 @@ export const CATALOG = [
   /* ---- More hats ---- */
   { id: 'flower_pin',   name: 'Flower Pin',      category: 'hat', price: 45,  blurb: 'One perfect daisy.' },
   { id: 'headband',     name: 'Headband',        category: 'hat', price: 55,  blurb: 'Keeps the gills tidy.' },
-  { id: 'sun_hat',      name: 'Sun Hat',         category: 'hat', price: 60,  blurb: 'Wide brim, very summery.' },
-  { id: 'beanie',       name: 'Woolly Beanie',   category: 'hat', price: 75,  blurb: 'With a bobble on top.' },
+  { id: 'sun_hat',      name: 'Sun Hat',         category: 'hat', price: 60,  blurb: 'Wide brim, very summery.', season: 'summer' },
+  { id: 'beanie',       name: 'Woolly Beanie',   category: 'hat', price: 75,  blurb: 'With a bobble on top.', season: 'winter' },
   { id: 'chef_hat',     name: 'Chef Hat',        category: 'hat', price: 100, blurb: 'For very serious cooking.' },
   { id: 'pirate_hat',   name: 'Pirate Hat',      category: 'hat', price: 170, blurb: 'Arr.' },
   { id: 'tiara',        name: 'Sparkle Tiara',   category: 'hat', price: 360, blurb: 'Catches the light beautifully.' },
@@ -141,23 +146,23 @@ export const CATALOG = [
   /* ---- More to wear ---- */
   { id: 'bell_collar',  name: 'Bell Collar',     category: 'accessory', price: 50,  blurb: 'Jingles when you wiggle.' },
   { id: 'necklace',     name: 'Bead Necklace',   category: 'accessory', price: 65,  blurb: 'Hand-threaded, obviously.' },
-  { id: 'flower_lei',   name: 'Flower Lei',      category: 'accessory', price: 85,  blurb: 'A ring of blossoms.' },
-  { id: 'snorkel',      name: 'Snorkel',         category: 'accessory', price: 115, blurb: 'Completely unnecessary. Wonderful.' },
+  { id: 'flower_lei',   name: 'Flower Lei',      category: 'accessory', price: 85,  blurb: 'A ring of blossoms.', season: 'summer' },
+  { id: 'snorkel',      name: 'Snorkel',         category: 'accessory', price: 115, blurb: 'Completely unnecessary. Wonderful.', season: 'summer' },
   { id: 'backpack',     name: 'Little Backpack', category: 'accessory', price: 140, blurb: 'For carrying snacks.' },
   { id: 'sweater',      name: 'Stripy Sweater',  category: 'accessory', price: 175, blurb: 'Knitted with love.' },
   { id: 'fairy_wings',  name: 'Fairy Wings',     category: 'accessory', price: 330, blurb: 'They shimmer.' },
 
   /* ---- More wallpaper ---- */
-  { id: 'wall_clouds',  name: 'Cloudy Sky',      category: 'wallpaper', price: 110, blurb: 'Soft and drifting.' },
+  { id: 'wall_clouds',  name: 'Cloudy Sky',      category: 'wallpaper', price: 110, blurb: 'Soft and drifting.', season: 'winter' },
   { id: 'wall_rainbow', name: 'Rainbow Stripes', category: 'wallpaper', price: 185, blurb: 'Every colour at once.' },
   { id: 'wall_books',   name: 'Library Wall',    category: 'wallpaper', price: 240, blurb: 'Books all the way up.' },
   { id: 'wall_ocean',   name: 'Deep Ocean',      category: 'wallpaper', price: 270, blurb: 'Where an axolotl belongs.' },
 
   /* ---- More flooring ---- */
   { id: 'floor_moss',   name: 'Mossy Floor',     category: 'flooring', price: 105, blurb: 'Springy and green.' },
-  { id: 'floor_sand',   name: 'Soft Sand',       category: 'flooring', price: 125, blurb: 'Warm between the toes.' },
-  { id: 'floor_marble', name: 'Marble',          category: 'flooring', price: 230, blurb: 'Rather grand.' },
-  { id: 'floor_petals', name: 'Fallen Petals',   category: 'flooring', price: 290, blurb: 'Pink all over.' },
+  { id: 'floor_sand',   name: 'Soft Sand',       category: 'flooring', price: 125, blurb: 'Warm between the toes.', season: 'summer' },
+  { id: 'floor_marble', name: 'Marble',          category: 'flooring', price: 230, blurb: 'Rather grand.', season: 'winter' },
+  { id: 'floor_petals', name: 'Fallen Petals',   category: 'flooring', price: 290, blurb: 'Pink all over.', season: 'fall' },
 
   /* ---- More windows and doors ---- */
   { id: 'window_flower',name: 'Flower Box',      category: 'window', price: 210, blurb: 'A window with a garden on it.' },
@@ -169,31 +174,31 @@ export const CATALOG = [
   { id: 'bed_hammock',  name: 'Hammock',         category: 'bed', price: 195, blurb: 'Swings very gently.' },
   { id: 'bed_lilypad',  name: 'Lily Pad Bed',    category: 'bed', price: 255, blurb: 'Floats, sort of.' },
   { id: 'bed_mushroom', name: 'Mushroom Bed',    category: 'bed', price: 330, blurb: 'Red with white spots.' },
-  { id: 'bed_cloud',    name: 'Cloud Bed',       category: 'bed', price: 520, blurb: 'As soft as it looks.' },
+  { id: 'bed_cloud',    name: 'Cloud Bed',       category: 'bed', price: 520, blurb: 'As soft as it looks.', season: 'winter' },
 
   /* ---- More rugs ---- */
   { id: 'rug_moss',     name: 'Moss Mat',        category: 'rug', price: 130, blurb: 'A little patch of forest.' },
   { id: 'rug_star',     name: 'Star Rug',        category: 'rug', price: 175, blurb: 'Five points, very tidy.' },
-  { id: 'rug_flower',   name: 'Flower Rug',      category: 'rug', price: 240, blurb: 'Petals all around.' },
-  { id: 'rug_cloud',    name: 'Cloud Rug',       category: 'rug', price: 300, blurb: 'Like standing on the sky.' },
+  { id: 'rug_flower',   name: 'Flower Rug',      category: 'rug', price: 240, blurb: 'Petals all around.', season: 'spring' },
+  { id: 'rug_cloud',    name: 'Cloud Rug',       category: 'rug', price: 300, blurb: 'Like standing on the sky.', season: 'winter' },
 
   /* ---- More for the walls ---- */
-  { id: 'butterflies',  name: 'Butterflies',     category: 'wallDecor', price: 60,  blurb: 'Three, mid-flutter.' },
+  { id: 'butterflies',  name: 'Butterflies',     category: 'wallDecor', price: 60,  blurb: 'Three, mid-flutter.', season: 'spring' },
   { id: 'small_shelf',  name: 'Little Shelf',    category: 'wallDecor', price: 85,  blurb: 'Just big enough.' },
   { id: 'mirror',       name: 'Round Mirror',    category: 'wallDecor', price: 115, blurb: 'Who is that handsome axolotl?' },
   { id: 'wall_planter', name: 'Hanging Planter', category: 'wallDecor', price: 135, blurb: 'Trailing leaves.' },
   { id: 'map',          name: 'Treasure Map',    category: 'wallDecor', price: 160, blurb: 'X is somewhere.' },
-  { id: 'fairy_lights', name: 'Fairy Lights',    category: 'wallDecor', price: 195, blurb: 'Warm little bulbs.' },
-  { id: 'rainbow_arch', name: 'Rainbow',         category: 'wallDecor', price: 250, blurb: 'Indoors, which is rare.' },
+  { id: 'fairy_lights', name: 'Fairy Lights',    category: 'wallDecor', price: 195, blurb: 'Warm little bulbs.', season: 'winter' },
+  { id: 'rainbow_arch', name: 'Rainbow',         category: 'wallDecor', price: 250, blurb: 'Indoors, which is rare.', season: 'spring' },
 
   /* ---- Plants, properly ---- */
   { id: 'plant_cactus',    name: 'Little Cactus',  category: 'floorDecor', price: 60,  blurb: 'Prickly but friendly.' },
   { id: 'plant_succulent', name: 'Succulent',      category: 'floorDecor', price: 70,  blurb: 'Almost impossible to kill.' },
-  { id: 'plant_flowers',   name: 'Flower Pot',     category: 'floorDecor', price: 95,  blurb: 'Three blooms, all different.' },
-  { id: 'mushrooms',       name: 'Toadstools',     category: 'floorDecor', price: 110, blurb: 'A small red cluster.' },
+  { id: 'plant_flowers',   name: 'Flower Pot',     category: 'floorDecor', price: 95,  blurb: 'Three blooms, all different.', season: 'spring' },
+  { id: 'mushrooms',       name: 'Toadstools',     category: 'floorDecor', price: 110, blurb: 'A small red cluster.', season: 'fall' },
   { id: 'plant_big_leaf',  name: 'Big Leaf Plant', category: 'floorDecor', price: 165, blurb: 'Enormous cheerful leaves.' },
-  { id: 'plant_tall',      name: 'Tall Palm',      category: 'floorDecor', price: 145, blurb: 'Reaches right up.' },
-  { id: 'plant_bonsai',    name: 'Bonsai Tree',    category: 'floorDecor', price: 190, blurb: 'Tiny and very old.' },
+  { id: 'plant_tall',      name: 'Tall Palm',      category: 'floorDecor', price: 145, blurb: 'Reaches right up.', season: 'summer' },
+  { id: 'plant_bonsai',    name: 'Bonsai Tree',    category: 'floorDecor', price: 190, blurb: 'Tiny and very old.', season: 'fall' },
 
   /* ---- More for the floor ---- */
   { id: 'watering_can',    name: 'Watering Can',   category: 'floorDecor', price: 40,  blurb: 'For all those plants.' },
@@ -282,6 +287,10 @@ export const isSpecial = item => !!item && item.price === null;
 export const isStarter = item => !!item && item.price === 0;
 
 export const itemsForSlot = slot => CATALOG.filter(i => i.category === slot);
+
+/** Shop items that suit a given season. A hint for the shop, nothing more. */
+export const itemsInSeason = seasonKey =>
+  CATALOG.filter(i => i.price > 0 && i.season === seasonKey);
 
 /* ---------- Ownership ---------- */
 

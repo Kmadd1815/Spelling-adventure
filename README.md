@@ -238,6 +238,29 @@ still runs on spelling.
 There is a grown-up setting — **Mini-games** in the Parent Area — to make the
 games wait until Today's Practice is finished. It is off by default.
 
+## The seasons
+
+The app knows what time of year it is, and the room shows it. There is
+nothing to set and nothing to buy — it just changes underneath her four
+times a year.
+
+| | Light | In the air | Window glass |
+|---|---|---|---|
+| 🌸 **Spring** | blossom pink | petals, tumbling down | pale blue |
+| ☀️ **Summer** | warm gold | motes, drifting up through a sunbeam | bright blue |
+| 🍂 **Fall** | amber | leaves, in three colours | warm amber |
+| ❄️ **Winter** | cool blue | snow, slow and soft | icy blue |
+
+Alongside that, the axolotl has things to say about the weather — roughly
+one greeting in three is about the season — and the shop puts whatever suits
+the month at the front of its tab with a little badge. **Nothing is ever taken
+off the shelves because of the date.** An item she has been saving three
+weeks for quietly disappearing in December would punish her for saving.
+
+If the tablet has "reduce motion" turned on, the weather layer is removed
+rather than frozen: a dozen snowflakes stuck near the ceiling look broken,
+where a plain room does not.
+
 ## Seasonal events
 
 An event sits **on top of** the season rather than replacing it: October is
@@ -524,14 +547,16 @@ js/core/                systems — no DOM in here
   discovery.js          what the axolotl finds, and how rarely
   safety.js             persistent storage, and noticing when a backup
                         is overdue
-  season.js             date-driven season
+  season.js             the four seasons: light, weather, glass and
+                        what the axolotl says about the weather
   bus.js                tiny pub/sub
 
 js/ui/                  reusable pieces
   dom.js  router.js  toast.js  fx.js (reaction bursts)
   art.js       the axolotl, drawn from a handful of proportions
   item-art.js  every item, plus the wallpaper and floor surfaces
-  room.js      the room: wall, floor, and where each slot sits
+  room.js      the room: wall, floor, the season's weather and light,
+               and where each slot sits
   keyboard.js  THE on-screen keyboard, shared by spelling and games
   buddy.js     the axolotl's seat in every mini-game
   discovery.js the little ceremony around opening what it found
