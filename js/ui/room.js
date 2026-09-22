@@ -8,14 +8,18 @@
    Positions are percentages of the room box, so the same arrangement holds
    from a phone-width hero to a full-screen decorating view.
 
-   The season lives in here too: whatever is drifting through the air this
-   time of year falls behind the furniture and in front of the wall, and a
-   faint wash of the day's light sits over the top. Both are decoration
-   only — nothing she owns or can buy changes with the season.
+   The season lives in here too, but it stays where it belongs: this is
+   indoors, so the weather falls OUTSIDE, seen through the window and
+   nowhere else. The room itself only takes the wash of the day's light.
+   (An outdoor scene would want the weather across the whole picture —
+   that is what weatherLayer is for, and why it takes its own sizing.)
+
+   Both are decoration only — nothing she owns or can buy changes with the
+   season.
 */
 
 import { el } from './dom.js';
-import { decorSVG, surfaceStyle } from './item-art.js';
+import { decorSVG, surfaceStyle, WINDOW_GLASS } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
 
@@ -26,8 +30,12 @@ const HORIZON = 56;
    further back something is, the earlier it is drawn, so the axolotl stands
    in front of its bed and behind the thing in the front corner. */
 const PLACES = {
-  window:      { left: 9,  top: 9,    width: 22, depth: 1 },
-  door:        { left: 74, bottom: HORIZON - 2, width: 20, depth: 1, anchor: 'bottom' },
+  /* The window is the only way the weather gets in, so it is worth the
+     wall space: big enough to actually watch it snowing. */
+  window:      { left: 8,  top: 7, width: 27, depth: 1 },
+  /* Measured from the join, not from the bottom of the picture, so the
+     door stands on the floor instead of hovering over it. */
+  door:        { left: 79, bottom: 100 - HORIZON, width: 20, depth: 1, footGap: 4 },
   wallDecor: [
     { left: 38, top: 7,  width: 16, depth: 2 },
     { left: 57, top: 15, width: 14, depth: 2 },
@@ -38,7 +46,10 @@ const PLACES = {
      corners the way a room actually gets decorated. */
   bed:         { left: 1,  bottom: 20, width: 27, depth: 3 },
   floorDecor: [
-    { left: 71, bottom: 24, width: 16, depth: 3 },   // back right
+    /* Standing between the rug and the door: any further left and the rug
+       draws over the top of it, any further right and it blocks the way
+       out. There is about four percent of room either side. */
+    { left: 69, bottom: 24, width: 15, depth: 3 },   // back right
     { left: 2,  bottom: 1,  width: 15, depth: 9 },   // front left, ahead of the pet
     { left: 82, bottom: 1,  width: 16, depth: 9 },   // front right
   ],
@@ -56,6 +67,12 @@ function place(node, spec) {
   node.style.width = `${spec.width}%`;
   if (spec.top !== undefined) node.style.top = `${spec.top}%`;
   else node.style.bottom = `${spec.bottom}%`;
+  /* Every door is drawn with a little clear space beneath it inside its own
+     square, so a door placed by its box hovers. This pulls the box down by
+     exactly that gap: a margin percentage resolves against the room's WIDTH,
+     and so does the piece's width, and the art is square — so `footGap`
+     viewBox units come out as the same number of pixels at any room size. */
+  if (spec.footGap) node.style.marginBottom = `${-spec.footGap * spec.width / 100}%`;
   node.style.zIndex = String(spec.depth);
   return node;
 }
@@ -63,29 +80,89 @@ function place(node, spec) {
 /* What is in the air this time of year. Each piece carries its own timing
    and drift so the fall never looks stamped out, and the whole layer is
    hidden rather than frozen when motion is turned down — a frozen snowfall
-   is a row of dots stuck near the ceiling. */
-function weatherLayer(season) {
+   is a row of dots stuck near the ceiling.
+
+   The sizing is a parameter because the same layer has two jobs: a few
+   pieces falling briskly across a window pane, and — when there is an
+   outdoor scene to put it in — a whole skyful drifting slowly across it.
+   A drift of thirty pixels reads as a breeze across a room and as a gale
+   across a pane of glass. */
+function weatherLayer(season, { pieces, dur = [9, 20], drift = 30 } = {}) {
   const layer = el('div', { class: `room-weather weather-${season.weather}` });
-  for (let i = 0; i < season.pieces; i++) {
+  const n = pieces ?? season.pieces;
+  for (let i = 0; i < n; i++) {
     /* The delay is negative on purpose: a positive one would park every
-       piece above the ceiling until its turn came round, so the room would
+       piece above the ceiling until its turn came round, so the view would
        open empty and only start snowing a quarter of a minute later. A
        negative delay starts each piece part-way through its own fall, so
        the weather is already in the air the moment she opens the app. */
-    const dur = 9 + Math.random() * 11;
+    const d = dur[0] + Math.random() * (dur[1] - dur[0]);
     layer.append(el('span', {
       class: 'wx',
       style: {
         left: `${Math.random() * 100}%`,
-        '--wx-delay': `${(-Math.random() * dur).toFixed(2)}s`,
-        '--wx-dur': `${dur.toFixed(2)}s`,
-        '--wx-drift': `${(Math.random() * 60 - 30).toFixed(1)}px`,
+        '--wx-delay': `${(-Math.random() * d).toFixed(2)}s`,
+        '--wx-dur': `${d.toFixed(2)}s`,
+        '--wx-drift': `${(Math.random() * drift * 2 - drift).toFixed(1)}px`,
         '--wx-spin': `${Math.round(Math.random() * 540 - 270)}deg`,
         '--wx-size': `${(0.55 + Math.random() * 0.6).toFixed(2)}`,
       },
     }));
   }
   return layer;
+}
+
+/* The window, and the piece of outdoors behind it.
+
+   The sky and the weather hang BEHIND the glass rather than over it, so the
+   frame and the glazing bars stay in front of the snow the way they would
+   if you were standing in the room. That works because `--season-glass` is
+   a custom property: setting it to `transparent` here paints this one
+   window's glass out of the way and leaves every other copy of the same
+   drawing — on the shop shelf, in the decorating list — with its glass
+   still in. */
+function windowPiece(itemId, spec, season) {
+  const art = decorSVG(itemId, { size: 200 });
+  if (!art) return null;
+
+  const node = el('div', {
+    class: 'room-piece room-window',
+    style: { '--season-glass': 'transparent' },
+  });
+
+  /* A window whose shape nobody has written down gets plain glass rather
+     than a square of sky sitting over its frame. */
+  const glass = WINDOW_GLASS[itemId];
+  if (!glass) {
+    node.insertAdjacentHTML('beforeend', art);
+    node.style.removeProperty('--season-glass');
+    return place(node, spec);
+  }
+
+  const view = el('div', { class: 'room-view', style: {
+    /* The season's glass colour, deepened towards the top of the pane. Flat
+       colour is what sky looks like in a paint program; this is what it
+       looks like through a window, and it is also what lets white snow read
+       against pale blue instead of disappearing into it. */
+    background: `linear-gradient(180deg, rgba(38,62,84,.26), rgba(38,62,84,0) 66%), ${season.glass}`,
+    clipPath: glass.clip,
+  } });
+
+  /* The weather is spread across the GLASS, not across the drawing's square.
+     Left to itself it would scatter over the frame and the sill as well,
+     and since those are clipped away the pane would look half empty. */
+  const [t, r, b, l] = glass.pane;
+  const wx = weatherLayer(season, {
+    pieces: Math.max(7, Math.round(season.pieces * 0.85)),
+    dur: [4.5, 10],
+    drift: 12,
+  });
+  Object.assign(wx.style, { top: `${t}%`, right: `${r}%`, bottom: `${b}%`, left: `${l}%` });
+  view.append(wx);
+
+  node.append(view);
+  node.insertAdjacentHTML('beforeend', art);
+  return place(node, spec);
 }
 
 function piece(itemId, spec, extraClass = '') {
@@ -116,9 +193,11 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
   floor.style.height = `${100 - HORIZON}%`;
 
   room.append(wall, floor, el('div', { class: 'room-skirting', style: { top: `${HORIZON}%` } }));
-  room.append(weatherLayer(season));
 
-  if (worn.window) room.append(piece(worn.window, PLACES.window));
+  /* Indoors the weather belongs outside, so it arrives with the window and
+     nowhere else. She always has one — window_plain is a starter — so there
+     is no season she cannot see. */
+  if (worn.window) room.append(windowPiece(worn.window, PLACES.window, season));
   if (worn.door)   room.append(piece(worn.door, PLACES.door));
 
   (worn.wallDecor || []).forEach((id, i) => {

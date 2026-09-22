@@ -112,7 +112,7 @@ export function defaultState() {
     equipped: {
       wallpaper: 'wall_plain',
       flooring: 'floor_wood',
-      window: null,
+      window: 'window_plain',
       door: null,
       bed: null,
       rug: null,
@@ -147,6 +147,10 @@ function migrate(state) {
     if (!e.wallpaper) e.wallpaper = 'wall_plain';
     if (!e.flooring) e.flooring = 'floor_wood';
   }
+
+  /* A room needs a window: indoors, it is the only place the weather
+     shows. Saves made before there was a starter one get it here. */
+  if (state.equipped && !state.equipped.window) state.equipped.window = 'window_plain';
 
   // Mastery used to be counted as a list of session ids. It is now a streak
   // of correct answers capped at one a day, so carry the old count across as

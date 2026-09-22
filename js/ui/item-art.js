@@ -1021,6 +1021,15 @@ const DECOR = {
     <path d="M 75 38 v -14 l 12 5 -12 5" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="2" stroke-linejoin="round"/>`,
 
   /* ---- Windows. Drawn against the wall, so they show sky. ---- */
+
+  /* The one she starts with. Deliberately the plainest of them: every
+     window in the shop should look like an improvement on this. */
+  window_plain: () => `
+    <rect x="18" y="14" width="64" height="62" rx="3" fill="var(--season-glass, #bfe6f5)" stroke="#b9a184" stroke-width="6"/>
+    <path d="M 50 11 v 68" stroke="#cdbba3" stroke-width="4"/>
+    <rect x="13" y="73" width="74" height="8" rx="3" fill="#ded0bb" stroke="#b9a184" stroke-width="3"/>
+    <circle cx="33" cy="30" r="5" fill="#fff" opacity=".5"/>`,
+
   window_round: () => `
     <circle cx="50" cy="48" r="34" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7"/>
     <circle cx="50" cy="48" r="34" fill="none" stroke="#d9c4a5" stroke-width="3"/>
@@ -1444,6 +1453,71 @@ const DECOR = {
     <circle cx="24" cy="54" r="7" fill="#c9a3e0" stroke="#8a6fa8" stroke-width="2.5"/>
     <circle cx="76" cy="54" r="7" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2.5"/>`,
 };
+
+/* ---------- What each window is a window ONTO ----------
+
+   Indoors the weather falls outside, not around her bed, so the room hangs
+   a piece of sky behind the glass. Each window needs two things for that:
+
+     clip  the exact shape of the glass, so no sky leaks over the frame
+     pane  the rectangle the glass fits inside — top, right, bottom, left —
+           so the weather can be spread across the glass rather than across
+           the drawing's square, most of which is frame, sill and fresh air
+
+   Getting `pane` wrong is not a crash, it is a window where the snow all
+   piles into one corner, which is how the first cut of this looked.
+
+   Percentages in a clip-path resolve against the element's own box, and a
+   piece's box is exactly the square its art is drawn in — so the numbers
+   below ARE the viewBox coordinates used in the drawings above. Keep the
+   two together: a window whose art moves and whose shape does not will
+   leak, and it will leak quietly. */
+export const WINDOW_GLASS = {
+  /* <rect x=18 y=14 w=64 h=62> */
+  window_plain: {
+    clip: 'inset(14% 18% 24% 18% round 3%)',
+    pane: [14, 18, 24, 18],
+  },
+  /* <circle cx=50 cy=48 r=34>. A circle()'s percentage radius resolves
+     against the box's diagonal, which on a square box is its side. */
+  window_round: {
+    clip: 'circle(34% at 50% 48%)',
+    pane: [14, 16, 18, 16],
+  },
+  /* <rect x=16 y=16 w=68 h=62> */
+  window_cottage: {
+    clip: 'inset(16% 16% 22% 16% round 4%)',
+    pane: [16, 16, 22, 16],
+  },
+  /* x 18–82, a semicircular top centred at (50,48) r=32, sill at y=82 */
+  window_arch: {
+    clip: 'inset(16% 18% 18% 18% round 50% 50% 0 0)',
+    pane: [16, 18, 18, 18],
+  },
+  /* <rect x=18 y=12 w=64 h=54>, with the flower box below it */
+  window_flower: {
+    clip: 'inset(12% 18% 34% 18% round 4%)',
+    pane: [12, 18, 34, 18],
+  },
+  /* the ten points of the star, worked out the same way the art does.
+     Its pane is the star's own extent (x 10.1–89.9, y 6–82), not the
+     square around it: the corners of that square are outside the glass. */
+  window_star: {
+    clip: starClip(50, 48, 42, 18),
+    pane: [6, 10.1, 18, 10.1],
+  },
+};
+
+/** The star window's outline as a clip-path polygon. */
+function starClip(cx, cy, outer, inner) {
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const r = i % 2 ? inner : outer;
+    pts.push(`${n2(cx + Math.cos(a) * r)}% ${n2(cy + Math.sin(a) * r)}%`);
+  }
+  return `polygon(${pts.join(', ')})`;
+}
 
 /** A decoration on its own, for the shop, the book, or the scene. */
 export function decorSVG(itemId, { size = 100 } = {}) {

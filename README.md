@@ -244,12 +244,19 @@ The app knows what time of year it is, and the room shows it. There is
 nothing to set and nothing to buy — it just changes underneath her four
 times a year.
 
-| | Light | In the air | Window glass |
-|---|---|---|---|
-| 🌸 **Spring** | blossom pink | petals, tumbling down | pale blue |
-| ☀️ **Summer** | warm gold | motes, drifting up through a sunbeam | bright blue |
-| 🍂 **Fall** | amber | leaves, in three colours | warm amber |
-| ❄️ **Winter** | cool blue | snow, slow and soft | icy blue |
+**The weather falls outside.** This is her bedroom, so snow does not drift
+past the bed: it falls beyond the glass, where she can watch it while she
+works. Each window in the catalogue has its own shape written down, and the
+sky is clipped to it, so the view fits a round porthole and a star exactly
+as well as it fits a square pane. She starts with a **Plain Window**, free
+and hers from the first launch, so there is no season she cannot see.
+
+| | The light in the room | Outside the window |
+|---|---|---|
+| 🌸 **Spring** | blossom pink | petals tumbling down |
+| ☀️ **Summer** | warm gold | motes drifting up through a sunbeam |
+| 🍂 **Fall** | amber | leaves, in three colours |
+| ❄️ **Winter** | cool blue | snow, slow and soft |
 
 Alongside that, the axolotl has things to say about the weather — roughly
 one greeting in three is about the season — and the shop puts whatever suits
@@ -258,8 +265,12 @@ off the shelves because of the date.** An item she has been saving three
 weeks for quietly disappearing in December would punish her for saving.
 
 If the tablet has "reduce motion" turned on, the weather layer is removed
-rather than frozen: a dozen snowflakes stuck near the ceiling look broken,
-where a plain room does not.
+rather than frozen: a dozen snowflakes stuck in the corner of a window look
+broken, where a still view out of it does not.
+
+*(When there is a second, outdoor room, the weather can come out from behind
+the glass and fall across the whole picture — the layer already takes its own
+sizing for that.)*
 
 ## Seasonal events
 

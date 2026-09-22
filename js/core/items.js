@@ -93,6 +93,7 @@ export const CATALOG = [
   { id: 'floor_pond',    name: 'Shallow Pond',    category: 'flooring', price: 320, blurb: 'Perfect for an axolotl.' },
 
   /* ---- Windows ---- */
+  { id: 'window_plain',  name: 'Plain Window',    category: 'window', price: 0,   blurb: 'Looks out on the garden.' },
   { id: 'window_round',  name: 'Round Window',    category: 'window', price: 120, blurb: 'A porthole to the garden.' },
   { id: 'window_cottage',name: 'Cottage Window',  category: 'window', price: 180, blurb: 'Four panes and a sill.' },
   { id: 'window_arch',   name: 'Arched Window',   category: 'window', price: 260, blurb: 'Grand and sunny.' },
