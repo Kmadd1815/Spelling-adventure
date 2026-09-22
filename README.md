@@ -216,6 +216,67 @@ still runs on spelling.
 There is a grown-up setting — **Mini-games** in the Parent Area — to make the
 games wait until Today's Practice is finished. It is off by default.
 
+## Seasonal events
+
+An event sits **on top of** the season rather than replacing it: October is
+still Fall, it just also has a Haunted Spelling Hunt in it. When one is
+running, a banner appears on the home screen above Today's Practice — above
+it, never instead of it.
+
+### Haunted Spelling Hunt — 1–31 October 2026
+
+Friendly ghosts have got lost in the dark. She taps one, hears a word, and
+spells it; the ghost lights up and drifts off home. Nothing in it is scary:
+the ghosts are round and smiling and *lost* rather than haunting, and a
+missed word means the ghost waits a moment and moves somewhere else. Nothing
+is ever lost.
+
+Ghosts helped home accumulate across the whole month, and crossing a
+threshold earns a collectible:
+
+| Ghosts | Earns |
+|---|---|
+| 2 | Pumpkin Lantern |
+| 5 | Little Witch Hat |
+| 9 | Bat Garland |
+| 14 | Candy Bucket |
+| 20 | Little Ghost Friend |
+
+The hunt asks her to spell a whole word from memory with nothing to copy, so
+like Crossword and Tic Tac Toe it **can add to a mastery streak and can never
+break one**.
+
+### The rules events follow
+
+* **Event items are earned, never sold.** They are ordinary special items —
+  no price field — so the shop has nowhere to put a number on them.
+* **What she earns is hers for good.** An event ending takes nothing away; it
+  only stops new things being earned from it.
+* **Events have their own small star budget** — 12 a day, counted separately
+  from the mini-games' 25 — so a month of Halloween cannot quietly double
+  what a day is worth.
+* **Each year is its own entry.** `halloween_2026` only ever runs in 2026.
+  Adding `halloween_2027` with a different set of collectibles leaves
+  everything she earned this year untouched.
+
+The Parent Area lists what is running and what is coming, and can **preview**
+an event before it opens. A preview plays the real thing but banks nothing —
+no stars, no progress, no items — so the event is still new on the day.
+
+## Pet discoveries
+
+Every so often, after she has finished a spelling session, the axolotl turns
+up with something it found. She taps the box to open it.
+
+The rules that keep this a nice surprise rather than a slot machine:
+
+* **Never required.** Nothing is gated behind a discovery and nothing levels
+  up because of one.
+* **At most one a day.**
+* **Only after real work** — a two-word run does not summon a present.
+* **Never the same thing twice.** There are six things to find; when they are
+  all found the axolotl simply stops finding things and never mentions it.
+
 ## Playing with the axolotl
 
 The pet breathes, its gills drift, and it blinks — all the time, with no
@@ -383,6 +444,11 @@ These are deliberate and should survive future changes:
 13. A game never puts something she has to avoid somewhere she cannot avoid
    it. In Axolotl Swim only the letter she needs is ever placed in a gap
    between rocks; wrong letters drift in open water with room to swim past.
+14. An event layers on top of the season and never replaces the day's work.
+   What it gives her is permanent; the event ending only stops new things
+   being earned.
+15. A pet discovery is always a bonus. Nothing in the app is gated behind
+   one, and running out of things to find costs her nothing.
 
 ---
 
@@ -409,6 +475,8 @@ js/core/                systems — no DOM in here
   items.js              the catalogue, ownership and the room's slots
   games.js              the mini-game registry, their payouts and the one
                         door between a game and the spelling engine
+  events.js             the event calendar, progress and collectibles
+  discovery.js          what the axolotl finds, and how rarely
   season.js             date-driven season
   bus.js                tiny pub/sub
 
@@ -419,12 +487,14 @@ js/ui/                  reusable pieces
   room.js      the room: wall, floor, and where each slot sits
   keyboard.js  THE on-screen keyboard, shared by spelling and games
   buddy.js     the axolotl's seat in every mini-game
+  discovery.js the little ceremony around opening what it found
 
 js/screens/             one file per screen
   home  setup  spell  words  pet  progress  parent  shop  decorate
   games.js     the mini-game hub
   play.js      the frame every game runs inside: loading, recording,
                paying out, and the shared results card
+  event.js     the seasonal event, and the shape later ones will take
 
 js/games/               one file per mini-game
   wordsearch  crossword  tictactoe  snake  tower  swim

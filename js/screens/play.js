@@ -19,6 +19,8 @@ import * as speech from '../core/speech.js';
 import * as pet from '../core/pet.js';
 import { byId as itemById } from '../core/items.js';
 import { update } from '../core/state.js';
+import { maybeDiscover } from '../core/discovery.js';
+import { showDiscovery } from '../ui/discovery.js';
 
 export default function playScreen(container, { id = '' } = {}) {
   const game = games.byId(id);
@@ -142,6 +144,9 @@ export default function playScreen(container, { id = '' } = {}) {
 
     release();
     mount(container, resultsCard({ payout, treats, milestones, headline, detail, emoji, missed }));
+
+    const found = maybeDiscover({ attempted: wordsWon });
+    if (found) setTimeout(() => showDiscovery(found), 900);
   }
 
   function resultsCard({ payout, treats, milestones, headline, detail, emoji, missed }) {

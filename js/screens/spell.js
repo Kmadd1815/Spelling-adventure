@@ -29,6 +29,8 @@ import * as rewards from '../core/rewards.js';
 import { byId as itemById } from '../core/items.js';
 import * as pet from '../core/pet.js';
 import { getState, update, settings } from '../core/state.js';
+import { maybeDiscover } from '../core/discovery.js';
+import { showDiscovery } from '../ui/discovery.js';
 
 /* Hands a specific set of words to the next session — used by "practice the
    tricky ones", the parent's per-list practice, and reviewing mastered words. */
@@ -391,6 +393,12 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
     releaseLayout();
     mount(container, resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones, treats }));
+
+    /* And once in a while the axolotl has been off finding something while
+       she worked. A beat first, so it arrives after the results rather than
+       on top of them. */
+    const found = maybeDiscover({ attempted });
+    if (found) setTimeout(() => showDiscovery(found), 900);
   }
 
   function resultsScreen({ attempted, firstTryCorrect, missed, payout, streak, milestones, treats }) {

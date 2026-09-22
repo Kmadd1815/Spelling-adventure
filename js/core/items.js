@@ -215,6 +215,23 @@ export const CATALOG = [
   { id: 'sun_mobile',     name: 'Sunbeam Mobile',      category: 'wallDecor',  price: null, blurb: 'Thirty days of practice.' },
   { id: 'ribbon_shelf',   name: 'Ribbon Shelf',        category: 'wallDecor',  price: null, blurb: 'A whole list completed.' },
   { id: 'trophy_shelf',   name: 'Trophy Shelf',        category: 'wallDecor',  price: null, blurb: 'Five lists completed.' },
+
+  /* Found by the axolotl after a spelling session. Never in the shop, never
+     required for anything — the whole point is that they turn up. */
+  { id: 'glow_jar',       name: 'Jar of Fireflies',    category: 'floorDecor', price: null, blurb: 'Something the axolotl found.' },
+  { id: 'moon_shell',     name: 'Moon Shell',          category: 'floorDecor', price: null, blurb: 'Something the axolotl found.' },
+  { id: 'star_map',       name: 'Star Map',            category: 'wallDecor',  price: null, blurb: 'Something the axolotl found.' },
+  { id: 'paper_boat',     name: 'Paper Boat',          category: 'floorDecor', price: null, blurb: 'Something the axolotl found.' },
+  { id: 'mushroom_stool', name: 'Mushroom Stool',      category: 'floorDecor', price: null, blurb: 'Something the axolotl found.' },
+  { id: 'feather_cap',    name: 'Feather Cap',         category: 'hat',        price: null, blurb: 'Something the axolotl found.' },
+
+  /* Halloween 2026 — earned only during the Haunted Spelling Hunt, and kept
+     for good afterwards. A later year gets its own set rather than these. */
+  { id: 'pumpkin_lantern', name: 'Pumpkin Lantern',    category: 'floorDecor', price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
+  { id: 'witch_hat',       name: 'Little Witch Hat',   category: 'hat',        price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
+  { id: 'bat_garland',     name: 'Bat Garland',        category: 'wallDecor',  price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
+  { id: 'candy_bucket',    name: 'Candy Bucket',       category: 'floorDecor', price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
+  { id: 'ghost_friend',    name: 'Little Ghost Friend', category: 'floorDecor', price: null, blurb: 'Haunted Spelling Hunt, 2026.' },
 ];
 
 const BY_ID = new Map(CATALOG.map(i => [i.id, i]));

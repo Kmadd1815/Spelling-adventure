@@ -13,6 +13,9 @@ import { getState, update, replaceState, resetAll, settings, flushNow } from '..
 import { on as onBus } from '../core/bus.js';
 import { APP_VERSION, BUILD_DATE } from '../core/version.js';
 import { checkNow, updateWaiting } from '../core/updates.js';
+import * as events from '../core/events.js';
+import { monthName } from './event.js';
+import * as discovery from '../core/discovery.js';
 import { setQueue } from './spell.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
@@ -481,6 +484,8 @@ export default function parentScreen(container) {
           'When she types on a Bluetooth keyboard the on-screen letters hide themselves to free up the screen, and a keyboard button brings them back.' })
       ),
 
+      eventsCard(),
+
       el('div', { class: 'card' },
         el('h3', { text: 'Mini-games' }),
         el('p', { class: 'muted tiny', text:
@@ -495,6 +500,45 @@ export default function parentScreen(container) {
         el('h3', { text: 'Parent PIN' }),
         button('Change PIN', { cls: 'btn btn-quiet', onClick: changePinDialog })
       )
+    );
+  }
+
+  /* Events and discoveries, so a grown-up can see what is coming and check
+     an event works before the day it opens. */
+  function eventsCard() {
+    const live = events.liveEvent();
+    const soon = events.upcoming().slice(0, 3);
+    const found = discovery.POOL.length - discovery.stillOutThere().length;
+
+    return el('div', { class: 'card' },
+      el('h3', { text: 'Events and surprises' }),
+      el('p', { class: 'muted tiny', text:
+        'Holiday events run on the tablet\u2019s own clock and sit on top of the season. What she earns in one is hers permanently \u2014 an event ending only stops new things being earned. Event items are never sold in the shop.' }),
+
+      live
+        ? el('div', { class: 'ev-row' },
+            el('div', { class: 'grow' },
+              el('b', { text: `${live.emoji} ${live.name}` }),
+              el('div', { class: 'tiny muted', text: `Running now \u00B7 ${events.daysLeft(live)} days left` })),
+            button('Open', { cls: 'btn btn-quiet', onClick: () => navigate('/event') }))
+        : el('div', { class: 'tiny muted', text: 'No event running right now.' }),
+
+      soon.length ? el('div', { class: 'section-title', text: 'Coming up' }) : null,
+      ...soon.map(e => el('div', { class: 'ev-row' },
+        el('div', { class: 'grow' },
+          el('b', { text: `${e.emoji} ${e.name}` }),
+          el('div', { class: 'tiny muted',
+            text: `${monthName(e.from[0])} ${e.from[1]} \u2013 ${monthName(e.to[0])} ${e.to[1]}, ${e.year}` })),
+        button('Preview', { cls: 'btn btn-quiet',
+          onClick: () => navigate(`/event?preview=${e.id}`) })
+      )),
+
+      el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+        `A preview plays the real thing but banks nothing \u2014 no stars, no progress, no items \u2014 so the event is still new on the day.` }),
+
+      el('div', { class: 'section-title', text: 'Pet discoveries' }),
+      el('p', { class: 'muted tiny', text:
+        `After a spelling session the axolotl sometimes turns up with something it found. At most one a day, never required for anything, and each one can only be found once. ${found} of ${discovery.POOL.length} found so far.` })
     );
   }
 

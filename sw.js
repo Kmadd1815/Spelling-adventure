@@ -32,6 +32,8 @@ const SHELL = [
   './js/core/rewards.js',
   './js/core/pet.js',
   './js/core/games.js',
+  './js/core/events.js',
+  './js/core/discovery.js',
   './js/core/season.js',
   './js/ui/dom.js',
   './js/ui/router.js',
@@ -41,6 +43,7 @@ const SHELL = [
   './js/ui/fx.js',
   './js/ui/room.js',
   './js/ui/buddy.js',
+  './js/ui/discovery.js',
   './js/ui/keyboard.js',
   './js/screens/home.js',
   './js/screens/setup.js',
@@ -53,6 +56,7 @@ const SHELL = [
   './js/screens/decorate.js',
   './js/screens/games.js',
   './js/screens/play.js',
+  './js/screens/event.js',
   /* The games themselves are loaded on demand, so they are listed here to
      make sure they are in the cache before she is ever offline. */
   './js/games/wordsearch.js',

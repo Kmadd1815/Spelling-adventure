@@ -76,10 +76,17 @@ export function defaultState() {
          a reload. Reset by core/games.js the first time it is read on a
          new day. */
       gameDay: null,           // { day, stars, plays: { gameId: count } }
+      eventDay: null,          // { day, stars, rounds } — events are budgeted apart
+      lastDiscoveryDay: null,  // 'YYYY-MM-DD' the axolotl last found something
     },
 
     /* Rolling history, trimmed to the most recent sessions. */
     sessions: [],
+
+    /* How far she has got in each seasonal event, keyed by event id:
+       { count, claimed: [itemId] }. An event ending never clears this —
+       what she earned stays earned, and next year is a new key. */
+    events: {},
 
     /* Everything she owns. Each record is just which catalogue item it is
        and how she came by it — the name, art and price all live in the
@@ -150,6 +157,7 @@ function migrate(state) {
     settings:   { ...base.settings,   ...(state.settings || {}) },
     progress:   { ...base.progress,   ...(state.progress || {}) },
     collection: { ...base.collection, ...(state.collection || {}) },
+    events:     { ...base.events,     ...(state.events     || {}) },
     equipped:   { ...base.equipped,   ...(state.equipped   || {}) },
   };
   merged.schemaVersion = SCHEMA_VERSION;

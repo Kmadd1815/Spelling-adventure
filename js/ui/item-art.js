@@ -16,7 +16,13 @@ const n2 = n;   // alias, so nested template helpers read clearly
 
 /* ============================ WEARABLES ============================ */
 
-/* g = { hx, hy, hrx, hry, bx, by, brx, bry, coat } — the pet's geometry. */
+/* g = { hx, hy, hrx, hry, bx, by, brx, bry, coat } — the pet's geometry.
+
+   HEADROOM: the pet is drawn into viewBox "0 44 200 162", and the baby has
+   the biggest head relative to that box, so nothing a hat draws may go
+   higher than about 1.32 x hry above the head centre or it is silently
+   clipped off the top. Tall hats lower their brim to buy height rather than
+   growing upward past that line. */
 
 const HATS = {
   bow: g => {
@@ -29,7 +35,7 @@ const HATS = {
   },
 
   party_hat: g => {
-    const baseY = g.hy - g.hry * 0.74, w = g.hrx * 0.46, h = g.hry * 0.92;
+    const baseY = g.hy - g.hry * 0.52, w = g.hrx * 0.46, h = g.hry * 0.56;
     return `
       <path d="M ${n(g.hx - w)} ${n(baseY)} L ${n(g.hx)} ${n(baseY - h)} L ${n(g.hx + w)} ${n(baseY)} Z"
             fill="#f7b955" stroke="#c98d34" stroke-width="2.4" stroke-linejoin="round"/>
@@ -38,6 +44,50 @@ const HATS = {
       <path d="M ${n(g.hx - w * 0.25)} ${n(baseY - h * 0.62)} L ${n(g.hx + w * 0.22)} ${n(baseY - h * 0.72)}"
             stroke="#e8f4fb" stroke-width="3" stroke-linecap="round"/>
       <circle cx="${n(g.hx)}" cy="${n(baseY - h - 2)}" r="${n(w * 0.26)}" fill="#f2849f" stroke="#b34a66" stroke-width="2"/>`;
+  },
+
+  /* Halloween 2026. Soft purple rather than black, and the point leans back
+     instead of stabbing upward, so it reads as dressing-up rather than spooky. */
+  witch_hat: g => {
+    const baseY = g.hy - g.hry * 0.46;
+    const w = g.hrx * 0.52, h = g.hry * 0.84;
+    const tipX = g.hx + w * 0.62, tipY = baseY - h;
+    const bandY = baseY - g.hry * 0.16;
+    return `
+      <ellipse cx="${n(g.hx)}" cy="${n(baseY)}" rx="${n(g.hrx * 0.96)}" ry="${n(g.hry * 0.20)}"
+               fill="#6b5590" stroke="#3f3159" stroke-width="2.4"/>
+      <path d="M ${n(g.hx - w)} ${n(baseY)}
+               Q ${n(g.hx - w * 0.30)} ${n(baseY - h * 0.58)} ${n(tipX)} ${n(tipY)}
+               Q ${n(g.hx + w * 0.42)} ${n(baseY - h * 0.34)} ${n(g.hx + w)} ${n(baseY)} Z"
+            fill="#7d64a6" stroke="#3f3159" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M ${n(g.hx - w * 0.92)} ${n(bandY)} Q ${n(g.hx)} ${n(bandY + g.hry * 0.07)} ${n(g.hx + w * 0.92)} ${n(bandY)}"
+            fill="none" stroke="#f7b955" stroke-width="${n(g.hry * 0.14)}" stroke-linecap="round"/>
+      <circle cx="${n(g.hx)}" cy="${n(bandY + g.hry * 0.03)}" r="${n(g.hrx * 0.09)}"
+              fill="#ffd980" stroke="#c98d34" stroke-width="2"/>`;
+  },
+
+  /* A pet discovery. A soft cap with one long feather, angled so the gills
+     stay visible underneath it. */
+  feather_cap: g => {
+    const y = g.hy - g.hry * 0.48, w = g.hrx * 0.88, dome = g.hry * 0.54;
+    const quillX = g.hx + w * 0.34, quillY = y - dome * 0.72;
+    const tipX = g.hx + w * 1.02, tipY = y - dome * 1.52;
+    return `
+      <path d="M ${n(g.hx - w)} ${n(y + g.hry * 0.08)}
+               Q ${n(g.hx - w * 0.72)} ${n(y - dome)} ${n(g.hx)} ${n(y - dome)}
+               Q ${n(g.hx + w * 0.72)} ${n(y - dome)} ${n(g.hx + w)} ${n(y + g.hry * 0.08)} Z"
+            fill="#7fae8f" stroke="#43704f" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M ${n(g.hx - w * 0.52)} ${n(y - dome * 0.62)} Q ${n(g.hx - w * 0.18)} ${n(y - dome * 0.94)} ${n(g.hx + w * 0.16)} ${n(y - dome * 0.84)}"
+            fill="none" stroke="#a8ceb4" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+      <path d="M ${n(g.hx - w * 1.10)} ${n(y + g.hry * 0.06)} Q ${n(g.hx)} ${n(y + g.hry * 0.34)} ${n(g.hx + w * 1.10)} ${n(y + g.hry * 0.06)}"
+            fill="none" stroke="#e8d3ba" stroke-width="${n(g.hry * 0.20)}" stroke-linecap="round"/>
+      <path d="M ${n(quillX)} ${n(quillY)}
+               Q ${n(g.hx + w * 1.22)} ${n(y - dome * 1.36)} ${n(tipX)} ${n(tipY)}
+               Q ${n(g.hx + w * 0.34)} ${n(y - dome * 1.30)} ${n(quillX)} ${n(quillY)} Z"
+            fill="#f2849f" stroke="#a8465e" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M ${n(quillX)} ${n(quillY)} Q ${n(g.hx + w * 0.82)} ${n(y - dome * 1.42)} ${n(tipX)} ${n(tipY)}"
+            fill="none" stroke="#a8465e" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="${n(quillX)}" cy="${n(quillY)}" r="${n(g.hrx * 0.075)}" fill="#ffd980" stroke="#c98d34" stroke-width="1.8"/>`;
   },
 
   flower_crown: g => {
@@ -61,7 +111,7 @@ const HATS = {
   },
 
   wizard_hat: g => {
-    const baseY = g.hy - g.hry * 0.72, w = g.hrx * 0.70, h = g.hry * 1.35;
+    const baseY = g.hy - g.hry * 0.54, w = g.hrx * 0.70, h = g.hry * 0.76;
     return `
       <path d="M ${n(g.hx - w)} ${n(baseY)}
                Q ${n(g.hx - w * 0.30)} ${n(baseY - h * 0.55)} ${n(g.hx + w * 0.22)} ${n(baseY - h)}
@@ -119,24 +169,24 @@ const HATS = {
   },
 
   beanie: g => {
-    const y = g.hy - g.hry * 0.50;
-    return `<path d="M ${n(g.hx - g.hrx * 0.82)} ${n(y)} a ${n(g.hrx * 0.82)} ${n(g.hry * 0.86)} 0 0 1 ${n(g.hrx * 1.64)} 0 z"
+    const y = g.hy - g.hry * 0.32;
+    return `<path d="M ${n(g.hx - g.hrx * 0.82)} ${n(y)} a ${n(g.hrx * 0.82)} ${n(g.hry * 0.72)} 0 0 1 ${n(g.hrx * 1.64)} 0 z"
                   fill="#8a7fc4" stroke="#5f568f" stroke-width="2.4" stroke-linejoin="round"/>
             <rect x="${n(g.hx - g.hrx * 0.88)}" y="${n(y - g.hry * 0.10)}"
                   width="${n(g.hrx * 1.76)}" height="${n(g.hry * 0.26)}" rx="${n(g.hry * 0.13)}"
                   fill="#a79ade" stroke="#5f568f" stroke-width="2.4"/>
-            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.92)}" r="${n(g.hrx * 0.15)}"
+            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.76)}" r="${n(g.hrx * 0.14)}"
                     fill="#fff6e8" stroke="#c9b8a4" stroke-width="2"/>`;
   },
 
   chef_hat: g => {
-    const y = g.hy - g.hry * 0.56;
+    const y = g.hy - g.hry * 0.36;
     return `<rect x="${n(g.hx - g.hrx * 0.46)}" y="${n(y - g.hry * 0.26)}"
                   width="${n(g.hrx * 0.92)}" height="${n(g.hry * 0.34)}" rx="${n(g.hry * 0.10)}"
                   fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx - g.hrx * 0.34)}" cy="${n(y - g.hry * 0.56)}" r="${n(g.hrx * 0.30)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx + g.hrx * 0.34)}" cy="${n(y - g.hry * 0.56)}" r="${n(g.hrx * 0.30)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.74)}" r="${n(g.hrx * 0.34)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>`;
+            <circle cx="${n(g.hx - g.hrx * 0.34)}" cy="${n(y - g.hry * 0.40)}" r="${n(g.hrx * 0.26)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
+            <circle cx="${n(g.hx + g.hrx * 0.34)}" cy="${n(y - g.hry * 0.40)}" r="${n(g.hrx * 0.26)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
+            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.54)}" r="${n(g.hrx * 0.28)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>`;
   },
 
   pirate_hat: g => {
@@ -152,7 +202,7 @@ const HATS = {
   },
 
   tiara: g => {
-    const y = g.hy - g.hry * 0.74, w = g.hrx * 0.74;
+    const y = g.hy - g.hry * 0.60, w = g.hrx * 0.74;
     return `
       <path d="M ${n(g.hx - w)} ${n(y + g.hry * 0.30)}
                L ${n(g.hx - w * 0.52)} ${n(y - g.hry * 0.30)}
@@ -480,6 +530,115 @@ export const surfaceStyle = id => SURFACES[id] || SURFACES.wall_plain;
    Each draws inside a 0 0 100 100 box, standing on y = 92. */
 
 const DECOR = {
+  /* ---- Halloween 2026 ---- */
+
+  pumpkin_lantern: () => `
+    <path d="M 50 26 Q 52 16 60 14" fill="none" stroke="#6f9b57" stroke-width="3.4" stroke-linecap="round"/>
+    <rect x="45" y="20" width="10" height="12" rx="4" fill="#7fae5c" stroke="#4f7a3c" stroke-width="2.5"/>
+    <ellipse cx="32" cy="60" rx="17" ry="26" fill="#ef9243" stroke="#b3641f" stroke-width="3"/>
+    <ellipse cx="68" cy="60" rx="17" ry="26" fill="#ef9243" stroke="#b3641f" stroke-width="3"/>
+    <ellipse cx="50" cy="60" rx="26" ry="28" fill="#f7a94e" stroke="#b3641f" stroke-width="3"/>
+    <path d="M 34 52 l 9 -7 l 5 10 z" fill="#5a3418"/>
+    <path d="M 66 52 l -9 -7 l -5 10 z" fill="#5a3418"/>
+    <path d="M 36 68 Q 50 82 64 68 Q 57 72 50 70 Q 43 72 36 68 Z" fill="#5a3418"/>
+    <circle cx="42" cy="63" r="3.4" fill="#f4c9a8" opacity=".55"/>
+    <circle cx="59" cy="63" r="3.4" fill="#f4c9a8" opacity=".55"/>`,
+
+  ghost_friend: () => `
+    <path d="M 50 16 Q 76 16 76 46 L 76 84 Q 69 76 62 84 Q 55 76 50 84 Q 45 76 38 84 Q 31 76 24 84 L 24 46 Q 24 16 50 16 Z"
+          fill="#fbf7f2" stroke="#b9b0c4" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="41" cy="44" rx="4.4" ry="5.4" fill="#4a3b52"/>
+    <ellipse cx="59" cy="44" rx="4.4" ry="5.4" fill="#4a3b52"/>
+    <ellipse cx="34" cy="55" rx="5" ry="3.4" fill="#f4b8c6" opacity=".7"/>
+    <ellipse cx="66" cy="55" rx="5" ry="3.4" fill="#f4b8c6" opacity=".7"/>
+    <path d="M 44 56 Q 50 62 56 56" fill="none" stroke="#4a3b52" stroke-width="3" stroke-linecap="round"/>`,
+
+  candy_bucket: () => `
+    <path d="M 26 46 L 32 88 Q 50 92 68 88 L 74 46 Z"
+          fill="#f7a94e" stroke="#b3641f" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="22" y="40" width="56" height="10" rx="5" fill="#ef9243" stroke="#b3641f" stroke-width="3"/>
+    <path d="M 30 40 Q 50 8 70 40" fill="none" stroke="#8a6f54" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="38" cy="38" r="7" fill="#ef7f9f" stroke="#b3596e" stroke-width="2.4"/>
+    <circle cx="55" cy="36" r="6" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2.4"/>
+    <circle cx="66" cy="40" r="5.4" fill="#a78bc9" stroke="#6f5a8f" stroke-width="2.4"/>
+    <path d="M 44 34 l 8 -4 l 0 8 z" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="2"/>`,
+
+  bat_garland: () => {
+    const bat = (x, y, s) => `
+      <g transform="translate(${x} ${y}) scale(${s})">
+        <path d="M 0 0 Q -7 -8 -18 -6 Q -12 -1 -13 5 Q -7 2 -4 6 Q 0 10 4 6 Q 7 2 13 5 Q 12 -1 18 -6 Q 7 -8 0 0 Z"
+              fill="#5c4a78" stroke="#3f3159" stroke-width="2.2" stroke-linejoin="round"/>
+        <circle cx="-3" cy="0" r="1.5" fill="#ffd980"/><circle cx="3" cy="0" r="1.5" fill="#ffd980"/>
+      </g>`;
+    return `
+      <path d="M 6 26 Q 50 44 94 26" fill="none" stroke="#8a7f74" stroke-width="3" stroke-linecap="round"/>
+      ${bat(22, 44, 0.85)}${bat(50, 54, 1.05)}${bat(78, 44, 0.85)}`;
+  },
+
+  /* ---- Found by the axolotl ---- */
+
+  glow_jar: () => `
+    <rect x="34" y="20" width="32" height="9" rx="4" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
+    <path d="M 32 29 Q 24 42 24 62 L 24 80 Q 24 89 33 89 L 67 89 Q 76 89 76 80 L 76 62 Q 76 42 68 29 Z"
+          fill="#d9eef6" stroke="#7fa8bb" stroke-width="3" stroke-linejoin="round" opacity=".92"/>
+    <circle cx="40" cy="52" r="5" fill="#ffe98a" opacity=".95"/>
+    <circle cx="60" cy="44" r="4" fill="#ffe98a" opacity=".85"/>
+    <circle cx="56" cy="66" r="5.4" fill="#ffe98a" opacity=".95"/>
+    <circle cx="37" cy="74" r="3.6" fill="#ffe98a" opacity=".8"/>
+    <circle cx="64" cy="78" r="3" fill="#ffe98a" opacity=".7"/>
+    <path d="M 33 40 Q 31 56 33 74" fill="none" stroke="#fff" stroke-width="4" opacity=".55" stroke-linecap="round"/>`,
+
+  moon_shell: () => `
+    <ellipse cx="50" cy="89" rx="24" ry="5" fill="#e8dcc9" opacity=".7"/>
+    <path d="M 50 85
+             C 20 76 10 54 15 36
+             Q 21 42 27 33
+             Q 33 41 39 28
+             Q 45 36 50 26
+             Q 55 36 61 28
+             Q 67 41 73 33
+             Q 79 42 85 36
+             C 90 54 80 76 50 85 Z"
+          fill="#f6e6ef" stroke="#c7a6bb" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 50 85 L 18 44" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 28 34" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 39 29" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 50 27" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 61 29" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 72 34" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 50 85 L 82 44" stroke="#dcc0d0" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 58 46 a 11 11 0 1 0 5.5 14.5 a 8.4 8.4 0 1 1 -5.5 -14.5 Z" fill="#ffe98a" opacity=".9"/>
+    <ellipse cx="50" cy="83" rx="7" ry="4" fill="#dcc0d0"/>`,
+
+  star_map: () => `
+    <rect x="12" y="16" width="76" height="68" rx="7" fill="#e8d3ba" stroke="#a5875f" stroke-width="3.4"/>
+    <rect x="19" y="23" width="62" height="54" rx="4" fill="#3c4a6b"/>
+    <path d="M 31 63 L 44 44 L 58 52 L 71 33" fill="none" stroke="#8fb6d9" stroke-width="2" opacity=".8"/>
+    ${[[31,63,3.6],[44,44,4.4],[58,52,3],[71,33,4],[36,33,2.4],[64,66,2.6],[50,30,2.2],[26,48,2]]
+      .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff4cf"/>`).join('')}
+    <circle cx="44" cy="44" r="8" fill="#fff4cf" opacity=".18"/>`,
+
+  paper_boat: () => `
+    <ellipse cx="50" cy="82" rx="38" ry="8" fill="#bfe0ef" opacity=".8"/>
+    <path d="M 16 68 L 84 68 L 68 84 L 32 84 Z"
+          fill="#cfe2f0" stroke="#7d9cb5" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 50 66 L 50 22 L 80 66 Z" fill="#fffdf9" stroke="#7d9cb5" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 50 66 L 50 30 L 24 66 Z" fill="#e6eef4" stroke="#7d9cb5" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 58 46 L 72 60" stroke="#b9cddc" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M 20 88 Q 30 84 40 88 Q 50 92 60 88 Q 70 84 80 88" fill="none"
+          stroke="#8fc9e0" stroke-width="3" stroke-linecap="round"/>`,
+
+  mushroom_stool: () => `
+    <ellipse cx="50" cy="88" rx="22" ry="6" fill="#d9cbb6" opacity=".7"/>
+    <path d="M 40 56 Q 38 78 36 88 L 64 88 Q 62 78 60 56 Z"
+          fill="#f6ece0" stroke="#b9a68f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 12 58 Q 14 22 50 22 Q 86 22 88 58 Q 68 66 50 66 Q 32 66 12 58 Z"
+          fill="#ef7f7f" stroke="#b34d4d" stroke-width="3.4" stroke-linejoin="round"/>
+    <ellipse cx="32" cy="40" rx="8" ry="6.4" fill="#fff6e8"/>
+    <ellipse cx="60" cy="34" rx="6.4" ry="5" fill="#fff6e8"/>
+    <ellipse cx="72" cy="48" rx="5.4" ry="4.4" fill="#fff6e8"/>
+    <ellipse cx="46" cy="52" rx="5" ry="4" fill="#fff6e8"/>`,
+
   pebbles: () => `
     <ellipse cx="38" cy="78" rx="20" ry="13" fill="#b9aca0" stroke="#8a7f74" stroke-width="2.5"/>
     <ellipse cx="62" cy="83" rx="16" ry="10" fill="#cdc2b6" stroke="#8a7f74" stroke-width="2.5"/>

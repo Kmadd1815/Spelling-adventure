@@ -22,6 +22,8 @@ import decorateScreen from './screens/decorate.js';
 import setupScreen    from './screens/setup.js';
 import gamesScreen    from './screens/games.js';
 import playScreen     from './screens/play.js';
+import eventScreen    from './screens/event.js';
+import { liveEvent, byId as eventById } from './core/events.js';
 import { byId as gameById } from './core/games.js';
 
 /* ---------- Routes ---------- */
@@ -39,6 +41,8 @@ router.route('/decorate', { title: 'Decorate', back: true, render: decorateScree
 router.route('/shop',     { title: 'Shop', back: true, render: shopScreen });
 router.route('/games',    { title: 'Mini-Games', back: true, render: gamesScreen });
 router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', back: true, render: playScreen });
+router.route('/event',    { title: p => (liveEvent() || eventById(p.preview))?.name || 'Event',
+                            back: true, render: eventScreen });
 router.route('/parent',   { title: 'Parent Area', back: true, stars: false, render: parentScreen });
 
 /* ---------- Top bar ---------- */

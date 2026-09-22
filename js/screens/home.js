@@ -10,6 +10,7 @@ import * as items from '../core/items.js';
 import { buildRoom } from '../ui/room.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
+import * as events from '../core/events.js';
 
 export default function homeScreen(container) {
   const season = currentSeason();
@@ -68,6 +69,26 @@ export default function homeScreen(container) {
     );
 
   const body = el('div', { class: 'stack' }, hero);
+
+  /* An event sits on top of the season rather than replacing anything, so
+     it gets a banner above the day's work and never takes its place. */
+  const live = events.liveEvent();
+  if (live) {
+    const left = events.daysLeft(live);
+    const next = events.nextReward(live);
+    body.append(el('button', {
+      class: 'event-banner', type: 'button', onClick: () => navigate('/event'),
+    },
+      el('span', { class: 'event-emoji', text: live.emoji }),
+      el('span', { class: 'grow' },
+        el('span', { class: 'event-title', text: live.name }),
+        el('small', { text: next
+          ? `${next.at - events.progress(live.id).count} more to find something new`
+          : 'You found everything \u2014 come and play anyway' })
+      ),
+      el('small', { class: 'event-days', text: left === 1 ? 'Last day!' : `${left} days left` })
+    ));
+  }
 
   if (!hasWords) {
     body.append(el('div', { class: 'card center' },
