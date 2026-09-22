@@ -309,7 +309,16 @@ That is twenty-four new things to save for, which roughly doubles what the
 shop sells. The sky and the ground are free, so the first thing she sees out
 there is a garden rather than an empty box.
 
-The **Starry Night** sky darkens the whole garden, not just the top of it.
+The **Starry Night** sky darkens the whole garden, not just the top of it —
+including the distant hills, which stand above where that darkening begins
+and would otherwise sit in full daylight under a moon. Its stars are real
+twinkling ones over a faint wash of far-off ones, and the moon has a halo.
+
+In summer the weather is **fireflies**, which glow and blink rather than
+drifting steadily; under a night sky that is most of what there is to
+watch. Reduced motion stops the stars twinkling but keeps them — a sky full
+of still stars is a sky, where a dozen snowflakes stopped near the top of a
+window looks broken, so that one is removed instead.
 
 Both places are arranged from the same *Decorate* screen, which grows a
 **My Room / The Garden** switch once the gate is open; the shop grows a

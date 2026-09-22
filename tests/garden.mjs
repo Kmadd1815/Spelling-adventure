@@ -165,6 +165,97 @@ const room = await page.evaluate(() => {
 ok('indoors, the weather is still only behind the window',
    !room.isGarden && room.behindGlass >= 5 && room.loose === 0, JSON.stringify(room));
 
+/* ---------- the night sky ---------- */
+
+await boot({ garden: { sky: 'sky_night' } }, '#/garden');
+const night = await page.evaluate(() => {
+  const g = document.querySelector('.garden');
+  const stars = [...g.querySelectorAll('.garden-stars .star')];
+  const one = stars.length ? getComputedStyle(stars[0]) : null;
+  return {
+    count: stars.length,
+    animation: one?.animationName,
+    glow: one?.boxShadow,
+    sizes: new Set(stars.map(st => getComputedStyle(st).width)).size,
+    hills: getComputedStyle(g.querySelector('.hill')).filter,
+  };
+});
+ok('the night sky has stars, and they twinkle',
+   night.count >= 15 && night.animation === 'star-twinkle',
+   `${night.count} stars, ${night.animation}`);
+ok('...each one lit rather than painted on',
+   !!night.glow && night.glow !== 'none', String(night.glow).slice(0, 48));
+ok('...and no two the same size', night.sizes >= 5, `${night.sizes} sizes`);
+/* The hills stand above where the night wash begins, so they have to be
+   dimmed themselves or they stay in full daylight under a moon. */
+ok('the hills know it is night too', night.hills !== 'none', night.hills);
+
+await boot({ garden: { sky: 'sky_day' } }, '#/garden');
+ok('a daytime sky has no stars in it',
+   await page.locator('.garden-stars .star').count() === 0);
+
+/* Stars are the one thing here that is fine held still: a sky full of
+   stopped stars is a sky, where a dozen snowflakes stopped near the top
+   looks broken. So unlike the weather they are kept, not removed. */
+const still = await browser.newContext({
+  viewport: { width: 1180, height: 1000 }, reducedMotion: 'reduce',
+});
+const stillPage = await still.newPage();
+await stillPage.goto(BASE, { waitUntil: 'networkidle' });
+await stillPage.evaluate(SEED, { garden: { sky: 'sky_night' } });
+await stillPage.reload({ waitUntil: 'networkidle' });
+await stillPage.goto(BASE + '#/garden', { waitUntil: 'networkidle' });
+await stillPage.waitForTimeout(500);
+const calm = await stillPage.evaluate(() => {
+  const st = document.querySelector('.garden-stars .star');
+  const cs = st && getComputedStyle(st);
+  return { stars: document.querySelectorAll('.garden-stars .star').length,
+           animation: cs?.animationName, opacity: cs?.opacity,
+           weather: document.querySelectorAll('.room-weather .wx').length,
+           weatherShown: getComputedStyle(document.querySelector('.room-weather')).display };
+});
+ok('with motion turned down the stars stay, and stop twinkling',
+   calm.stars >= 15 && calm.animation === 'none' && Number(calm.opacity) > 0.5,
+   JSON.stringify(calm));
+ok('...while the weather goes away rather than freezing',
+   calm.weatherShown === 'none', calm.weatherShown);
+await still.close();
+
+/* ---------- fireflies ----------
+   Summer's weather, which under a night sky is what she is looking at. */
+const summer = await browser.newContext({ viewport: { width: 1180, height: 1000 } });
+await summer.addInitScript(`(() => { const R = Date;
+  const shift = new R('2027-07-15T12:00:00').getTime() - R.now();
+  class F extends R { constructor(...a){ if(!a.length) super(R.now()+shift); else super(...a);} static now(){return R.now()+shift;} }
+  window.Date = F; })()`);
+const sp = await summer.newPage();
+await sp.goto(BASE, { waitUntil: 'networkidle' });
+await sp.evaluate(SEED, { garden: { sky: 'sky_night' } });
+await sp.reload({ waitUntil: 'networkidle' });
+await sp.goto(BASE + '#/garden', { waitUntil: 'networkidle' });
+await sp.waitForTimeout(500);
+const flies = await sp.evaluate(() => {
+  const layer = document.querySelector('.room-weather');
+  const one = document.querySelector('.room-weather .wx');
+  const lit = one && getComputedStyle(one, '::before');
+  return {
+    kind: [...layer.classList].find(c => c.startsWith('weather-')),
+    count: document.querySelectorAll('.room-weather .wx').length,
+    glow: lit?.boxShadow,
+    animations: lit?.animationName,
+  };
+});
+ok('in summer the weather is fireflies', flies.kind === 'weather-motes' && flies.count >= 5,
+   `${flies.count} ${flies.kind}`);
+ok('...and each one glows', !!flies.glow && flies.glow !== 'none',
+   String(flies.glow).slice(0, 52));
+/* A firefly that shines steadily is a bulb: the drift it shares with all
+   the other weather, and a blink of its own on top. */
+ok('...and blinks as well as drifts',
+   String(flies.animations).includes('wx-sway') && String(flies.animations).includes('wx-glow'),
+   String(flies.animations));
+await summer.close();
+
 /* ---------- a look at each sky ---------- */
 for (const sky of ['sky_day', 'sky_sunset', 'sky_night', 'sky_rainbow']) {
   await boot({ garden: { sky } }, '#/garden');

@@ -623,7 +623,9 @@ export const SURFACES = {
   },
   sky_night: {
     backgroundColor: '#2c3563',
-    backgroundImage: 'radial-gradient(circle at 78% 24%, #fdf3cf 4%, rgba(253,243,207,.35) 6%, transparent 10%), radial-gradient(#fff8d8 1.2px, transparent 1.6px), radial-gradient(#e8ecff 1px, transparent 1.4px), linear-gradient(180deg, #232c58 0%, #3a4577 60%, #6a6f9c 100%)',
+    /* A brighter moon with a real halo, and the faint scattering of far-off
+       stars that the twinkling ones in ui/garden.js sit on top of. */
+    backgroundImage: 'radial-gradient(circle at 78% 24%, #fffdf0 3.4%, #fdf3cf 4.6%, rgba(253,243,207,.45) 7%, rgba(220,228,255,.16) 12%, transparent 17%), radial-gradient(#fff8d8 1.3px, transparent 1.8px), radial-gradient(#dfe7ff 1.1px, transparent 1.5px), linear-gradient(180deg, #232c58 0%, #3a4577 60%, #6a6f9c 100%)',
     backgroundSize: 'auto, 70px 70px, 47px 47px, auto',
     backgroundPosition: '0 0, 0 0, 23px 31px, 0 0',
   },

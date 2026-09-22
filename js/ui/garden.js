@@ -31,10 +31,21 @@ const HORIZON = 44;
    in full daylight under a moon is the sort of thing that reads as a bug,
    and the night sky is the second most expensive thing in the shop — it
    should feel like it did something. */
+/* Clear where the moon is, coming in through the lower sky and full by the
+   horizon. An even wash over the whole picture dims the moon and every star
+   in it, which is the opposite of the point; but a wash that waits until
+   the horizon leaves the hedge and the top of the tree standing in full
+   daylight under that moon, which is worse. Dimmer towards the ground is
+   also just what a night looks like. */
 const SKY_CAST = {
-  sky_night:  'linear-gradient(180deg, rgba(30,36,70,.58), rgba(38,44,80,.46))',
-  sky_sunset: 'linear-gradient(180deg, rgba(232,137,154,.20), rgba(246,184,132,.15))',
+  sky_night:  'linear-gradient(180deg, rgba(30,36,70,0) 0%, rgba(30,36,70,.06) 14%, ' +
+              'rgba(30,36,70,.42) 30%, rgba(30,36,70,.56) 44%, rgba(34,40,76,.5) 100%)',
+  sky_sunset: 'linear-gradient(180deg, rgba(232,137,154,0) 0%, rgba(232,137,154,.04) 14%, ' +
+              'rgba(236,146,146,.16) 30%, rgba(240,160,134,.24) 44%, rgba(246,184,132,.2) 100%)',
 };
+
+/* The skies with something in them worth watching. */
+const STARRY = new Set(['sky_night']);
 
 /* A piece's box is the square its art is drawn in, and its height comes out
    as its width — the scene is 16:10, so a piece W% wide is W × 1.6 % tall.
@@ -77,6 +88,31 @@ function piece(itemId, spec, left) {
   return place(el('div', { class: 'room-piece', html: art }), spec, left);
 }
 
+/* Stars, for the skies that have them.
+
+   Real elements rather than dots in the background gradient, because a
+   gradient cannot twinkle and a star that does not twinkle is a dot. The
+   gradient keeps its own faint scattering underneath — a wash of distant
+   ones with a few bright ones over the top is what a sky actually looks
+   like. */
+function starLayer(count = 26) {
+  const layer = el('div', { class: 'garden-stars', style: { height: `${HORIZON}%` } });
+  for (let i = 0; i < count; i++) {
+    layer.append(el('span', {
+      class: 'star',
+      style: {
+        left: `${(Math.random() * 100).toFixed(1)}%`,
+        top: `${(Math.random() * 86).toFixed(1)}%`,
+        '--star-size': `${(1.8 + Math.random() * 2.6).toFixed(2)}px`,
+        /* Negative, so they are already mid-twinkle when she opens it. */
+        '--star-dur': `${(2.6 + Math.random() * 4.5).toFixed(2)}s`,
+        '--star-delay': `${(-Math.random() * 7).toFixed(2)}s`,
+      },
+    }));
+  }
+  return layer;
+}
+
 /* Something in the distance for the fence to stand in front of. Not an item:
    a garden with nothing behind it is a stage set, and this is cheaper than
    asking her to buy a horizon. */
@@ -96,7 +132,10 @@ function hills() {
  */
 export function buildGarden({ petHTML = '', petProps = {}, season = currentSeason() } = {}) {
   const worn = items.equipped();
-  const garden = el('div', { class: 'room garden' });
+  /* The sky is on the scene as well as in it, so the pieces that sit above
+     where the cast begins — the distant hills — can be told what time of
+     day it is. */
+  const garden = el('div', { class: 'room garden', 'data-sky': worn.sky || 'sky_day' });
 
   const sky = el('div', { class: 'garden-sky' });
   Object.assign(sky.style, surfaceStyle(worn.sky || 'sky_day'));
@@ -106,7 +145,9 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
   Object.assign(ground.style, surfaceStyle(worn.ground || 'ground_grass'));
   ground.style.height = `${100 - HORIZON}%`;
 
-  garden.append(sky, ground, hills());
+  garden.append(sky, ground);
+  if (STARRY.has(worn.sky)) garden.append(starLayer());
+  garden.append(hills());
 
   /* Outdoors the weather is simply in the air, in front of the sky and the
      ground and behind everything standing in the garden. This is the whole
