@@ -16,6 +16,7 @@ import { checkNow, updateWaiting } from '../core/updates.js';
 import * as events from '../core/events.js';
 import { monthName, whenText } from './event.js';
 import * as discovery from '../core/discovery.js';
+import * as safety from '../core/safety.js';
 import { setQueue } from './spell.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
@@ -98,6 +99,22 @@ export default function parentScreen(container) {
           `${missingSentences.length} word${missingSentences.length === 1 ? '' : 's'} (${missingSentences.slice(0, 4).map(w => w.text).join(', ')}${missingSentences.length > 4 ? '…' : ''}) sound identical to another word. Without an example sentence they are impossible to answer correctly from audio alone.` }),
         button('Add sentences', { cls: 'btn btn-quiet', style: { marginTop: '10px' },
           onClick: () => show({ name: 'lists' }) })
+      ));
+    }
+
+    const backup = safety.backupStatus();
+    if (backup.due) {
+      body.append(el('div', { class: 'card card-warn' },
+        el('h3', { text: '\u{1F4BE} Save a copy of her progress' }),
+        el('p', { class: 'tiny', text: safety.backupMessage(backup) }),
+        el('div', { class: 'row', style: { marginTop: '12px' } },
+          button('Save a copy now', { cls: 'btn btn-primary grow', emoji: '\u{1F4BE}',
+            onClick: () => saveBackup().then(() => show({ name: 'hub' })) }),
+          button('Later', { cls: 'btn btn-quiet', onClick: () => {
+            safety.snoozeReminder();
+            show({ name: 'hub' });
+          } })
+        )
       ));
     }
 
@@ -715,17 +732,7 @@ export default function parentScreen(container) {
     return el('div', { class: 'stack' },
       backButton(() => show({ name: 'hub' })),
 
-      el('div', { class: 'card' },
-        el('h2', { text: 'Backup' }),
-        el('p', { class: 'muted tiny', text:
-          'Everything lives in this browser’s storage on this tablet alone. Clearing Chrome’s browsing data would erase months of progress, so save a copy somewhere safe now and then — your cloud drive is ideal.' }),
-        button('Save a backup file', { cls: 'btn btn-primary btn-block', emoji: '\u{1F4BE}',
-          onClick: downloadBackup }),
-        el('div', { style: { height: '10px' } }),
-        button('Restore from a backup', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F4C2}',
-          onClick: () => fileInput.click() }),
-        fileInput
-      ),
+      backupCard(fileInput),
 
       el('div', { class: 'card' },
         el('h3', { text: 'Start over' }),
@@ -814,16 +821,98 @@ export default function parentScreen(container) {
     navigate('/setup', { replace: true });
   }
 
-  function downloadBackup() {
-    flushNow();
+  /* The backup card, which is really a small status report: when a copy was
+     last taken, what has happened since, and whether Chrome has agreed not
+     to reclaim the storage. */
+  function backupCard(fileInput) {
+    const status = safety.backupStatus();
+    const since = safety.masteredSinceBackup();
+
+    const readable = bytes => bytes == null ? null
+      : bytes > 900000 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+    const health = el('div', { class: 'tiny muted', text: 'Checking storage\u2026' });
+    safety.persistenceState().then(persist => {
+      // Her progress, not the whole app: the offline cache dwarfs it and
+      // quoting that number would suggest the backup is far bigger than it is.
+      const size = readable(safety.saveSize());
+      health.textContent = [
+        size ? `Her progress is about ${size} of data.` : null,
+        persist === 'granted'
+          ? 'Chrome has agreed not to clear this app\u2019s storage on its own.'
+          : persist === 'not granted'
+            ? 'Chrome has not promised to keep this app\u2019s storage, which makes a saved copy matter more.'
+            : null,
+      ].filter(Boolean).join(' ');
+    });
+
+    return el('div', { class: status.due ? 'card card-warn' : 'card' },
+      el('h2', { text: 'Backup' }),
+      el('p', { class: 'muted tiny', text:
+        'Everything lives in this browser\u2019s storage on this tablet alone. Clearing Chrome\u2019s browsing data, or losing the tablet, would take months of progress with it. A saved copy is the only thing that survives that \u2014 keep it in your cloud drive.' }),
+
+      el('div', { class: 'card card-tight', style: { marginBottom: '14px' } },
+        el('div', { class: 'tiny', style: { fontWeight: '800' }, text: safety.reassurance() }),
+        el('div', { class: 'tiny muted', text: (() => {
+          const ever = safety.lastBackup() !== null;
+          if (!ever) return since > 0
+            ? `${since} word${since === 1 ? '' : 's'} mastered so far, none of it saved anywhere else.`
+            : 'Nothing mastered yet.';
+          return since > 0
+            ? `${since} word${since === 1 ? '' : 's'} mastered since then.`
+            : 'Nothing new mastered since then.';
+        })() }),
+        health
+      ),
+
+      button('Save a copy', { cls: 'btn btn-primary btn-block', emoji: '\u{1F4BE}',
+        onClick: () => saveBackup().then(() => show({ name: 'data' })) }),
+      el('p', { class: 'tiny muted center', style: { margin: '8px 0 14px' }, text:
+        'Sends it to your share sheet where the tablet offers one, so it can go straight to Drive.' }),
+
+      button('Restore from a copy', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F4C2}',
+        onClick: () => fileInput.click() }),
+      fileInput
+    );
+  }
+
+  /* Prefer the share sheet: on a tablet, "save to Drive" is one tap from
+     there, whereas a download lands in a folder she then has to go and
+     find. Falls back to a plain download wherever sharing files is not
+     offered. */
+  async function saveBackup() {
+    flushNow();                       // include anything still queued
     const blob = storage.exportBlob(getState());
+    const name = storage.suggestedFilename();
+
+    try {
+      const file = new File([blob], name, { type: 'application/json' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Spelling Adventure backup' });
+        safety.noteBackupSaved();
+        toast('Copy saved', { gold: true });
+        return true;
+      }
+    } catch (err) {
+      // Changing her mind at the share sheet is not a failure, and must not
+      // be recorded as a backup.
+      if (err?.name === 'AbortError') return false;
+    }
+
+    downloadBackup(blob, name);
+    safety.noteBackupSaved();
+    return true;
+  }
+
+  function downloadBackup(blob = storage.exportBlob(getState()),
+                          name = storage.suggestedFilename()) {
     const url = URL.createObjectURL(blob);
-    const a = el('a', { href: url, download: storage.suggestedFilename() });
+    const a = el('a', { href: url, download: name });
     document.body.append(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('Backup saved to Downloads');
+    toast('Copy saved to Downloads', { gold: true });
   }
 
   /* ---------- Shared ---------- */

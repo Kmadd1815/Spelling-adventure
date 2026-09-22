@@ -106,13 +106,35 @@ the English (United States) voice data.
 
 ## Back up the progress
 
-Everything lives in this browser's storage on this one tablet. Clearing
-Chrome's browsing data would erase months of work.
+**This is the one genuinely fragile thing about the app.** Everything she
+has done lives in one browser's storage, on one tablet. The rolling second
+copy the app keeps guards against a half-finished write and against nothing
+else — "clear browsing data", a storage sweep by Chrome, a factory reset or
+a lost tablet all take both copies at once.
 
-*Parent Area → Backup & reset → Save a backup file.* It lands in Downloads;
-move it to your cloud drive. Doing this every few weeks is enough.
+Two things guard against that:
 
----
+**The app asks Chrome not to reclaim its storage.** On start-up it requests
+persistent storage, which stops the browser evicting the save file when the
+device is short of space. Chrome grants this readily to an installed app. The
+Backup screen says whether it was granted.
+
+**The Parent Area asks you for a copy when one is overdue.** Not on a
+schedule, and never in front of her — only when there is something real to
+lose, and it says what:
+
+* no copy has ever been saved and she has started using it
+* eight or more words mastered since the last copy
+* a fortnight since the last copy
+
+"Later" puts it away for three days. Saving a copy clears it.
+
+**Saving a copy** goes to the share sheet where the tablet offers one, so it
+can go straight to Google Drive in a tap; it falls back to a download
+otherwise. The file is plain JSON and **Restore from a copy** reads it back.
+
+Do it at the end of a term, after a big week, and before anything that might
+touch the tablet's storage.
 
 ## How mastery works
 
@@ -469,6 +491,9 @@ These are deliberate and should survive future changes:
    being earned.
 15. A pet discovery is always a bonus. Nothing in the app is gated behind
    one, and running out of things to find costs her nothing.
+16. The backup reminder only ever appears in the Parent Area, only when
+   something real is at risk, and always says what is at risk rather than
+   quoting a date. The child is never asked to think about it.
 
 ---
 
@@ -497,6 +522,8 @@ js/core/                systems — no DOM in here
                         door between a game and the spelling engine
   events.js             the event calendar, progress and collectibles
   discovery.js          what the axolotl finds, and how rarely
+  safety.js             persistent storage, and noticing when a backup
+                        is overdue
   season.js             date-driven season
   bus.js                tiny pub/sub
 

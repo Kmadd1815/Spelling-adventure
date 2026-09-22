@@ -9,6 +9,7 @@ import { applySeasonTheme } from './core/season.js';
 import { getState } from './core/state.js';
 import { on } from './core/bus.js';
 import { watchForUpdates } from './core/updates.js';
+import { requestPersistence } from './core/safety.js';
 import { toast } from './ui/toast.js';
 
 import homeScreen     from './screens/home.js';
@@ -93,6 +94,12 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- Go ---------- */
 
 applySeasonTheme();
+
+/* Ask Chrome not to reclaim her save file if the tablet runs short of
+   space. Asking costs nothing, the answer is remembered by the browser,
+   and a refusal is not worth mentioning to anybody — the backup reminder
+   in the Parent Area covers the same risk either way. */
+requestPersistence();
 speech.ready().then(list => {
   if (!list.length) console.warn('[speech] the device reported no voices');
 });

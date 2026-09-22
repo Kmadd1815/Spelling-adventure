@@ -34,6 +34,7 @@ const SHELL = [
   './js/core/games.js',
   './js/core/events.js',
   './js/core/discovery.js',
+  './js/core/safety.js',
   './js/core/season.js',
   './js/ui/dom.js',
   './js/ui/router.js',

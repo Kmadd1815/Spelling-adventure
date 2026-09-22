@@ -83,6 +83,13 @@ export function defaultState() {
       gameDay: null,           // { day, stars, plays: { gameId: count } }
       eventDay: null,          // { day, stars, rounds } — events are budgeted apart
       lastDiscoveryDay: null,  // 'YYYY-MM-DD' the axolotl last found something
+
+      /* Backup safety. Everything she has done lives in one browser on one
+         tablet, so core/safety.js watches how long it has been since a copy
+         left the device and how much has happened since. */
+      lastBackupAt: null,        // ms
+      lastBackupMastered: 0,     // mastered words at that moment
+      backupSnoozedUntil: null,  // ms — "remind me later" 
     },
 
     /* Rolling history, trimmed to the most recent sessions. */
