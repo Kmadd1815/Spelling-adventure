@@ -143,6 +143,11 @@ touch the tablet's storage.
   So three in a row really means three different days — she learned the word,
   rather than copying letters she was still looking at.
 - **Missing a word starts the count over.**
+- A correct answer sometimes earns **no new dot** — because today is
+  already counted, or because it was the second look at one she just
+  missed. The screen says so rather than leaving a dot that did not move:
+  *"Today is already counted — 1 of 3 days so far."* A right answer that
+  changes nothing is otherwise indistinguishable from a broken counter.
 - Mastered words **leave** the normal practice pool.
 - Unmastered words **carry forward** week after week until she gets them.
 - Mastered words are **never deleted**. They live in *My Words → Mastered*

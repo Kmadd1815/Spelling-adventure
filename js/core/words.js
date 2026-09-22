@@ -245,12 +245,15 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
       word.lastMissed = now;
     }
 
+    let creditedNow = false;
+
     if (countsForMastery) {
       if (wasCorrect) {
         // One credit a day, so the streak measures days she knew it.
         if (word.lastCreditDay !== today) {
           word.streak = (word.streak || 0) + 1;
           word.lastCreditDay = today;
+          creditedNow = true;
         }
       } else {
         word.streak = 0;
@@ -268,7 +271,11 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
     const justMastered = nowMastered && !wasMastered;
     if (justMastered) emit('word:mastered', word);
 
-    return { ok: true, word, justMastered, credits: word.streak || 0 };
+    /* `creditedNow` is what the screen needs to tell her the truth. A right
+       answer that earns nothing — because today is already counted, or
+       because it was a second look at one she missed — looks identical to a
+       broken counter unless somebody says so. */
+    return { ok: true, word, justMastered, credits: word.streak || 0, creditedNow };
   });
 }
 

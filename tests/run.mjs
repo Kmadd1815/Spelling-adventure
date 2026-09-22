@@ -25,7 +25,7 @@ const BASE = `http://127.0.0.1:${PORT}/index.html`;
 
 /* The order is roughly cheapest first, so a broken build says so in seconds
    rather than after the six mini-games have been played through. */
-const ORDER = ['shell', 'regress', 'milestone', 'shop', 'petplay', 'fxcheck',
+const ORDER = ['shell', 'regress', 'mastery', 'milestone', 'shop', 'petplay', 'fxcheck',
                'room', 'roomfit', 'seasons', 'garden', 'backup', 'calendar',
                'events', 'games'];
 

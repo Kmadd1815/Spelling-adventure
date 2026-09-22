@@ -292,10 +292,10 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       setTimeout(next, 420);
       return;
     }
-    correct ? showCorrect(word, isRetry) : showMissed(word, attempt, isRetry);
+    correct ? showCorrect(word, isRetry, outcome) : showMissed(word, attempt, isRetry);
   }
 
-  function showCorrect(word, isRetry) {
+  function showCorrect(word, isRetry, outcome) {
     stage.classList.add('showing-feedback');
     renderTiles('good');
     renderPips();
@@ -306,7 +306,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered()
         : isRetry ? 'You remembered it!' : pet.praiseCorrect() }),
       el('div', { class: 'correct-spelling', text: word.text }),
-      masteryDots(word)
+      masteryDots(word, { isRetry, creditedNow: !!outcome?.creditedNow })
     ));
 
     if (justMastered) confetti(28);
@@ -340,15 +340,34 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     ));
   }
 
-  function masteryDots(word) {
+  /* Where she is, and — when the answer she just got right did not move
+     anything — why not.
+
+     A correct answer that earns no dot is the single most confusing thing
+     in the app: the counter looks broken. It is not, but nobody can tell
+     that from a row of dots that did not change. */
+  function masteryDots(word, { isRetry = false, creditedNow = true } = {}) {
     const have = words.credits(word);
     const need = words.threshold();
+
+    /* After a second look at one she missed, a scoreboard reading zero
+       under "You remembered it!" is just unkind, and she cannot do
+       anything about it today anyway. */
+    if (isRetry) {
+      return el('div', { class: 'center tiny muted', style: { marginTop: '6px' },
+        text: 'Try it again tomorrow to start your days.' });
+    }
+
     const wrap = el('div', { class: 'mastery-dots', style: { justifyContent: 'center', marginTop: '6px' } });
     for (let i = 0; i < need; i++) wrap.append(el('div', { class: i < have ? 'mdot on' : 'mdot' }));
+
+    const caption = have >= need ? 'Mastered!'
+      : creditedNow ? `${have} of ${need} days in a row`
+      : `Today is already counted — ${have} of ${need} days so far.`;
+
     return el('div', { class: 'center' },
       wrap,
-      el('div', { class: 'tiny muted', style: { marginTop: '4px' },
-        text: have >= need ? 'Mastered!' : `${have} of ${need} days in a row` })
+      el('div', { class: 'tiny muted', style: { marginTop: '4px' }, text: caption })
     );
   }
 

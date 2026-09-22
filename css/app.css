@@ -518,6 +518,8 @@ body {
 .badge-mastered   { background: #fff2cc; color: #7a5a14; }
 
 .mastery-dots { display: inline-flex; gap: 4px; }
+/* The dots with their label beside them, so the row says what it counts. */
+.mastery-line { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
 .mdot { width: 10px; height: 10px; border-radius: 50%; background: var(--bg-deep); }
 .mdot.on { background: var(--gold); }
 

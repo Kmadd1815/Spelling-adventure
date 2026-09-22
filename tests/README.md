@@ -29,6 +29,7 @@ downloaded, `PLAYWRIGHT_BROWSERS_PATH` is respected.
 |---|---|
 | `shell` | every module is in the service worker's offline list. No browser; instant. |
 | `regress` | a whole day's practice, end to end, with the payouts line by line |
+| `mastery` | days in a row, across three faked days — and what the screen says when a right answer earns no dot |
 | `milestone` | a milestone fires once, and its keepsake can be worn but never bought |
 | `shop` | the wall between buying and earning, from both sides |
 | `petplay` | the pet cannot be neglected — mostly a check that nothing sad got added |
