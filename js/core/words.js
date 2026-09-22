@@ -80,8 +80,12 @@ export function progressLabel(word) {
   const have = credits(word);
   const need = threshold();
   if (have >= need) return 'Mastered!';
-  const unit = oncePerDay() ? (need === 1 ? 'day' : 'days') : (need === 1 ? 'time' : 'times');
-  return `${have} of ${need} ${unit} in a row`;
+  /* No unit when every test answer counts: "3 of 5 in a row" is exactly
+     true and does not have to explain itself. The screens say what moves
+     the dots; this only says how far along they are. */
+  return oncePerDay()
+    ? `${have} of ${need} ${need === 1 ? 'day' : 'days'} in a row`
+    : `${have} of ${need} in a row`;
 }
 
 /** Today, as a date key. Mastery counts at most one correct answer a day. */
@@ -190,6 +194,18 @@ function priorityScore(word, newestListId) {
  * @param {string} [opts.listId]     required when pool === 'list'
  * @param {boolean} [opts.allowRepeats] pad by repeating when the pool is small
  */
+/* Fisher-Yates. Used to shuffle the ORDER of a session, never which words
+   are in it — the priority ranking decides that and is the whole reason
+   the right words come round. */
+export function shuffled(list) {
+  const out = list.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export function pickWords({ count = 8, pool = 'active', listId = null, allowRepeats = false } = {}) {
   let candidates;
   switch (pool) {
@@ -219,7 +235,12 @@ export function pickWords({ count = 8, pool = 'active', listId = null, allowRepe
     let i = 0;
     while (chosen.length < count) chosen.push(ranked[i++ % ranked.length]);
   }
-  return chosen;
+
+  /* Ranked to choose, shuffled to ask. The same eight words in the same
+     order every day turns into a sequence she can recite rather than a
+     list she can spell, and she notices the pattern long before anyone
+     else does. */
+  return shuffled(chosen);
 }
 
 /* ---------- Recording an attempt ----------

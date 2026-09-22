@@ -35,10 +35,15 @@ const REPEAT_PAY = 1;
 /**
  * The catalogue.
  *
- * canMaster  true only where she spells the whole word from memory with
- *            nothing to copy from and no way to stumble onto the answer.
- *            Word Search shows her the spelling; Snake and Swim can be
- *            brute-forced by swimming into letters to see what happens.
+ * canMaster  false everywhere now: mastery is five correct answers in a
+ *            row on the Practice Test or the Spelling Test, and nothing
+ *            else moves it. The field stays so that rule has one obvious
+ *            place to live if it ever changes back.
+ *
+ *            It used to mean: true only where she spells a whole word from
+ *            memory with nothing to copy and no way to stumble onto the
+ *            answer. Word Search shows her the spelling; Snake and Swim can
+ *            be brute-forced by swimming into letters to see what happens.
  *            Those are recorded in her history but never move the streak.
  * minWords   how many words the game needs before it makes any sense.
  * pay        base for finishing, perWord for each word she got, and a
@@ -59,7 +64,7 @@ export const GAMES = [
     id: 'crossword', name: 'Crossword', emoji: '\u{1F9E9}', tint: 't-blue',
     blurb: 'Read the clue, then spell the word into the squares.',
     buddyRole: 'Reads the clues with you',
-    minWords: 4, canMaster: true,
+    minWords: 4, canMaster: false,
     pay: { base: 4, perWord: 1, perfect: 4 },
     scene: 'paper',
     load: () => import('../games/crossword.js'),
@@ -68,7 +73,7 @@ export const GAMES = [
     id: 'tictactoe', name: 'Tic Tac Toe', emoji: '⭕', tint: 't-orange',
     blurb: 'Spell a word right to claim a square. Beat the axolotl!',
     buddyRole: 'Plays against you',
-    minWords: 3, canMaster: true,
+    minWords: 3, canMaster: false,
     pay: { base: 4, perWord: 1, perfect: 3 },
     scene: 'party',
     load: () => import('../games/tictactoe.js'),
@@ -153,9 +158,11 @@ export function availability(game) {
 */
 
 export function recordGameAttempt(wordId, wasCorrect, { canMaster = false } = {}) {
-  return words.recordAttempt(wordId, wasCorrect, {
-    countsForMastery: !!(canMaster && wasCorrect),
-  });
+  /* No game moves mastery any more — the two tests are the only things
+     that do. The `canMaster` flag stays in the registry because it is what
+     the hub uses to say so, and because the rule belongs in one place
+     rather than in six games. */
+  return words.recordAttempt(wordId, wasCorrect, { countsForMastery: false });
 }
 
 /* ---------- Today's game earnings ---------- */

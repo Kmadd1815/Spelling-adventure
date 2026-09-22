@@ -38,21 +38,32 @@ let queueOverride = null;
 export function setQueue(wordList) { queueOverride = wordList.slice(); }
 
 const KINDS = {
+  /* `counts` is the whole mastery rule in one column.
+
+     Only the two tests move it. Practice shows her the answer, gives her a
+     second look at anything she misses, and is meant to be where she
+     learns — so it is teaching, not assessment, and a streak built out of
+     it would be measuring the wrong thing.
+
+     Neutral means neutral in BOTH directions: practice cannot advance a
+     streak and cannot break one either. Losing five test results to a
+     fumbled practice word would be maddening and would teach her to avoid
+     practising. */
   daily: {
     label: "Today's Practice", pool: 'daily',
-    feedback: true, retry: true, marksDaily: true,
+    feedback: true, retry: true, marksDaily: true, counts: false,
   },
   extra: {
     label: 'Practice', pool: 'active',
-    feedback: true, retry: true, marksDaily: false,
+    feedback: true, retry: true, marksDaily: false, counts: false,
   },
   practiceTest: {
     label: 'Practice test', pool: 'active',
-    feedback: false, retry: false, marksDaily: false,
+    feedback: false, retry: false, marksDaily: false, counts: true,
   },
   fullTest: {
     label: 'Spelling test', pool: 'list',
-    feedback: false, retry: false, marksDaily: false,
+    feedback: false, retry: false, marksDaily: false, counts: true,
   },
 };
 
@@ -84,9 +95,10 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     plan = queueOverride.map(word => ({ word, isRetry: false }));
     queueOverride = null;
   } else if (kind === 'fullTest') {
-    // A real spelling test covers the whole list in order, mastered words
-    // and all. Missing one she had mastered honestly puts it back in play.
-    plan = words.wordsInList(listId).map(word => ({ word, isRetry: false }));
+    // A real spelling test covers the whole list, mastered words and all,
+    // in a fresh order each time. Missing one she had mastered honestly
+    // puts it back in play.
+    plan = words.shuffled(words.wordsInList(listId)).map(word => ({ word, isRetry: false }));
   } else {
     const size = kind === 'practiceTest'
       ? Math.max(1, settings().practiceTestSize || 10)
@@ -106,6 +118,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
   const originalIds = plan.map(e => e.word.id);
   const results = new Map();       // wordId -> { text, typed, correct }  (first attempts only)
   const masteredThisSession = [];
+  let creditedThisSession = 0;
   let index = 0;
   let typed = '';
   let locked = false;
@@ -271,8 +284,10 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     // A second look at a word she just missed is practice, not assessment:
     // it is recorded in her history but cannot advance or break the streak,
     // and it earns nothing.
-    const outcome = words.recordAttempt(word.id, correct, { countsForMastery: !isRetry });
+    const outcome = words.recordAttempt(word.id, correct,
+      { countsForMastery: config.counts && !isRetry });
     if (outcome?.justMastered) masteredThisSession.push(word);
+    if (outcome?.creditedNow) creditedThisSession += 1;
 
     if (!isRetry) {
       results.set(word.id, { text: word.text, typed: attempt, correct });
@@ -306,7 +321,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered()
         : isRetry ? 'You remembered it!' : pet.praiseCorrect() }),
       el('div', { class: 'correct-spelling', text: word.text }),
-      masteryDots(word, { isRetry, creditedNow: !!outcome?.creditedNow })
+      masteryDots(word, { creditedNow: !!outcome?.creditedNow })
     ));
 
     if (justMastered) confetti(28);
@@ -345,29 +360,23 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
      A correct answer that earns no dot is the single most confusing thing
      in the app: the counter looks broken. It is not, but nobody can tell
-     that from a row of dots that did not change. */
-  function masteryDots(word, { isRetry = false, creditedNow = true } = {}) {
+     that from a row of dots that did not change. Two reasons it can
+     happen, and they need different sentences:
+
+       practice        it never counts. Only the two tests do.
+       already today   one-a-day counting is on and today is spent.
+  */
+  function masteryDots(word, { creditedNow = true } = {}) {
     const have = words.credits(word);
     const need = words.threshold();
-
-    /* After a second look at one she missed, a scoreboard reading zero
-       under "You remembered it!" is just unkind, and she cannot do
-       anything about it today anyway. */
-    if (isRetry) {
-      return el('div', { class: 'center tiny muted', style: { marginTop: '6px' },
-        text: words.oncePerDay()
-          ? 'Try it again tomorrow to start your days.'
-          : 'Next time you get it right, it counts again.' });
-    }
 
     const wrap = el('div', { class: 'mastery-dots', style: { justifyContent: 'center', marginTop: '6px' } });
     for (let i = 0; i < need; i++) wrap.append(el('div', { class: i < have ? 'mdot on' : 'mdot' }));
 
-    const caption = creditedNow
-      ? words.progressLabel(word)
-      /* Only reachable with one-a-day counting on, and then it is the whole
-         explanation for a dot that did not move. */
-      : `Today is already counted — ${have} of ${need} days so far.`;
+    const caption = have >= need ? 'Mastered!'
+      : !config.counts ? `${have} of ${need} — tests are what fill these in.`
+      : creditedNow ? words.progressLabel(word)
+      : `Today is already counted — ${have} of ${need} so far.`;
 
     return el('div', { class: 'center' },
       wrap,
@@ -452,6 +461,27 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
         )
       )
     );
+
+    /* A test that moved nothing, because one-a-day counting is on and
+       today is spent. The tests show no per-word feedback at all, so
+       without this the whole session passes in silence and the dots simply
+       do not move. */
+    if (config.counts && attempted > 0 && creditedThisSession === 0) {
+      body.append(el('div', { class: 'card center' },
+        el('p', { class: 'muted tiny', text:
+          'Today is already counted for these words. A test tomorrow moves them on.' })
+      ));
+    }
+
+    /* Practice does not move mastery any more, so after one the dots are
+       exactly where they were. Saying which activity DOES move them turns
+       that from a counter that looks broken into a signpost. */
+    if (!config.counts && attempted > 0) {
+      body.append(el('div', { class: 'card center' },
+        el('p', { class: 'muted tiny', text:
+          `Practice is for learning. ${words.threshold()} in a row on a test is what masters a word \u2014 try Take a Test when you are ready.` })
+      ));
+    }
 
     if (masteredThisSession.length) {
       body.append(el('div', { class: 'card' },

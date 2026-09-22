@@ -1,17 +1,18 @@
-/* What "in a row" counts.
+/* What moves mastery, and what does not.
 
-   A word is mastered after N correct answers in a row. By default every
-   correct answer counts, so three in a row can happen in one afternoon
-   across three sittings — she is never shown a word before she spells it,
-   so there is nothing on screen to copy.
+   A word is mastered after N correct answers in a row ON A TEST. Only the
+   Practice Test and the Spelling Test count: they give no feedback until
+   the end and no second look, so they are the honest measure. Today's
+   Practice, extra practice, the mini-games and the events are all neutral
+   — they cannot advance a streak and, just as deliberately, cannot break
+   one either. A word fumbled while she is still learning it should not
+   undo five test results.
 
-   A grown-up can turn on "Once a day", which makes it three separate days
-   instead: a stronger claim, and a much slower one.
+   That means a correct answer often earns no dot, which looks exactly like
+   a broken counter. So this checks the wording as carefully as the sums.
 
-   Both modes are checked here, because the difference is the whole point
-   and the wording has to follow it — a list saying "times" beside a
-   session saying "days" is worse than either. So is a correct answer that
-   earns no dot and does not say why.
+   It is also the only suite that spans more than one day, for the optional
+   "Once a day" rule.
 */
 
 import { chromium, BASE, ok } from './lib/harness.mjs';
@@ -31,7 +32,10 @@ const SEED = ({ rows, settings = {} }) => {
       hint: '', tags: [], attempts: 0, correctCount: 0, incorrectCount: 0, streak: 0,
       lastCreditDay: null, lastDailyDay: null, recent: [], firstSeen: null, lastSeen: null,
       lastCorrect: null, lastMissed: null, masteredAt: null, createdAt: now })),
-    settings: { masteryThreshold: 3, oneCreditPerDay: false, ...settings },
+    /* masteryRuleV2 stops migrate() overwriting whatever a block asked
+       for — that one-time move is right for a real save and wrong here.
+       The block that tests the move deletes the flag on purpose. */
+    settings: { masteryThreshold: 5, oneCreditPerDay: false, masteryRuleV2: true, ...settings },
     progress: { stars: 0, milestonesEarned: [] },
     equipped: { wallpaper: 'wall_plain', flooring: 'floor_wood' },
     collection: { items: [] } }));
@@ -89,13 +93,16 @@ async function play(page, { missFirst = false, max = 20 } = {}) {
     for (const ch of type) await page.click(`.key:text-is("${ch}")`, { timeout: 3000 });
     await page.click('.key-enter');
     await page.waitForTimeout(650);
+    /* The word goes in whether or not there is a feedback panel: the two
+       TESTS deliberately have none, and only recording the ones that do
+       meant every test looked like it asked nothing at all. */
     const fb = await page.evaluate(() => {
       const f = document.querySelector('.feedback');
       return f ? { text: f.textContent.replace(/\s+/g, ' ').trim(),
                    dots: f.querySelectorAll('.mdot').length,
-                   on: f.querySelectorAll('.mdot.on').length } : null;
+                   on: f.querySelectorAll('.mdot.on').length } : {};
     });
-    if (fb) said.push({ word, ...fb });
+    said.push({ word, text: '', dots: 0, on: 0, ...fb });
     const nb = page.locator('button:has-text("Next word")');
     if (await nb.count()) { await nb.click(); await page.waitForTimeout(350); }
   }
@@ -119,7 +126,7 @@ const streaks = page => page.evaluate(async () => {
   return Object.fromEntries(getState().words.map(w => [w.text, w.streak]));
 });
 
-async function open(day, save, opts = {}) {
+async function open(day, save, opts = {}, rows = WORDS) {
   const ctx = await browser.newContext({ viewport: { width: 820, height: 1200 } });
   await ctx.addInitScript(hooks(day));
   const page = await ctx.newPage();
@@ -127,7 +134,7 @@ async function open(day, save, opts = {}) {
   page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
   await page.goto(BASE, { waitUntil: 'networkidle' });
   if (save) await page.evaluate(s => localStorage.setItem('spelling-adventure:v1', s), save);
-  else await page.evaluate(SEED, { rows: WORDS, settings: opts });
+  else await page.evaluate(SEED, { rows, settings: opts });
   await page.reload({ waitUntil: 'networkidle' });
   await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
@@ -136,63 +143,128 @@ async function open(day, save, opts = {}) {
 
 const keep = page => page.evaluate(() => localStorage.getItem('spelling-adventure:v1'));
 
-/* ---------- the default: every correct answer counts ---------- */
+/* ---------- only the tests move it ---------- */
 
 {
   const { ctx, page } = await open('2026-09-21', null);
 
   await startSession(page, '#/daily');
-  const first = await play(page);
-  const after1 = await streaks(page);
-
-  /* Today's Practice closes once every word has had its turn, so the
-     second and third goes are extra Practice — which is what she would
-     reach for anyway. */
-  await startSession(page, '#/practice');
-  const second = await play(page);
-  const after2 = await streaks(page);
+  const practice = await play(page);
+  const afterPractice = await streaks(page);
+  ok('a whole practice session moves nothing',
+     Object.values(afterPractice).every(v => v === 0), JSON.stringify(afterPractice));
+  ok('...and says what does move it',
+     practice.some(x => /tests are what fill these in/i.test(x.text)),
+     practice[0]?.text.slice(0, 70));
 
   await startSession(page, '#/practice');
   await play(page);
-  const after3 = await streaks(page);
+  ok('extra practice moves nothing either',
+     Object.values(await streaks(page)).every(v => v === 0));
 
-  ok('every correct answer adds one, same day or not',
-     after1.train === 1 && after2.train === 2,
-     `${after1.train} then ${after2.train}`);
-  ok('...so three in a row masters it without waiting for tomorrow',
-     after3.train === 3, `streak ${after3.train}`);
-  ok('...and the screen counts times, not days',
-     second.some(x => /of 3 times in a row/.test(x.text)),
-     second[0]?.text.slice(0, 64));
-
-  await page.goto(BASE + '#/words', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(600);
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.word-row')]
-    .map(r => r.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean));
-  ok('My Words agrees with the session about what it is counting',
-     rows.every(t => !/days/.test(t)), rows[0]?.slice(0, 60));
+  /* A test is a different matter. */
+  await startSession(page, '#/test');
+  await play(page);
+  const afterTest = await streaks(page);
+  ok('a practice test moves every word it asked',
+     Object.values(afterTest).every(v => v === 1), JSON.stringify(afterTest));
   await ctx.close();
 }
 
-/* ---------- a second look at one she missed still never counts ---------- */
+/* ---------- five tests in a row ---------- */
 
 {
   const { ctx, page } = await open('2026-09-21', null);
+  const marks = [];
+  for (let i = 0; i < 5; i++) {
+    await startSession(page, '#/test');
+    await play(page);
+    marks.push((await streaks(page)).train);
+  }
+  ok('each test adds one', marks.join(',') === '1,2,3,4,5', marks.join(','));
+
+  const done = await page.evaluate(async () => {
+    const w = await import('./js/core/words.js');
+    return { mastered: w.masteredWords().length, active: w.activeWords().length };
+  });
+  ok('...and the fifth masters the word', done.mastered === WORDS.length, JSON.stringify(done));
+  await ctx.close();
+}
+
+/* ---------- practice cannot break a streak either ---------- */
+
+{
+  const { ctx, page } = await open('2026-09-21', null);
+  await startSession(page, '#/test');
+  await play(page);
+  const before = (await streaks(page)).train;
+
   await startSession(page, '#/daily');
   const said = await play(page, { missFirst: true });
   const after = await streaks(page);
+  const fumbled = said[0].word;
 
-  const missedWord = said[0].word;
-  ok('missing a word starts it over', after[missedWord] === 0,
-     `${missedWord}: ${after[missedWord]}`);
+  ok('a word missed in practice keeps its test streak',
+     before === 1 && after[fumbled] === 1,
+     `${fumbled}: ${before} before, ${after[fumbled]} after`);
 
-  const retry = said.find(x => /remembered it/i.test(x.text));
-  ok('getting the second look right is praised', !!retry, retry?.text.slice(0, 40));
-  /* A scoreboard reading zero under "You remembered it!" is unkind and she
-     can do nothing about it in that moment. */
-  ok('...without showing her a scoreboard on nought',
-     !!retry && retry.dots === 0 && /counts again/i.test(retry.text),
-     retry ? `${retry.dots} dots — ${retry.text.slice(-44)}` : '(no retry)');
+  /* Missing one ON A TEST is a different matter — that is the measure. */
+  await startSession(page, '#/test');
+  await play(page, { missFirst: true });
+  const afterTest = await streaks(page);
+  ok('a word missed on a test starts over',
+     Object.values(afterTest).some(v => v === 0), JSON.stringify(afterTest));
+  await ctx.close();
+}
+
+/* ---------- a fresh order every time ---------- */
+
+{
+  /* Six words rather than three, so "same order twice" is a real
+     coincidence rather than a one-in-six one. And a threshold nothing can
+     reach, because a word that masters leaves the pool and the next test
+     would have nothing to ask. */
+  const SIX = ['train', 'paint', 'afraid', 'explain', 'brain', 'chain'];
+  const { ctx, page } = await open('2026-09-21', null,
+    { practiceTestSize: 6, masteryThreshold: 99 }, SIX);
+  const orders = [];
+  for (let i = 0; i < 6; i++) {
+    await startSession(page, '#/test');
+    orders.push((await play(page)).map(x => x.word).join(' '));
+  }
+  /* Six runs of the same words. Identical order every time would mean the
+     shuffle is not happening; she learns the sequence long before anyone
+     notices she is not reading the words. */
+  ok('the same words come up in a different order', new Set(orders).size > 1,
+     `${new Set(orders).size} distinct orders in 6 runs`);
+  ok('...and it is always the same words',
+     new Set(orders.map(o => o.split(' ').sort().join(' '))).size === 1);
+  await ctx.close();
+}
+
+/* ---------- the old save moves across ---------- */
+
+{
+  const { ctx, page } = await open('2026-09-21', null);
+  const moved = await page.evaluate(async () => {
+    /* A save from before the rule changed: three in a row, no flag. */
+    const raw = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+    raw.settings = { masteryThreshold: 3 };
+    raw.words[0].streak = 2;
+    localStorage.setItem('spelling-adventure:v1', JSON.stringify(raw));
+    return true;
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(async () => {
+    const { settings } = await import('./js/core/state.js');
+    const { getState } = await import('./js/core/state.js');
+    return { threshold: settings().masteryThreshold, gate: settings().gamesAfterDaily,
+             streak: getState().words[0].streak };
+  });
+  ok('an older save is moved to five, and keeps what she had earned',
+     moved && after.threshold === 5 && after.streak === 2, JSON.stringify(after));
+  ok('...and gets the games gate with it', after.gate === true);
   await ctx.close();
 }
 
@@ -200,49 +272,25 @@ const keep = page => page.evaluate(() => localStorage.getItem('spelling-adventur
 
 {
   const { ctx, page } = await open('2026-09-21', null, { oneCreditPerDay: true });
-  await startSession(page, '#/daily');
+  await startSession(page, '#/test');
   await play(page);
   const after1 = await streaks(page);
 
-  await startSession(page, '#/practice');
+  await startSession(page, '#/test');
   const said = await play(page);
   const after2 = await streaks(page);
 
-  ok('once a day means twice in one day is still one',
-     after1.train === 1 && after2.train === 1,
-     `${after1.train} then ${after2.train}`);
-  ok('...and the screen says why the dot did not move',
-     said.some(x => /already counted/i.test(x.text)),
-     said[0]?.text.slice(0, 64));
-  ok('...and counts days rather than times',
-     said.some(x => /of 3 days/.test(x.text)) ||
-       (await page.goto(BASE + '#/words', { waitUntil: 'networkidle' }),
-        await page.waitForTimeout(500),
-        (await page.evaluate(() => document.body.textContent)).includes('of 3 days')),
-     'label');
+  ok('once a day means two tests in one day is still one',
+     after1.train === 1 && after2.train === 1, `${after1.train} then ${after2.train}`);
+  /* A test shows no per-word feedback, so the explanation has to be on the
+     results screen or the whole session passes in silence. */
+  const results = await page.evaluate(() =>
+    document.getElementById('screen').textContent.replace(/\s+/g, ' ').trim());
+  ok('...and the results screen says why the dots did not move',
+     /already counted for these words/i.test(results),
+     results.slice(0, 90));
   await ctx.close();
 }
-
-/* ---------- three separate days, with the day rule on ---------- */
-
-let save = null;
-const seen = [], asked = [];
-for (const [i, day] of ['2026-09-21', '2026-09-22', '2026-09-23'].entries()) {
-  const { ctx, page } = await open(day, save, { oneCreditPerDay: true });
-  await startSession(page, '#/daily');
-  const said = await play(page);
-  asked.push([...new Set(said.map(x => x.word))]);
-  if (process.env.DEBUG) console.log(`  day ${i + 1} ${day}:`,
-    said.map(x => `${x.word}=${x.on}/${x.dots}`).join(' '), '->', JSON.stringify(await streaks(page)));
-  seen.push(await streaks(page));
-  save = await keep(page);
-  await ctx.close();
-}
-ok('every word gets its turn every day',
-   asked.every(day => day.length === WORDS.length), asked.map(d => d.length).join(', '));
-ok('a right answer on a new day adds a day',
-   seen[0].train === 1 && seen[1].train === 2, JSON.stringify(seen.map(s => s.train)));
-ok('...three days running masters it', seen[2].train === 3, `streak ${seen[2].train}`);
 
 console.log('\n--- PAGE ERRORS ---');
 console.log(errs.length ? errs.join('\n') : 'none');

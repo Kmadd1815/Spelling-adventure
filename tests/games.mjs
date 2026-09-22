@@ -68,7 +68,26 @@ await page.waitForTimeout(500);
 const cards = await page.locator('.game-card').count();
 ok('games hub shows six games', cards === 6, `saw ${cards}`);
 const locked = await page.locator('.game-card-locked').count();
-ok('no game locked with 8 words', locked === 0, `locked ${locked}`);
+/* Games wait for Today's Practice now, so with a fresh list every card is
+   shut — and the gate has the way through printed on it. */
+ok('with practice still to do, every game waits', locked === 6, `locked ${locked}`);
+/* Matching on the heading rather than the button: the button's label has a
+   curly apostrophe in it, which is a silly thing for a test to depend on. */
+ok('...and the gate says how to open it',
+   await page.locator('h2:has-text("Practice first")').count() === 1 &&
+   await page.locator('.card button.btn-primary').count() === 1);
+
+/* The rest of this suite is about the games themselves, so let practice be
+   done and carry on. */
+await page.evaluate(async () => {
+  const w = await import('./js/core/words.js');
+  w.allWords().forEach(x => w.markCoveredToday(x.id));
+});
+await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+await page.click('.hub-tile:has-text("Games")');
+await page.waitForTimeout(500);
+ok('with practice done, the games open up',
+   await page.locator('.game-card-locked').count() === 0);
 ok('buddy is on the hub', await page.locator('.buddy .buddy-pet svg').count() === 1);
 await page.screenshot({ path: `${SP}/G0-hub.png` });
 
@@ -164,7 +183,31 @@ ok('crossword paid out', await page.locator('.payout-total').count() === 1);
 await page.screenshot({ path: `${SP}/G4-crossword-results.png` });
 const cwWords = await wordState();
 const credited = cwWords.filter(w => w.streak > 0).map(w => w.text);
-ok('crossword DID grant mastery credit', credited.length >= 2, credited.join(','));
+/* No game moves mastery in either direction any more — only the Practice
+   Test and the Spelling Test do. */
+ok('crossword does NOT grant mastery credit', credited.length === 0, credited.join(',') || 'none');
+
+/* ---------- Swim gets faster ---------- */
+
+{
+  /* Her own suggestion, and it has to be felt rather than merely true: the
+     ramp used to be 12% a word over three words and nobody noticed it. */
+  const ramp = await page.evaluate(async () => {
+    const res = await fetch('./js/games/swim.js');
+    const src = await res.text();
+    const step = Number((src.match(/SPEED_STEP\s*=\s*([\d.]+)/) || [])[1]);
+    const words = Number((src.match(/WORDS_PER_ROUND\s*=\s*(\d+)/) || [])[1]);
+    return { step, words, byTheEnd: 1 + step * (words - 1),
+             tellsHer: /Faster now/.test(src),
+             readsLive: /wordIndex \* SPEED_STEP/.test(src) };
+  });
+  ok('Swim speeds up enough to feel it', ramp.byTheEnd >= 1.4,
+     `${Math.round((ramp.byTheEnd - 1) * 100)}% faster by the last word`);
+  ok('...and says so when she earns it', ramp.tellsHer);
+  /* Read live, so finishing a word speeds up the rocks already on screen
+     rather than only the ones spawned after it. */
+  ok('...and the rocks already in the water speed up too', ramp.readsLive);
+}
 
 /* ---------- crossword cannot break a streak ---------- */
 const streakKept = await page.evaluate(async () => {

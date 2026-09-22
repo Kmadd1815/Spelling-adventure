@@ -138,14 +138,18 @@ touch the tablet's storage.
 
 ## How mastery works
 
-- A word is **mastered** after being spelled correctly **N times in a row**
-  (default 3, configurable). Every correct answer counts, so three in a row
-  can happen in one afternoon across three sittings — a word only comes up
-  once per session, and she is never shown it before she spells it, so there
-  is nothing on screen to copy.
-- *Parent Area → Spelling rules → **What counts as "in a row"*** can change
-  that to **once a day**, which makes three in a row mean three separate
-  days whatever else she does in between. A stronger claim, and much slower.
+- A word is **mastered** after being spelled correctly **5 times in a row
+  on a test** (configurable). **Only the Practice Test and the Spelling Test
+  count.** They give no feedback until the end and no second look, so they
+  are the honest measure of whether she knows a word.
+- Today's Practice, extra practice, the mini-games and the seasonal events
+  are **neutral**: they cannot advance a streak and — just as deliberately —
+  **cannot break one either**. A word fumbled while she is still learning it
+  should not undo five test results, and if it could she would learn to
+  avoid practising.
+- *Parent Area → Spelling rules → **What counts as "in a row"*** can add a
+  **once a day** limit, which makes five in a row mean five separate days.
+  A stronger claim, and much slower.
 - **Missing a word starts the count over.**
 - A correct answer sometimes earns **no new dot** — because today is
   already counted, or because it was the second look at one she just
@@ -180,6 +184,11 @@ finishing is always worth doing. The per-word stars pay for **accuracy**. The
 results screen itemises every line rather than showing one total, so the
 accuracy bonus is something she can actually see herself earning.
 
+**The words come in a fresh order every time.** Which words get chosen is
+still decided by what she is struggling with; only the order they are asked
+in is shuffled. The same eight words in the same sequence every day turns
+into something she can recite rather than a list she can spell.
+
 Once every active word has had its turn today, **Today's Practice goes quiet
 until tomorrow**. Extra practice stays open, and is deliberately worth much
 less — it is for when she wants more, not a way to farm stars.
@@ -189,14 +198,14 @@ less — it is for when she wants more, not a way to farm stars.
 Six games, all of them played with her own spelling words, and the axolotl
 is in every one of them.
 
-| | What it is | The axolotl | Counts for mastery |
-|---|---|---|---|
-| **Word Search** | Her words hidden in a 10×10 grid, forwards only | Cheers from the side | no |
-| **Crossword** | Built from the definitions on her list | Reads the clues | **yes** |
-| **Tic Tac Toe** | Spell a word right to claim a square | Plays against her | **yes** |
-| **Word Snake** | Hears the word, then collects its letters in order | She plays as it | no |
-| **Tower Builder** | Guess letters; every right one lays a block | Builds the tower | no |
-| **Axolotl Swim** | Hold to swim up, dodge rocks, catch letters | She plays as it | no |
+| | What it is | The axolotl |
+|---|---|---|
+| **Word Search** | Her words hidden in a 10×10 grid, forwards only | Cheers from the side |
+| **Crossword** | Built from the definitions on her list | Reads the clues |
+| **Tic Tac Toe** | Spell a word right to claim a square | Plays against her |
+| **Word Snake** | Hears the word, then collects its letters in order | She plays as it |
+| **Tower Builder** | Guess letters; every right one lays a block | Builds the tower |
+| **Axolotl Swim** | Hold to swim up, dodge rocks, catch letters. Gets faster with every word she lands | She plays as it |
 
 Each game sits on its own painted backdrop — paper for the puzzles, a
 meadow for the tower, open water for the two she swims — built from stacked
@@ -244,8 +253,12 @@ So playing three different games is worth roughly a day's practice, and
 playing one game thirty times is not worth anything much. The shop ladder
 still runs on spelling.
 
-There is a grown-up setting — **Mini-games** in the Parent Area — to make the
-games wait until Today's Practice is finished. It is off by default.
+**The games wait until Today's Practice is finished.** The hub says how many
+words are left and has a button straight into it, so it is a door rather
+than a wall. *Parent Area → Spelling rules → Mini-games* can set them to
+**Always open** instead.
+
+No game moves mastery in either direction — only the two tests do.
 
 ## The seasons
 
@@ -362,9 +375,8 @@ track at the top fills a bit more. What differs between them is data in
 what happens to them — so a seventh event is an entry in a list, not a new
 screen.
 
-Because she spells a whole word from memory with nothing to copy, every
-event **can add to a mastery streak and can never break one**, the same rule
-Crossword and Tic Tac Toe follow.
+Events do not touch mastery in either direction — like the games, and for
+the same reason: only the two tests measure it.
 
 Nothing in any of them is frightening or punishing. The Halloween ghosts are
 round and smiling and *lost* rather than haunting, and getting a word wrong
@@ -578,8 +590,8 @@ These are deliberate and should survive future changes:
    what makes growth readable at a glance.
 9. Breaking a streak costs nothing and is never mentioned.
 10. All spelling goes through one engine; all speech goes through one voice.
-11. A mini-game can add to a mastery streak but can never break one, and only
-   a game where she spells the whole word from memory can add to one at all.
+11. Only the Practice Test and the Spelling Test move mastery. Practice, the
+   games and the events cannot advance a streak and cannot break one.
 12. Mini-games pay less than practice, and their earnings are capped per day,
    so the shop can never be funded by games instead of spelling.
 13. A game never puts something she has to avoid somewhere she cannot avoid
@@ -703,7 +715,8 @@ export default function yourGame(ctx) {
 ```
 
 A game never imports `words.js`, `rewards.js` or `state.js`. `ctx.record()`
-applies that game's mastery rule — set by `canMaster` in the registry — and
+applies the mastery rule — games do not move it, and the rule lives in one
+place rather than in six games — and
 `ctx.finish()` prices the result against the daily ceiling. If a game needs
 something the engine cannot do, extend the engine rather than working around
 it inside the game.

@@ -39,6 +39,15 @@ const SPEED     = 2.5;
 const GAP_H     = 0.52;      // gap height as a fraction of the pond
 const ROCK_W    = 46;
 const SPAWN_MS  = 2100;     // between pairs of rocks
+
+/* How much faster each collected word makes it. The ramp used to be 12% a
+   word over three words — a 24% difference by the end, which is real but
+   far too small to feel while you are concentrating on spelling. At 26%
+   the last word is roughly half again as fast as the first, which reads as
+   "it got harder" rather than as nothing. */
+const SPEED_STEP = 0.26;
+const SPAWN_STEP = 260;     // ms closer together per word, on top of that
+const MIN_SPAWN  = 1250;    // never so close there is no gap to aim at
 const SAFE_MS   = 1400;      // grace after a bump
 const PET_SIZE  = 62;
 
@@ -126,6 +135,11 @@ export default function swim(ctx) {
 
   function needed() { return target[got] || ''; }
 
+  /* Both of these read wordIndex live rather than being computed once, so
+     a word finished mid-flight speeds up the rocks already on screen. */
+  const speedFactor = () => 1 + wordIndex * SPEED_STEP;
+  const spawnGap = () => Math.max(MIN_SPAWN, SPAWN_MS - wordIndex * SPAWN_STEP);
+
   function spawnRock() {
     const { w, h } = size();
     const gapH = Math.max(140, h * GAP_H);
@@ -211,13 +225,13 @@ export default function swim(ctx) {
     const petBox = { x: petX + 8, y: y + 10, w: PET_SIZE - 16, h: PET_SIZE - 20 };
 
     spawnAt -= dt * 16.67;
-    if (spawnAt <= 0) { spawnRock(); spawnAt = SPAWN_MS - wordIndex * 120; }
+    if (spawnAt <= 0) { spawnRock(); spawnAt = spawnGap(); }
 
     // Half a beat behind the rocks, so a decoy never arrives alongside one.
     decoyAt -= dt * 16.67;
-    if (decoyAt <= 0) { spawnDecoy(); decoyAt = SPAWN_MS - wordIndex * 120; }
+    if (decoyAt <= 0) { spawnDecoy(); decoyAt = spawnGap(); }
 
-    const step = SPEED * dt * (1 + wordIndex * 0.12);
+    const step = SPEED * dt * speedFactor();
 
     rocks.forEach(rock => {
       rock.x -= step;
@@ -292,9 +306,14 @@ export default function swim(ctx) {
     stop();
     speech.speakWord(word);
     buddy.celebrate(`${word.text}!`);
+    /* The next word is faster. Telling her turns a difficulty step into
+       something she earned, instead of the pond mysteriously getting
+       harder. */
+    const more = wordIndex + 1 < queue.length;
     mount(overlay, el('div', { class: 'swim-banner' },
       el('div', { class: 'big', text: word.text }),
-      el('div', { class: 'tiny', text: 'Collected!' })
+      el('div', { class: 'tiny', text: 'Collected!' }),
+      more ? el('div', { class: 'swim-faster', text: '\u26A1 Faster now!' }) : null
     ));
 
     wait(() => {
@@ -306,7 +325,7 @@ export default function swim(ctx) {
       got = 0;
       clearWorld();
       spawnAt = 600;
-      decoyAt = 600 + SPAWN_MS / 2;
+      decoyAt = 600 + spawnGap() / 2;
       drawWord();
       start();
     }, 1800);
@@ -379,7 +398,7 @@ export default function swim(ctx) {
   drawBubbles();
   petNode.style.top = `${y}px`;
   spawnAt = 900;
-  decoyAt = 900 + SPAWN_MS / 2;
+  decoyAt = 900 + spawnGap() / 2;
   // One beat to let the pond get its size before anything starts moving.
   wait(start, 260);
 }

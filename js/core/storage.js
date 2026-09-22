@@ -22,13 +22,14 @@ export function defaultState() {
 
     settings: {
       /* Spelling */
-      masteryThreshold: 3,      // correct answers in a row
+      masteryThreshold: 5,      // correct test answers in a row
       /* Whether those have to be on different days. Off by default: three
          in a row is what a parent means by "three in a row", and a word is
          never shown before she spells it, so there is nothing on screen to
          copy. On, it becomes three separate days, which is a stronger claim
          and a much slower one. */
       oneCreditPerDay: false,
+      masteryRuleV2: true,      // see migrate(): moved to five tests in a row
       practiceSize: 8,          // words in Today's Practice
       practiceTestSize: 10,     // words in a practice test
       includeMasteredInPractice: false,
@@ -42,7 +43,7 @@ export function defaultState() {
       keyboardLayout: 'qwerty', // 'qwerty' (real US layout) | 'abc'
 
       /* Mini-games */
-      gamesAfterDaily: false,   // when on, games wait until practice is done
+      gamesAfterDaily: true,    // games wait until Today's Practice is done
 
       /* Her birthday, as MM-DD. Birthday Week runs three days either side
          of it. A birthday belongs to the child, not to the calendar, so it
@@ -167,6 +168,20 @@ function migrate(state) {
   /* A room needs a window: indoors, it is the only place the weather
      shows. Saves made before there was a starter one get it here. */
   if (state.equipped && !state.equipped.window) state.equipped.window = 'window_plain';
+
+  /* The mastery rule changed twice: from "three in a row, one a day" to
+     "three in a row, every answer counts", and then to "five in a row, and
+     only the two tests count". A save made under an older rule is moved
+     across once — her streaks and anything already mastered carry over
+     untouched, they just need more to finish now. */
+  if (state.settings && !state.settings.masteryRuleV2) {
+    state.settings.masteryRuleV2 = true;
+    state.settings.masteryThreshold = 5;
+    /* Games now wait for Today's Practice by default. A save made before
+       that has `false` stored, which would silently win over the new
+       default, so it moves across here too. */
+    state.settings.gamesAfterDaily = true;
+  }
 
   /* Saves made before there was a garden get its sky and ground, and the
      empty lists the slots expect. */

@@ -452,12 +452,20 @@ export default function parentScreen(container) {
       el('div', { class: 'card' },
         el('h2', { text: 'Mastery' }),
         el('p', { class: 'muted tiny', text:
-          'How many times in a row she has to spell a word correctly before it counts as mastered and leaves the practice pool. Missing it starts the count over.' }),
+          'How many times in a row she has to spell a word correctly ON A TEST before it counts as mastered and leaves the practice pool. Missing it on a test starts the count over.' }),
         segmented([
-          { value: 2, label: '2 in a row' },
           { value: 3, label: '3 in a row' },
           { value: 5, label: '5 in a row' },
+          { value: 8, label: '8 in a row' },
         ], s.masteryThreshold, v => { update(st => { st.settings.masteryThreshold = v; }); toast('Saved'); })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'What counts towards it' }),
+        el('p', { class: 'muted tiny', text:
+          'Only the Practice Test and the Spelling Test. Those give no feedback until the end and no second look, so they are the honest measure of whether she knows a word.' }),
+        el('p', { class: 'muted tiny', style: { marginTop: '8px' }, text:
+          'Today\u2019s Practice, extra practice, the mini-games and the seasonal events do not count \u2014 and, just as deliberately, they cannot break a streak either. A word fumbled while she is still learning it should not undo five test results, and if it could she would learn to avoid practising.' })
       ),
 
       el('div', { class: 'card' },
@@ -518,11 +526,13 @@ export default function parentScreen(container) {
       el('div', { class: 'card' },
         el('h3', { text: 'Mini-games' }),
         el('p', { class: 'muted tiny', text:
-          'Six games that use her own spelling words. They pay far less than practice does \u2014 the first go at each game every day earns most, a repeat earns a token, and all six together are capped at 25 stars a day \u2014 so the shop still runs on spelling. Crossword and Tic Tac Toe ask her to spell a whole word from memory and can add to a mastery streak; no game can ever break one.' }),
+          'Six games that use her own spelling words. They pay far less than practice does \u2014 the first go at each game every day earns most, a repeat earns a token, and all six together are capped at 25 stars a day \u2014 so the shop still runs on spelling. No game moves mastery in either direction; only the two tests do.' }),
         segmented([
-          { value: false, label: 'Always open' },
           { value: true,  label: 'After practice' },
-        ], !!s.gamesAfterDaily, v => { update(st => { st.settings.gamesAfterDaily = v; }); toast('Saved'); })
+          { value: false, label: 'Always open' },
+        ], !!s.gamesAfterDaily, v => { update(st => { st.settings.gamesAfterDaily = v; }); toast('Saved'); }),
+        el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+          'After practice is the default: the games hub shows how many words are left and a button straight into Today\u2019s Practice, so it is a door rather than a wall.' })
       ),
 
       el('div', { class: 'card' },

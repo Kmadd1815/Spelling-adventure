@@ -13,7 +13,10 @@ const errs = []; p.on('pageerror', e => errs.push(e.message));
 await p.goto(BASE);
 await p.evaluate(() => { localStorage.clear(); localStorage.setItem('spelling-adventure:v1', JSON.stringify({
   schemaVersion:1, child:{name:'E',petCoat:'peach',petName:'B',setupComplete:true},
-  settings:{masteryThreshold:1}, progress:{stars:0},
+  /* masteryRuleV2 stops the migration moving this to five — that move is
+     the right thing for a real save and the wrong thing here, where one
+     correct answer is meant to master the word and fire a milestone. */
+  settings:{masteryThreshold:1, masteryRuleV2:true}, progress:{stars:0},
   lists:[{id:'l1',name:'W1',archived:false,createdAt:Date.now()}],
   words:[{id:'w1',listId:'l1',text:'train',definition:'',sentence:'',hint:'',tags:[],
     attempts:0,correctCount:0,incorrectCount:0,streak:0,lastCreditDay:null,lastDailyDay:null,recent:[],

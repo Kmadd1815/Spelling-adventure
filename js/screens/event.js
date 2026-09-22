@@ -224,7 +224,9 @@ export default function eventScreen(container, { preview = '' } = {}) {
 
     /* One door to her progress, and the same rule as the games: a hunt can
        add to a mastery streak and can never break one. */
-    recordAttempt(g.word.id, right, { countsForMastery: event.canMaster && right });
+    /* Events are a treat, not an assessment: only the two tests move
+       mastery. */
+    recordAttempt(g.word.id, right, { countsForMastery: false });
 
     if (right) {
       renderTiles('good');

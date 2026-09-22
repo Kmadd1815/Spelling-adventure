@@ -17,9 +17,9 @@ export default function gamesScreen(container) {
   const buddy = createBuddy({ layout: 'strip', greeting: 'Which one shall we play?' });
   const body = el('div', { class: 'stack' }, buddy.node);
 
-  /* An optional grown-up rule: practice first, games after. Off by default —
-     when it is on, this is a locked gate with the way through right on it,
-     not a telling-off. */
+  /* Practice first, games after. On by default, and a grown-up can turn it
+     off in the Parent Area. Either way this is a locked gate with the way
+     through printed on it, not a telling-off. */
   const gateOn = !!settings().gamesAfterDaily;
   const practiceLeft = words.wordsLeftToday().length;
   const gated = gateOn && words.allWords().length > 0 && practiceLeft > 0;
@@ -59,7 +59,8 @@ export default function gamesScreen(container) {
       el('span', { class: 'game-name', text: game.name }),
       el('small', { class: 'game-blurb', text: game.blurb }),
       el('small', { class: 'game-role', text: `\u{1F43E} ${game.buddyRole}` }),
-      !ok ? el('small', { class: 'game-note', text: reason })
+      gated ? el('small', { class: 'game-note', text: 'After Today\u2019s Practice' })
+          : !ok ? el('small', { class: 'game-note', text: reason })
           : plays ? el('small', { class: 'game-note',
               text: plays === 1 ? 'Played once today' : `Played ${plays} times today` })
           : null
