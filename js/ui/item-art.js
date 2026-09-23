@@ -2000,16 +2000,73 @@ const DECOR = {
     <path d="M 32 58 q 14 -26 34 -14" fill="none" stroke="#fff" stroke-width="7" opacity=".85" stroke-linecap="round"/>
     <circle cx="50" cy="12" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
 
-  wall_planter: () => `
-    <path d="M 50 8 V 24" stroke="#a5875f" stroke-width="3"/>
-    <path class="${SHADOW}" d="M 32 26 h 40 l -5 22 h -30 z" fill="#3a2c1e" opacity=".16"/>
-    ${litPath('M 30 24 h 40 l -5 22 h -30 z', '#e59a71', '#b06a45', { stroke: '#a5613f', sw: 3, join: 'round' })}
-    ${litRect(27, 20, 46, 8, 4, '#f0b28f', '#c17c56', { stroke: '#a5613f', sw: 3 })}
-    ${[[-1, 34], [1, 30], [-1, 20]].map(([side, len]) =>
-      `<path d="M ${50 + side * 12} 44 q ${side * 8} ${len * 0.6} ${side * 4} ${len}"
-            fill="none" stroke="#5fae7f" stroke-width="3.5" stroke-linecap="round"/>`).join('')}
-    ${litEllipse(36, 72, 5, 5, '#a3dcb8', '#69b98c')}${litEllipse(62, 66, 4.4, 4.4, '#a3dcb8', '#69b98c')}
-    ${litEllipse(44, 84, 4, 4, '#a3dcb8', '#69b98c')}`,
+  /* A hanging plant has to say "hanging" before it says "plant", and the
+     first version said neither: a pot with a stub of rope above it and
+     three bare green lines below read as a pot floating in mid air.
+
+     So the hanging is drawn properly — a bracket on the wall, a ring, and
+     two cords that run down PAST the pot and cradle it underneath — and
+     the plant is drawn as a plant: a bushy crown spilling over the rim,
+     and trailing stems with leaves along their whole length rather than a
+     line with three dots near the bottom. */
+  wall_planter: () => {
+    const rope = '#c9a97c', ropeDark = '#9c7b4f';
+    const cord = d => `<path d="${d}" fill="none" stroke="${rope}" stroke-width="2.8"
+                             stroke-linecap="round"/>` +
+                      `<path d="${d}" fill="none" stroke="${ropeDark}" stroke-width="1"
+                             stroke-linecap="round" opacity=".5"
+                             transform="translate(1.2 1.2)"/>`;
+    /* The crown: big enough to overhang the pot on both sides. */
+    const crown = (x, y, rot, sc, light, dark) =>
+      `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${sc})">
+         ${litPath('M 0 13 C -9 7 -9 -7 0 -12 C 9 -7 9 7 0 13 Z', light, dark,
+           { stroke: '#3d7f5a', sw: n2(2.4 / sc), join: 'round' })}
+         <path d="M 0 11 V -10" stroke="#3d7f5a" stroke-width="${n2(1.6 / sc)}"/>
+       </g>`;
+    /* The trailing leaves are small and there are a lot of them, so they
+       are flat fills with one highlight rather than a gradient each. */
+    const sprig = (x, y, rot) =>
+      `<g transform="translate(${x} ${y}) rotate(${rot})">
+         <ellipse rx="5.4" ry="3.5" fill="#8fd3a8" stroke="#4f8a5c" stroke-width="1.8"/>
+         <ellipse cx="-1.4" cy="-1.1" rx="2.8" ry="1.6" fill="#c4ead4" opacity=".75"/>
+       </g>`;
+
+    return castShadow(`
+      <!-- the wall bracket and its ring -->
+      ${litRect(42, 4, 16, 7, 3, '#f0cda4', '#c19a6c', { stroke: '#8a6340', sw: 2.6 })}
+      <circle cx="50" cy="15" r="4.4" fill="none" stroke="${ropeDark}" stroke-width="2.6"/>
+
+      <!-- two cords down past the pot, and the sling under it -->
+      ${cord('M 47 18 C 36 24 25 32 26 48')}
+      ${cord('M 53 18 C 64 24 75 32 74 48')}
+      ${cord('M 26 48 V 62')}${cord('M 74 48 V 62')}
+      ${cord('M 26 61 Q 50 74 74 61')}
+      <circle cx="28" cy="35" r="2.8" fill="${rope}" stroke="${ropeDark}" stroke-width="1.4"/>
+      <circle cx="72" cy="35" r="2.8" fill="${rope}" stroke="${ropeDark}" stroke-width="1.4"/>
+
+      <!-- the pot -->
+      ${litPath('M 32 46 h 36 l -5 20 h -26 z', '#e59a71', '#b06a45',
+        { stroke: '#a5613f', sw: 3, join: 'round' })}
+      ${litRect(29, 41, 42, 9, 4, '#f0b28f', '#c17c56', { stroke: '#a5613f', sw: 3 })}
+
+      <!-- the crown, spilling over the rim on both sides -->
+      ${crown(34, 39, -62, 0.8, '#7fcd9c', '#4f9b6d')}
+      ${crown(66, 39, 62, 0.8, '#7fcd9c', '#4f9b6d')}
+      ${crown(39, 34, -30, 0.92, '#93d8ae', '#5aa97d')}
+      ${crown(61, 34, 30, 0.92, '#8fd3a8', '#5aa97d')}
+      ${crown(50, 31, 0, 1, '#a3dcb8', '#69b98c')}
+
+      <!-- stems that trail, with leaves the whole way down -->
+      <path d="M 36 44 C 27 54 29 70 24 88" fill="none" stroke="#4f9b6d"
+            stroke-width="3" stroke-linecap="round"/>
+      ${sprig(29, 54, -34)}${sprig(27, 65, 30)}${sprig(29, 76, -30)}${sprig(25, 86, 24)}
+      <path d="M 64 44 C 73 54 71 70 76 86" fill="none" stroke="#4f9b6d"
+            stroke-width="3" stroke-linecap="round"/>
+      ${sprig(71, 54, 34)}${sprig(73, 65, -30)}${sprig(71, 76, 30)}${sprig(75, 84, -24)}
+      <path d="M 48 64 C 51 74 46 82 49 93" fill="none" stroke="#4f9b6d"
+            stroke-width="2.8" stroke-linecap="round"/>
+      ${sprig(52, 72, 34)}${sprig(46, 82, -30)}${sprig(50, 92, 20)}`);
+  },
 
   map: () => `
     <path class="${SHADOW}" d="M 16 24.5 q 18 -6 36 0 q 18 6 36 0 v 56 q -18 6 -36 0 q -18 -6 -36 0 z" fill="#3a2c1e" opacity=".16"/>
