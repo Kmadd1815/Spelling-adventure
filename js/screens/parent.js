@@ -684,8 +684,14 @@ export default function parentScreen(container) {
       el('div', { class: 'stat-grid' },
         stat(p.sessionsCompleted, 'Practices'),
         stat(p.testsCompleted, 'Tests'),
-        stat(p.currentStreak, 'Streak'),
+        stat(p.currentStreak, 'Practice days'),
         stat(p.wordsAttempted, 'Attempts')
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'About \u201cpractice days\u201d' }),
+        el('p', { class: 'muted tiny', text:
+          'It counts the days she turned up, not days in a row. Weekends, holidays and a day off for any reason cost her nothing \u2014 the number waits where she left it and carries on next time she practises. Nothing in the app can take it away, and nothing takes a mastered word away either: time off is not something she can fail at.' })
       ),
 
       el('div', { class: 'card' },

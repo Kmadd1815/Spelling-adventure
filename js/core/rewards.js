@@ -57,19 +57,13 @@ export function ownedSpecials() {
     .filter(i => i.id && i.price == null);
 }
 
-/* ---------- Streaks ----------
-   A streak is something to notice, never something to lose. Breaking one
-   quietly starts a new one; nothing is taken away and nothing is said. */
+/* ---------- Practice days ----------
+   Something to notice, never something to lose. It counts the days she
+   turned up, and nothing else can move it. */
 
 export function todayKey(d = new Date()) {
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function yesterdayKey() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return todayKey(d);
 }
 
 /** Whole days between two day keys, or null if either is missing. */
@@ -81,53 +75,51 @@ function daysBetween(fromKey, toKey) {
   return Math.round((b - a) / 86400000);
 }
 
-/* ---------- The rest day ----------
+/* ---------- Days she showed up ----------
 
-   The streak used to be strictly consecutive: one missed day turned forty
-   into one. For a nine-year-old that punishes a birthday party, a holiday
-   or a day off sick in exactly the same way it punishes not bothering — and
-   the one thing those have in common is that none of them was her choice.
+   This used to be a streak in the strict sense: consecutive days, one
+   missed day turning forty into one. Then one missed day a week was
+   forgiven. Both were wrong, and wrong in the same way — they counted the
+   days she did NOT open the app.
 
-   So one missed day a week is forgiven. Not a token to hoard and spend,
-   which is a thing to worry about; just a gap the streak steps over, once
-   in any seven days. Two days off in a row still starts a new one, because
-   a streak that cannot be broken is not a streak, it is a number that only
-   goes up. */
-const REST_DAY_EVERY = 7;
+   She will not be using this every day. There are weekends, and there are
+   family days, and there are days a nine-year-old is simply somewhere
+   else. None of those is a failure to practise; they are just days, and a
+   number that falls to zero because of them is telling her that being at
+   her grandmother's was a mistake.
+
+   So nothing counts against her. The number is the days she showed up, it
+   only ever goes up, and coming back after a fortnight carries on from
+   where she left it. If she can still spell the word after two weeks away,
+   that is not a streak she got lucky with — that is a word she knows. */
 
 /** Call once per completed activity.
-    @returns {{streak, isNewDay, isRecord, usedRestDay}} */
+    @returns {{streak, isNewDay, isRecord, daysAway}}
+    `daysAway` is how long since the last practice day, so the screen can
+    say welcome back rather than pretending she never left. */
 export function touchStreak() {
   return update(state => {
-    const today = todayKey();
     const p = state.progress;
+    const today = todayKey();
 
     if (p.lastPracticeDay === today) {
-      return { streak: p.currentStreak, isNewDay: false, isRecord: false, usedRestDay: false };
+      return { streak: p.currentStreak, isNewDay: false, isRecord: false, daysAway: 0 };
     }
 
     const gap = daysBetween(p.lastPracticeDay, today);
-    const sinceRest = daysBetween(p.lastRestDay, today);
-    const restAvailable = p.lastRestDay == null || sinceRest == null || sinceRest >= REST_DAY_EVERY;
-
-    let usedRestDay = false;
-    if (gap === 1) {
-      p.currentStreak = (p.currentStreak || 0) + 1;
-    } else if (gap === 2 && restAvailable) {
-      /* Exactly one day missed, and she has not already had her rest day
-         this week. The chain holds. */
-      p.currentStreak = (p.currentStreak || 0) + 1;
-      p.lastRestDay = today;
-      usedRestDay = true;
-    } else {
-      p.currentStreak = 1;
-    }
+    p.currentStreak = (p.currentStreak || 0) + 1;
     p.lastPracticeDay = today;
 
-    const isRecord = p.currentStreak > p.longestStreak;
-    if (isRecord) p.longestStreak = p.currentStreak;
+    /* It cannot go down any more, so every new day is a record. Kept as a
+       field because saves in the wild still carry it. */
+    p.longestStreak = Math.max(p.longestStreak || 0, p.currentStreak);
 
-    return { streak: p.currentStreak, isNewDay: true, isRecord, usedRestDay };
+    return {
+      streak: p.currentStreak,
+      isNewDay: true,
+      isRecord: p.currentStreak === p.longestStreak,
+      daysAway: gap == null ? 0 : Math.max(0, gap - 1),
+    };
   });
 }
 
@@ -176,18 +168,18 @@ export const MILESTONES = [
     item: 'word_castle',
     test: s => s.mastered >= 200 },
 
-  { id: 'streak_3',    title: '3 Days in a Row',      emoji: '\u{1F525}',
-    blurb: 'Three days of practice in a row!', stars: 20,
+  { id: 'streak_3',    title: '3 Days of Practice',   emoji: '\u{1F525}',
+    blurb: 'You have practised on three different days!', stars: 20,
     item: 'cozy_candle',
     test: s => s.streak >= 3 },
 
-  { id: 'streak_7',    title: 'A Whole Week',         emoji: '\u{1F525}',
-    blurb: 'Seven days in a row. Wow.', stars: 60,
+  { id: 'streak_7',    title: 'Seven Days',           emoji: '\u{1F525}',
+    blurb: 'Seven days of practice. Wow.', stars: 60,
     item: 'week_banner',
     test: s => s.streak >= 7 },
 
   { id: 'streak_30',   title: 'Thirty Days',          emoji: '\u{1F31E}',
-    blurb: 'A whole month of practice!', stars: 250,
+    blurb: 'Thirty days of practice. That is a lot of showing up.', stars: 250,
     item: 'sun_mobile',
     test: s => s.streak >= 30 },
 

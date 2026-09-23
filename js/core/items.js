@@ -275,7 +275,7 @@ export const CATALOG = [
   { id: 'golden_quill',   name: 'Golden Quill',        category: 'accessory',  price: null, blurb: 'Fifty words mastered.' },
   { id: 'champion_crown', name: 'Word Champion Crown', category: 'hat',        price: null, blurb: 'One hundred words. A champion.' },
   { id: 'word_castle',    name: 'Tiny Word Castle',    category: 'floorDecor', price: null, blurb: 'Two hundred words mastered.' },
-  { id: 'cozy_candle',    name: 'Cozy Candle',         category: 'floorDecor', price: null, blurb: 'Three days in a row.' },
+  { id: 'cozy_candle',    name: 'Cozy Candle',         category: 'floorDecor', price: null, blurb: 'Three days of practice.' },
   { id: 'week_banner',    name: 'Seven-Day Banner',    category: 'wallDecor',  price: null, blurb: 'A whole week of practice.' },
   { id: 'sun_mobile',     name: 'Sunbeam Mobile',      category: 'wallDecor',  price: null, blurb: 'Thirty days of practice.' },
   { id: 'ribbon_shelf',   name: 'Ribbon Shelf',        category: 'wallDecor',  price: null, blurb: 'A whole list completed.' },

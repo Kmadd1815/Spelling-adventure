@@ -41,7 +41,7 @@ export default function progressScreen(container, params) {
     body.append(el('div', { class: 'stat-grid' },
       stat(s.mastered, '⭐ Mastered'),
       stat(s.active, '\u{1F331} Practicing'),
-      stat(p.currentStreak, '\u{1F525} Day streak'),
+      stat(p.currentStreak, '\u{1F525} Practice days'),
       stat(p.stars, '★ Stars')
     ));
 
@@ -93,7 +93,9 @@ export default function progressScreen(container, params) {
     body.append(el('div', { class: 'stat-grid' },
       stat(p.sessionsCompleted, 'Practices'),
       stat(p.testsCompleted, 'Tests'),
-      stat(p.longestStreak, 'Best streak'),
+      /* Not "best streak" any more: practice days only go up, so the best
+         one is always today's and the tile said nothing. */
+      stat(getState().collection.items.length, 'Treasures'),
       stat(s.total, 'Words total')
     ));
 

@@ -87,12 +87,12 @@ export function defaultState() {
       testsCompleted: 0,
       gamesPlayed: 0,
       wordsAttempted: 0,
+      /* Days she turned up, not days in a row. Nothing takes it away —
+         see touchStreak() in core/rewards.js. longestStreak is kept only
+         because saves in the wild carry it; it can no longer differ. */
       currentStreak: 0,
       longestStreak: 0,
       lastPracticeDay: null,   // 'YYYY-MM-DD'
-      /* The day a missed day was last forgiven. One in any seven —
-         see REST_DAY_EVERY in core/rewards.js. */
-      lastRestDay: null,
       milestonesEarned: [],    // milestone ids
 
       /* What the mini-games have paid today, so the daily ceiling survives
@@ -175,6 +175,13 @@ function migrate(state) {
     if (!e.wallpaper) e.wallpaper = 'wall_plain';
     if (!e.flooring) e.flooring = 'floor_wood';
   }
+
+  /* The streak became a count of days she turned up rather than days in a
+     row, so the rest-day bookkeeping has nothing left to do. A save made
+     under the old rule may be mid-stream with a number that a missed day
+     was about to knock down; whatever it says now is what it keeps, and
+     from here it only goes up. */
+  if (state.progress && 'lastRestDay' in state.progress) delete state.progress.lastRestDay;
 
   /* A room needs a window: indoors, it is the only place the weather
      shows. Saves made before there was a starter one get it here. */
