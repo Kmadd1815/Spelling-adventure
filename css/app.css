@@ -295,6 +295,7 @@ body {
 .t-orange { background: linear-gradient(180deg, #f9a961, #ef9345); box-shadow: 0 5px 0 #d97830; }
 .t-green  { background: linear-gradient(180deg, #7fd096, #64bd80); box-shadow: 0 5px 0 #4a9b63; }
 .t-blue   { background: linear-gradient(180deg, #8ac6e6, #6fb3d9); box-shadow: 0 5px 0 #4f93ba; }
+.t-teal   { background: linear-gradient(180deg, #7fcfc6, #5fb5ac); box-shadow: 0 5px 0 #44928a; }
 .t-purple { background: linear-gradient(180deg, #bda3d8, #a78bc9); box-shadow: 0 5px 0 #866aa8; }
 .t-pink   { background: linear-gradient(180deg, #f5b3b3, #ef9a9a); box-shadow: 0 5px 0 #cf7a7a; }
 .t-gold   { background: linear-gradient(180deg, #ffd980, #f6c453); box-shadow: 0 5px 0 #dda93c; color: #7a5a14; }
@@ -2260,4 +2261,34 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .look-word.covered {
   background: repeating-linear-gradient(135deg, #efe2cd 0 10px, #e8d9c1 10px 20px);
   border-color: #d9c5a6;
+}
+
+/* ---------- Fill the Gap ----------
+   The sentence is the game, so it gets the room a sentence needs: big
+   enough to read comfortably at arm's length on a tablet, and the gap
+   drawn as a real hole rather than a row of underscores, which a child
+   reads as part of the word. */
+.gap-wrap { display: flex; flex-direction: row; gap: 14px;
+            align-items: flex-start; justify-content: center; }
+.gap-col  { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.gap-side { flex: 0 0 auto; }
+
+.gap-clue {
+  font-size: clamp(1.1rem, 3.4vw, 1.7rem);
+  line-height: 1.55;
+  font-weight: 600;
+  text-align: center;
+  color: #4a3a2c;
+  background: #fffaf0;
+  border: 3px solid #e8d9c0;
+  border-radius: 18px;
+  padding: .9rem 1.1rem;
+  max-width: 34ch;
+}
+.gap-clue.gap-meaning { font-style: italic; }
+.gap-revealed { background: #eaf7ee; border-color: #a9d9ba; }
+
+@media (max-width: 620px) {
+  .gap-wrap { flex-direction: column; align-items: center; }
+  .gap-side { order: -1; }
 }

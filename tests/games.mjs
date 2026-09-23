@@ -66,11 +66,13 @@ await page.waitForTimeout(500);
 await page.click('.hub-tile:has-text("Games")');
 await page.waitForTimeout(500);
 const cards = await page.locator('.game-card').count();
-ok('games hub shows six games', cards === 6, `saw ${cards}`);
+const HOW_MANY = await page.evaluate(async () =>
+  (await import('/js/core/games.js')).GAMES.length);
+ok('the hub shows every game there is', cards === HOW_MANY, `saw ${cards} of ${HOW_MANY}`);
 const locked = await page.locator('.game-card-locked').count();
 /* Games wait for Today's Practice now, so with a fresh list every card is
    shut — and the gate has the way through printed on it. */
-ok('with practice still to do, every game waits', locked === 6, `locked ${locked}`);
+ok('with practice still to do, every game waits', locked === HOW_MANY, `locked ${locked} of ${HOW_MANY}`);
 /* Matching on the heading rather than the button: the button's label has a
    curly apostrophe in it, which is a silly thing for a test to depend on. */
 ok('...and the gate says how to open it',
@@ -335,6 +337,73 @@ ok('a repeat go pays a token', cap.again === 1 && cap.repeat, JSON.stringify(cap
 ok('games stop at the daily ceiling', cap.spent === cap.cap && cap.afterCap === 0 && cap.capped, JSON.stringify(cap));
 ok('stars banked match what was paid', cap.stars === cap.spent, `${cap.stars} vs ${cap.spent}`);
 
+/* ---------- Fill the Gap ----------
+
+   The one game that can teach a homophone, so the thing worth holding down
+   is that the sentence never shows the answer. A sentence that does not
+   actually contain its word cannot be gapped — "We painted the fence" for
+   "paint" — and showing it ungapped would print the answer across the top
+   of the screen. That word falls back to its definition instead. */
+const gapUnit = await page.evaluate(async () => {
+  const { gapSentence } = await import('/js/games/fillgap.js');
+  return {
+    plain:    gapSentence({ text: 'paint',  sentence: 'I will paint a picture.' }),
+    inflected: gapSentence({ text: 'paint', sentence: 'We painted the fence.' }),
+    homophone: gapSentence({ text: 'their', sentence: 'They took their coats.' }),
+    none:      gapSentence({ text: 'paint', sentence: '' }),
+    /* "paint" must not be blanked out of "painting". */
+    inside:    gapSentence({ text: 'paint', sentence: 'The painting and the paint.' }),
+  };
+});
+const BAR = '\u2581';
+ok('a sentence is gapped where its word is',
+   gapUnit.plain && gapUnit.plain.includes(BAR) && !/paint/i.test(gapUnit.plain),
+   JSON.stringify(gapUnit.plain));
+ok('a sentence that does not contain its word is refused',
+   gapUnit.inflected === null && gapUnit.none === null,
+   'no ungapped sentence can reach the screen');
+ok('a homophone gaps cleanly', gapUnit.homophone === 'They took ' + BAR.repeat(5) + ' coats.',
+   JSON.stringify(gapUnit.homophone));
+ok('only the whole word is taken out, never a word inside another',
+   gapUnit.inside && /painting/i.test(gapUnit.inside) && gapUnit.inside.includes(BAR),
+   JSON.stringify(gapUnit.inside));
+
+await goPlay('fillgap');
+ok('Fill the Gap opens with a gap to fill',
+   await page.locator('.gap-clue').count() === 1, 'a clue is on screen');
+const gapText = await page.locator('.gap-clue').innerText();
+ok('...and the answer is not written on it',
+   gapText.includes(BAR), JSON.stringify(gapText));
+
+/* Play it through, getting every one right. */
+/* Twelve turns for five words: after a right answer the board locks for a
+   beat before it moves on, and a turn spent typing at a locked board is a
+   turn that does nothing. */
+for (let i = 0; i < 12; i++) {
+  if (await page.locator(RESULTS).count()) break;
+  const answer = await page.evaluate(async () => {
+    const words = await import('/js/core/words.js');
+    const clue = document.querySelector('.gap-clue')?.textContent || '';
+    if (!clue) return null;
+    const bar = '\u2581'.repeat(5);
+    const hit = words.allWords().find(w => {
+      if (!w.sentence) return false;
+      const re = new RegExp(`(^|[^a-z'])(${w.text})(?=[^a-z']|$)`, 'ig');
+      return w.sentence.replace(re, (_m, b2) => b2 + bar) === clue;
+    });
+    return hit ? hit.text : null;
+  });
+  if (!answer) break;
+  await page.keyboard.type(answer);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1000);
+}
+await page.waitForTimeout(900);
+ok('a clean run finishes and pays out',
+   await page.locator(RESULTS).count() === 1,
+   await page.locator('.game-result h2').innerText().catch(() => '(no results)'));
+await page.screenshot({ path: `${SP}/GA-fillgap.png` });
+
 /* ---------- the parent gate ---------- */
 await page.evaluate(async () => {
   const state = await import('/js/core/state.js');
@@ -344,7 +413,8 @@ await page.evaluate(async () => {
   });
 });
 await goHub();
-ok('the practice-first gate locks the games', await page.locator('.game-card-locked').count() === 6);
+ok('the practice-first gate locks the games',
+   await page.locator('.game-card-locked').count() === HOW_MANY, `of ${HOW_MANY}`);
 ok('...and offers the way through', await page.locator('button:has-text("Today’s Practice")').count() >= 1);
 await page.screenshot({ path: `${SP}/GA-gate.png` });
 

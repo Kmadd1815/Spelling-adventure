@@ -61,6 +61,18 @@ export const GAMES = [
     load: () => import('../games/wordsearch.js'),
   },
   {
+    id: 'fillgap', name: 'Fill the Gap', emoji: '\u{1F4DD}', tint: 't-teal',
+    blurb: 'Read the sentence and spell the word that is missing.',
+    buddyRole: 'Reads the sentence with you',
+    /* The only game that can teach a homophone: their and there sound the
+       same, so the sentence round the gap is the only thing that tells her
+       which one to write. */
+    minWords: 2, canMaster: false,
+    pay: { base: 4, perWord: 1, perfect: 4 },
+    scene: 'paper',
+    load: () => import('../games/fillgap.js'),
+  },
+  {
     id: 'crossword', name: 'Crossword', emoji: '\u{1F9E9}', tint: 't-blue',
     blurb: 'Read the clue, then spell the word into the squares.',
     buddyRole: 'Reads the clues with you',

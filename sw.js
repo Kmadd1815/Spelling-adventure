@@ -66,6 +66,7 @@ const SHELL = [
   /* The games themselves are loaded on demand, so they are listed here to
      make sure they are in the cache before she is ever offline. */
   './js/games/wordsearch.js',
+  './js/games/fillgap.js',
   './js/games/crossword.js',
   './js/games/tictactoe.js',
   './js/games/snake.js',
