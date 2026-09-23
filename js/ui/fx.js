@@ -68,11 +68,17 @@ export function burst(host, kind = 'hearts', { origin = null } = {}) {
   }
 }
 
-/** One happy hop, safe to call repeatedly. */
+/** One happy hop, safe to call repeatedly.
+
+   The hop goes on the INNER box, not the node itself: in a room the outer
+   one is busy carrying the axolotl about and the one in between is leaning
+   it, and all three would otherwise be writing to the same transform. See
+   ui/petlife.js. */
 export function hop(petNode) {
   if (!petNode) return;
-  petNode.classList.remove('pet-react');
-  void petNode.offsetWidth;          // restart the animation
-  petNode.classList.add('pet-react');
-  setTimeout(() => petNode.classList.remove('pet-react'), 700);
+  const node = petNode.querySelector?.('.pet-body') || petNode;
+  node.classList.remove('pet-react');
+  void node.offsetWidth;             // restart the animation
+  node.classList.add('pet-react');
+  setTimeout(() => node.classList.remove('pet-react'), 700);
 }

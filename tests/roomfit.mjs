@@ -32,6 +32,19 @@ const SEED = window_ => {
       .map((id, i) => ({ id: 'o' + i, itemId: id, source: 'test', earnedAt: now })) } }));
 };
 
+/* The same room with every slot filled, which is the only way to find out
+   whether the places actually fit side by side. */
+const FULL_WALL  = ['frame', 'clock', 'lantern'];
+const FULL_FLOOR = ['potted_plant', 'teddy', 'bookshelf', 'toy_ball', 'stool', 'little_tree'];
+const SEED_FULL = ([wall, floor]) => {
+  const raw = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+  raw.equipped.wallDecor = wall;
+  raw.equipped.floorDecor = floor;
+  raw.collection.items = [...raw.collection.items,
+    ...wall.concat(floor).map((id, i) => ({ id: 'f' + i, itemId: id, source: 'test', earnedAt: Date.now() }))];
+  localStorage.setItem('spelling-adventure:v1', JSON.stringify(raw));
+};
+
 /* A shadow is not part of the thing that throws it. The door correctly drops
    one onto the floor IN FRONT of it, so measuring the whole drawing would
    report that the door has sunk through the floorboards. Everything that is
@@ -117,12 +130,101 @@ ok('the back-right decoration is not hidden behind the rug',
    !overlap(plant, rug),
    `plant ${plant.l.toFixed(1)}–${plant.r.toFixed(1)}%, rug ${rug.l.toFixed(1)}–${rug.r.toFixed(1)}%`);
 
+/* ---------- a full room ----------
+
+   Three things on the wall and six on the floor. Every one of those places
+   is a number typed into a table, and a number typed into a table is how a
+   bookshelf ends up standing inside the doorway. Nothing here can tell
+   whether the room looks nice; it can tell whether two things are in the
+   same spot, which is the part that is simply wrong. */
+await page.evaluate(SEED, 'window_cottage');
+await page.evaluate(SEED_FULL, [FULL_WALL, FULL_FLOOR]);
+await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(600);
+
+const full = await page.evaluate(INK, '.room-piece');
+ok('a full room puts out everything she owns', full.length === 13,
+   `${full.length} pieces: 1 window, 1 door, 3 on the wall, a bed, a rug and 6 on the floor`);
+
+/* The door is the last thing anything should be standing in. */
+const fdoor = full[1];
+const clashes = full.slice(2).filter(p => overlap(p, fdoor));
+ok('nothing is standing in the doorway', clashes.length === 0,
+   clashes.map(p => `${p.l.toFixed(0)}–${p.r.toFixed(0)}%`).join(', ') || 'the way out is clear');
+
+/* And no two decorations are in the same place as each other. Furniture is
+   allowed to sit against the bed or over the rug — that is what a rug is
+   for — so this is only about the things she arranges. */
+const decor = full.slice(2, 5).concat(full.slice(7));
+const pairs = [];
+for (let i = 0; i < decor.length; i++) {
+  for (let j = i + 1; j < decor.length; j++) {
+    if (overlap(decor[i], decor[j])) pairs.push(`${i}+${j}`);
+  }
+}
+ok('no two of the nine decorations are in the same place', pairs.length === 0,
+   pairs.join(', ') || 'all nine have their own spot');
+
+/* Everything stays inside the room, and nothing on the wall has slid down
+   onto the floor or out through the ceiling. */
+const strays = full.filter(p => p.l < -1 || p.r > 101 || p.t < -1 || p.b > 101);
+ok('nothing has wandered off the edge of the room', strays.length === 0,
+   strays.map(p => `${p.l.toFixed(0)}–${p.r.toFixed(0)} / ${p.t.toFixed(0)}–${p.b.toFixed(0)}`).join(', ') || 'all inside');
+
+/* Nothing on the floor is LOST behind the rug. The rug reaches a long way
+   up the floor, so a decoration standing on the back of it has to be drawn
+   over the top of it — which is what a thing standing on a rug looks like.
+   The back row was invisible until this check existed. */
+const zOf = await page.evaluate(() => [...document.querySelectorAll('.room .room-piece')]
+  .map(n => Number(getComputedStyle(n).zIndex)));
+/* Ink, not boxes: every piece is drawn inside a square with a lot of empty
+   space round it, and two squares touching is not two drawings touching. */
+const rugInk = full[6], rugZ = zOf[6];
+const buried = full.slice(7)
+  .map((p, i) => ({ p, z: zOf[7 + i], i }))
+  .filter(({ p, z }) => overlap(p, rugInk) && z < rugZ);
+ok('nothing on the floor is hidden behind the rug', buried.length === 0,
+   buried.length
+     ? buried.map(({ i, p }) => `floor ${i + 1} at ${p.l.toFixed(0)}–${p.r.toFixed(0)}%`).join(', ')
+     : 'everything standing on the rug is drawn on top of it');
+
+const onWall = full.slice(2, 5);
+ok('all three wall decorations are actually on the wall',
+   onWall.every(p => p.b < HORIZON + 1),
+   onWall.map(p => `${p.t.toFixed(0)}–${p.b.toFixed(0)}%`).join(', '));
+
+await page.screenshot({ path: `${SP}/R-full-room.png` });
+
+/* ---------- the axolotl has somewhere to walk ---------- */
+const walk = await page.evaluate(async () => {
+  const pet = document.querySelector('.room-pet');
+  const started = pet.style.left;
+  /* Nudge it along by hand rather than waiting for it to decide to move:
+     the schedule is deliberately unhurried and a test is not. */
+  const { roam } = await import('/js/ui/petlife.js');
+  const stop = roam(document.querySelector('.room'));
+  await new Promise(r => setTimeout(r, 4200));
+  const moved = pet.style.left;
+  stop();
+  return { started, moved, lean: !!pet.querySelector('.pet-lean'),
+           body: !!pet.querySelector('.pet-body'),
+           tail: !!pet.querySelector('.pet-tail'),
+           head: !!pet.querySelector('.pet-head') };
+});
+ok('the axolotl has the boxes it moves with', walk.lean && walk.body,
+   `lean ${walk.lean}, body ${walk.body}`);
+ok('...and a tail and a head that can move on their own', walk.tail && walk.head,
+   `tail ${walk.tail}, head ${walk.head}`);
+ok('it goes somewhere rather than standing on one spot',
+   walk.started !== walk.moved, `${walk.started} then ${walk.moved}`);
+
 /* ---------- every window's pane is inside its own window ---------- */
 const WINDOWS = ['window_plain', 'window_round', 'window_cottage',
                  'window_arch', 'window_flower', 'window_star'];
 const shots = [];
 for (const id of WINDOWS) {
-  await page.evaluate(SEED, id);
+  await page.evaluate(SEED, id);   // back to one wall piece and one on the floor
   await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(450);

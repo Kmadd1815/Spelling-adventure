@@ -8,6 +8,7 @@ import * as pet from '../core/pet.js';
 import * as words from '../core/words.js';
 import * as items from '../core/items.js';
 import { buildRoom } from '../ui/room.js';
+import { roam, setPetArt } from '../ui/petlife.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import * as events from '../core/events.js';
@@ -54,11 +55,11 @@ export default function homeScreen(container) {
       pet.noteMoment();
       const spec = pet.INTERACTIONS.pet;
       const node = room.querySelector('.room-pet');
-      node.innerHTML = drawPet(spec.mood);
+      setPetArt(node, drawPet(spec.mood));
       hop(node);
       bubble.textContent = pet.interactionLine('pet');
       burst(room, spec.effect, { origin: node });
-      setTimeout(() => { node.innerHTML = drawPet('happy'); }, 2200);
+      setTimeout(() => setPetArt(node, drawPet('happy')), 2200);
     },
   };
 
@@ -195,6 +196,10 @@ export default function homeScreen(container) {
   ));
 
   mount(container, body);
+
+  /* And it goes for a wander. Stopped when the screen goes away — the
+     router calls what we return here. */
+  return roam(room);
 
   /* Two kinds of test now, so a chooser keeps both off the hub without
      hiding either one. */

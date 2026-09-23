@@ -29,10 +29,10 @@ export const SLOTS = {
   flooring:   { max: 1, label: 'Flooring',     group: 'room' },
   window:     { max: 1, label: 'Window',       group: 'room' },
   door:       { max: 1, label: 'Door',         group: 'room' },
-  wallDecor:  { max: 2, label: 'On the walls', group: 'decor' },
+  wallDecor:  { max: 3, label: 'On the walls', group: 'decor' },
   bed:        { max: 1, label: 'Bed',          group: 'furniture' },
   rug:        { max: 1, label: 'Rug',          group: 'furniture' },
-  floorDecor: { max: 3, label: 'On the floor', group: 'furniture' },
+  floorDecor: { max: 6, label: 'On the floor', group: 'furniture' },
   hat:        { max: 1, label: 'Hat',          group: 'pet' },
   accessory:  { max: 1, label: 'Accessory',    group: 'pet' },
 

@@ -12,6 +12,7 @@ import { el, mount, button } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
 import { petSVG } from '../ui/art.js';
 import { buildGarden } from '../ui/garden.js';
+import { roam, setPetArt, GARDEN_BAND } from '../ui/petlife.js';
 import { burst, hop } from '../ui/fx.js';
 import * as pet from '../core/pet.js';
 import * as items from '../core/items.js';
@@ -19,6 +20,11 @@ import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import { gardenOpen } from '../core/garden.js';
 
 export default function gardenScreen(container) {
+  /* It wanders out here too — more room than indoors, and no doorway to
+     stand in the middle of. */
+  let stopRoam = null;
+  const stopRoaming = () => { stopRoam?.(); stopRoam = null; };
+
   /* Reachable only through a door that will not open otherwise, but a typed
      URL is a door too, so the gate is checked here as well. */
   if (!gardenOpen()) { navigate('/'); return; }
@@ -40,6 +46,7 @@ export default function gardenScreen(container) {
     const bubble = el('div', { class: 'room-speech',
       text: Math.random() < 0.3 ? seasonLine(season) : pet.outdoorLine() });
 
+    stopRoaming();
     const scene = buildGarden({
       petHTML: drawPet(mood),
       petProps: {
@@ -73,6 +80,8 @@ export default function gardenScreen(container) {
     );
 
     mount(container, body);
+
+    stopRoam = roam(scene, { band: GARDEN_BAND });
   }
 
   /* Petting outdoors is the same free thing it is indoors: no treats, no
@@ -89,10 +98,10 @@ export default function gardenScreen(container) {
     const worn = items.equipped();
 
     if (petNode) {
-      petNode.innerHTML = petSVG({
+      setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
         hat: worn.hat, accessory: worn.accessory,
-      });
+      }));
       hop(petNode);
     }
     if (scene && petNode) burst(scene, spec.effect, { origin: petNode });
@@ -102,13 +111,13 @@ export default function gardenScreen(container) {
     moodTimer = setTimeout(() => {
       mood = 'happy';
       const node = container.querySelector('.room-pet');
-      if (node) node.innerHTML = petSVG({
+      if (node) setPetArt(node, petSVG({
         coat: info.coat, stage: info.stage, mood,
         hat: worn.hat, accessory: worn.accessory,
-      });
+      }));
     }, 2600);
   }
 
   render();
-  return () => clearTimeout(moodTimer);
+  return () => { clearTimeout(moodTimer); stopRoaming(); };
 }

@@ -361,7 +361,13 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   ${sparkles}
   <g class="pet-breathe" style="transform-origin:${n(bodyCx)}px ${n(groundY)}px">
   ${accBehind ? accArt : ''}
-  ${tail}${tailArt}
+  ${tail}
+  <!-- The tail hangs off the body and swings from where it joins it, so it
+       gets its own group: a tail that pivots anywhere else looks like a
+       rudder being steered rather than a tail being wagged. -->
+  <g class="pet-tail" style="transform-origin:${n(bodyCx + bodyRx * 0.30)}px ${n(bodyCy + bodyRy * 0.27)}px">
+    ${tailArt}
+  </g>
 
   <!-- body: a sphere, not a disc. The bounce light along the bottom is
        what makes the difference; the belly fades out rather than ending. -->
@@ -370,6 +376,10 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   ${bounce(bodyCx, bodyCy, bodyRx, bodyRy, c.belly)}
   ${arm(-1)}${arm(1)}
   ${foot(-1)}${foot(1)}
+
+  <!-- Everything above the neck, in one group so it can turn to look at
+       something. It pivots at the neck, where a head actually turns. -->
+  <g class="pet-head" style="transform-origin:${n(headCx)}px ${n(headCy + headRy)}px">
 
   <!-- gills, outlined underneath then filled over -->
   <g class="pet-gills" style="transform-origin:${n(headCx)}px ${n(headCy)}px">
@@ -395,6 +405,7 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
 
   ${accBehind ? '' : accArt}
   ${hatArt}
+  </g><!-- /pet-head -->
   </g>
 </svg>`;
 }

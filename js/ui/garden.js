@@ -19,6 +19,7 @@
 */
 
 import { el } from './dom.js';
+import { petLayers } from './petlife.js';
 import { decorSVG, surfaceStyle } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
@@ -170,7 +171,8 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
 
   if (worn.water) garden.append(piece(worn.water, PLACES.water));
 
-  const pet = el('div', { class: 'room-pet', html: petHTML, ...petProps });
+  const pet = el('div', { class: 'room-pet', ...petProps });
+  pet.append(petLayers(petHTML));
   garden.append(place(pet, PLACES.pet));
 
   const cast = SKY_CAST[worn.sky];

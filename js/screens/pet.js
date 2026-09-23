@@ -13,6 +13,7 @@ import { COATS } from '../core/pet.js';
 import * as items from '../core/items.js';
 import { itemSVG } from '../ui/item-art.js';
 import { buildRoom } from '../ui/room.js';
+import { roam, setPetArt } from '../ui/petlife.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 import { gardenOpen, gateLine } from '../core/garden.js';
@@ -20,6 +21,11 @@ import { gardenOpen, gateLine } from '../core/garden.js';
 export default function petScreen(container) {
   let mood = 'calm';
   let moodTimer = null;
+  /* The axolotl is walking about in there. Every re-render builds a new
+     room, so the last one's stroll has to be called off or two of them end
+     up walking the same drawing in opposite directions. */
+  let stopRoam = null;
+  const stopRoaming = () => { stopRoam?.(); stopRoam = null; };
 
   function render() {
     const info = pet.pet();
@@ -35,6 +41,7 @@ export default function petScreen(container) {
       hat: worn.hat, accessory: worn.accessory,
     });
 
+    stopRoaming();
     const room = buildRoom({
       petHTML: drawPet(mood),
       petProps: {
@@ -138,6 +145,8 @@ export default function petScreen(container) {
       button('Go practice', { cls: 'btn btn-primary btn-block', emoji: '\u2728',
         onClick: () => navigate('/practice') })
     ));
+
+    stopRoam = roam(room);
   }
 
   /**
@@ -163,10 +172,10 @@ export default function petScreen(container) {
     if (petNode) {
       const info = pet.pet();
       const worn = items.equipped();
-      petNode.innerHTML = petSVG({
+      setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
         hat: worn.hat, accessory: worn.accessory,
-      });
+      }));
       hop(petNode);
     }
     if (bubble) bubble.textContent = pet.interactionLine(key);
@@ -227,5 +236,5 @@ export default function petScreen(container) {
   }
 
   render();
-  return () => clearTimeout(moodTimer);
+  return () => { clearTimeout(moodTimer); stopRoaming(); };
 }

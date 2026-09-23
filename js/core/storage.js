@@ -168,8 +168,8 @@ function migrate(state) {
     for (const id of state.equipped.scene) {
       const slot = CATEGORY_OF[id] || 'floorDecor';
       if (slot === 'rug') e.rug = e.rug || id;
-      else if (slot === 'wallDecor') { if (e.wallDecor.length < 2) e.wallDecor.push(id); }
-      else if (e.floorDecor.length < 3) e.floorDecor.push(id);
+      else if (slot === 'wallDecor') { if (e.wallDecor.length < 3) e.wallDecor.push(id); }
+      else if (e.floorDecor.length < 6) e.floorDecor.push(id);
     }
     delete state.equipped.scene;
     if (!e.wallpaper) e.wallpaper = 'wall_plain';

@@ -153,20 +153,26 @@ await page.click('.modal button:has-text("Keep saving")'); await page.waitForTim
 ok('no stars were spent', (await save()).progress.stars === 110);
 
 // ---- scene slots ----
-const sceneTest = await page.evaluate(async () => {
+const FLOOR_IDS = ['pebbles','toy_ball','potted_plant','lamp','teddy','bookshelf','stool'];
+const sceneTest = await page.evaluate(async ids => {
   const it = await import('./js/core/items.js');
-  ['pebbles','toy_ball','potted_plant','lamp'].forEach(id => it.grant(id, 'test'));
-  const results = ['pebbles','toy_ball','potted_plant','lamp'].map(id => it.equip(id));
-  return { placed: it.inSlot('floorDecor').length, fourth: results[3] };
-});
-ok(`only ${sceneTest.placed} floor decorations can be out at once`, sceneTest.placed === 3);
-ok('the fourth is refused with a reason', sceneTest.fourth.reason === 'full');
+  ids.forEach(id => it.grant(id, 'test'));
+  /* From an empty floor: equipping something already out quietly succeeds
+     without adding, so leftovers make the count come up short. */
+  it.inSlot('floorDecor').forEach(id => it.unequip(id));
+  const results = ids.map(id => it.equip(id));
+  return { placed: it.inSlot('floorDecor').length, over: results[6] };
+}, FLOOR_IDS);
+ok(`only ${sceneTest.placed} floor decorations can be out at once`, sceneTest.placed === 6);
+ok('the seventh is refused with a reason', sceneTest.over.reason === 'full',
+   JSON.stringify(sceneTest.over));
 
 await page.goto(BASE + '#/', { waitUntil: 'networkidle' }); await page.waitForTimeout(700);
 /* Everything except the window she was given at the start — that one is
    always there, because indoors it is the only way the weather shows. */
 ok('decorations appear in the room',
-   await page.locator('.room-piece:not(.room-window)').count() === 3);
+   await page.locator('.room-piece:not(.room-window)').count() === 6,
+   `${await page.locator('.room-piece:not(.room-window)').count()} pieces besides the window`);
 ok('...and she has a window whether or not she has bought one',
    await page.locator('.room-window').count() === 1);
 await page.screenshot({ path: SP + '/S5-scene.png' });

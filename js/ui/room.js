@@ -19,6 +19,7 @@
 */
 
 import { el } from './dom.js';
+import { petLayers } from './petlife.js';
 import { decorSVG, surfaceStyle, WINDOW_GLASS } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
@@ -37,14 +38,20 @@ const PLACES = {
   /* Measured from the join, not from the bottom of the picture, so the
      door stands on the floor instead of hovering over it. */
   door:        { left: 79, bottom: 100 - HORIZON, width: 20, depth: 1, footGap: 4 },
+  /* Three across the wall, reading left to right after the window: the run
+     of them is what makes a wall look decorated rather than dotted. The
+     third hangs above the door, which is where the last picture goes in a
+     real room because it is the last space left. */
   wallDecor: [
     { left: 38, top: 7,  width: 16, depth: 2 },
     { left: 57, top: 15, width: 14, depth: 2 },
+    { left: 74, top: 3,  width: 12, depth: 2 },      // over the door
   ],
-  /* The axolotl stands centre stage, roughly a third to two thirds across.
-     Everything on the floor is placed clear of that: the bed in the back
-     left corner, and the three small things tucked into the other three
-     corners the way a room actually gets decorated. */
+  /* The axolotl walks the middle of the floor, roughly a third to two
+     thirds across (see BAND in ui/petlife.js), so everything on the floor
+     is placed clear of that: the bed in the back left corner, small things
+     along the back wall and in the front corners. The two rows matter — a
+     room with everything on one line is a shelf. */
   bed:         { left: 1,  bottom: 20, width: 27, depth: 3 },
   floorDecor: [
     /* Standing between the rug and the door: any further left and the rug
@@ -53,6 +60,14 @@ const PLACES = {
     { left: 69, bottom: 24, width: 15, depth: 3 },   // back right
     { left: 2,  bottom: 1,  width: 15, depth: 9 },   // front left, ahead of the pet
     { left: 82, bottom: 1,  width: 16, depth: 9 },   // front right
+    /* The back row, between the bed and the back-right corner. They sit
+       further up the floor, so the axolotl passes in front of them — and
+       ABOVE the rug in the stacking order, because the back of the rug
+       reaches this far up the floor and a stool standing on a rug is in
+       front of the rug, not underneath it. */
+    { left: 30, bottom: 27, width: 13, depth: 5 },   // back, left of centre
+    { left: 48, bottom: 28, width: 12, depth: 5 },   // back, centre
+    { left: 20, bottom: 1,  width: 13, depth: 9 },   // front, left of centre
   ],
   rug:         { left: 50, bottom: 3,  width: 46, depth: 4, centre: true },
   pet:         { left: 50, bottom: 7,  width: 34, depth: 6, centre: true },
@@ -197,7 +212,8 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
     if (spec) room.append(piece(id, spec));
   });
 
-  const pet = el('div', { class: 'room-pet', html: petHTML, ...petProps });
+  const pet = el('div', { class: 'room-pet', ...petProps });
+  pet.append(petLayers(petHTML));
   room.append(place(pet, PLACES.pet));
 
   /* The light goes on last so it falls across everything, and takes no
@@ -208,5 +224,6 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
 }
 
 /** Which floor position the next decoration would take, for the hints. */
-export const FLOOR_SPOTS = ['back right', 'front left', 'front right'];
-export const WALL_SPOTS  = ['left', 'right'];
+export const FLOOR_SPOTS = ['back right', 'front left', 'front right',
+                            'back left', 'back middle', 'front middle'];
+export const WALL_SPOTS  = ['left', 'right', 'over the door'];

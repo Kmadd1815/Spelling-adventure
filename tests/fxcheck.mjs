@@ -8,6 +8,12 @@
    So this suite watches the axolotl's actual screen position through every
    reaction, and checks the bursts come out of the pet rather than out of
    the top-left corner.
+
+   The axolotl walks about the room now, so measuring it against the room
+   would be measuring a moving target. Everything here is measured inside
+   its own box instead: walking moves the box, reacting moves the drawing
+   within it, and what must never happen is the drawing sliding sideways
+   inside the box. That is the bug, stated exactly.
 */
 
 import { chromium, BASE, SP, ok } from './lib/harness.mjs';
@@ -26,20 +32,29 @@ await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 
+/* The drawing measured inside its own box, in percentages of that box.
+   The box is where the axolotl is standing and may be on the move; the
+   drawing inside it is what a reaction animates. */
 const petBox = async () => page.evaluate(() => {
   const r = document.querySelector('.room').getBoundingClientRect();
-  const p = document.querySelector('.room-pet').getBoundingClientRect();
-  return { left: +(((p.left - r.left) / r.width) * 100).toFixed(1),
-           mid:  +((((p.left + p.width / 2) - r.left) / r.width) * 100).toFixed(2),
+  /* Measured against the box that LEANS it, not the one that carries it
+     about: walking moves the outer box and leaning tips the middle one,
+     and neither of those is a reaction flinging the drawing sideways. */
+  const box = document.querySelector('.room-pet .pet-lean') || document.querySelector('.room-pet');
+  const b = box.getBoundingClientRect();
+  const node = box.querySelector('.pet-body') || box;
+  const p = node.getBoundingClientRect();
+  return { mid:  +((((p.left + p.width / 2) - (b.left + b.width / 2)) / b.width) * 100).toFixed(2),
+           top:  +(((p.top - b.top) / b.height) * 100).toFixed(1),
            foot: +((((p.top + p.height) - r.top) / r.height) * 100).toFixed(2),
-           top:  +(((p.top  - r.top ) / r.height) * 100).toFixed(1),
            w: +((p.width / r.width) * 100).toFixed(1),
            h: +((p.height / r.height) * 100).toFixed(1) };
 });
 
 // Where the particles are, relative to the pet's own box.
 const fxVsPet = async () => page.evaluate(() => {
-  const p = document.querySelector('.room-pet').getBoundingClientRect();
+  const node = document.querySelector('.room-pet .pet-body') || document.querySelector('.room-pet');
+  const p = node.getBoundingClientRect();
   const fx = [...document.querySelectorAll('.fx')];
   if (!fx.length) return null;
   const boxes = fx.map(f => f.getBoundingClientRect());
@@ -65,7 +80,8 @@ const during = await petBox();
 console.log('   pet mid-hop: ', JSON.stringify(during));
 ok('the axolotl stays put horizontally while reacting',
    Math.abs(during.mid - before.mid) < 0.5);
-ok('it does hop upward', during.top < before.top - 0.3);
+ok('it does hop upward', during.top < before.top - 0.3,
+   `${before.top}% then ${during.top}% down its own box`);
 await page.screenshot({ path: SP + '/F1-hop.png' });
 
 // ---------- 2. effects land on the pet, not the wall ----------

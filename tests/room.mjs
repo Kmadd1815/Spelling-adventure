@@ -61,21 +61,28 @@ await page.screenshot({ path: SP + '/D1-home-room.png' });
 // ---- slot limits ----
 const limits = await page.evaluate(async () => {
   const it = await import('./js/core/items.js');
-  ['frame','clock','bunting','pebbles','toy_ball','potted_plant','lamp',
-   'window_arch','door_fancy','bed_cozy','wall_stars','floor_pond'].forEach(id => it.grant(id, 'test'));
-  const wall = ['frame','clock','bunting'].map(id => it.equip(id));
-  const floor = ['pebbles','toy_ball','potted_plant','lamp'].map(id => it.equip(id));
+  const WALL  = ['frame','clock','bunting','lantern'];              // one too many
+  const FLOOR = ['pebbles','toy_ball','potted_plant','lamp','teddy','bookshelf','stool'];
+  [...WALL, ...FLOOR, 'window_arch','door_fancy','bed_cozy','wall_stars','floor_pond']
+    .forEach(id => it.grant(id, 'test'));
+  /* Start from an empty wall and an empty floor: equipping something that
+     is already out is a no-op that quietly returns ok, so anything left
+     over from the seed makes the count come out one short. */
+  it.inSlot('wallDecor').forEach(id => it.unequip(id));
+  it.inSlot('floorDecor').forEach(id => it.unequip(id));
+  const wall = WALL.map(id => it.equip(id));
+  const floor = FLOOR.map(id => it.equip(id));
   ['window_arch','door_fancy','bed_cozy','wall_stars','floor_pond'].forEach(id => it.equip(id));
   return {
-    wallOut: it.inSlot('wallDecor').length, wallThird: wall[2],
-    floorOut: it.inSlot('floorDecor').length, floorFourth: floor[3],
+    wallOut: it.inSlot('wallDecor').length, wallOver: wall[3],
+    floorOut: it.inSlot('floorDecor').length, floorOver: floor[6],
     usage: Object.fromEntries(Object.keys(it.SLOTS).map(s => [s, it.slotUsage(s)])),
   };
 });
-ok('exactly 2 wall decorations fit', limits.wallOut === 2);
-ok('the third is refused', limits.wallThird.reason === 'full');
-ok('exactly 3 floor decorations fit', limits.floorOut === 3);
-ok('the fourth is refused', limits.floorFourth.reason === 'full');
+ok('exactly 3 wall decorations fit', limits.wallOut === 3, `${limits.wallOut} out`);
+ok('the fourth is refused', limits.wallOver.reason === 'full', JSON.stringify(limits.wallOver));
+ok('exactly 6 floor decorations fit', limits.floorOut === 6, `${limits.floorOut} out`);
+ok('the seventh is refused', limits.floorOver.reason === 'full');
 ok('one rug, one bed, one window, one door', ['rug','bed','window','door'].every(s => limits.usage[s].max === 1));
 
 // ---- swapping a single slot replaces rather than refuses ----
@@ -95,23 +102,37 @@ ok('decorate screen shows every slot',
    await page.locator('.slot-row').count() === 8);
 const counts = await page.locator('.slot-count').allTextContents();
 console.log('   slot labels:', counts.join(' | '));
-ok('multi slots say how many are out', counts.some(t => /2 of 2 out/.test(t)) && counts.some(t => /3 of 3 out/.test(t)));
+ok('multi slots say how many are out',
+   counts.some(t => /3 of 3 out/.test(t)) && counts.some(t => /6 of 6 out/.test(t)),
+   counts.join(' | '));
 await page.screenshot({ path: SP + '/D2-decorate.png', fullPage: true });
 
 // ---- placement: things are off to the sides, not ringing the pet ----
+/* The axolotl walks about the room now, so "clear of the pet" is neither
+   true nor something to want — it passes in front of the back row and
+   behind the front corners, which is what depth is for. What still has to
+   hold is that nothing is drawn ON TOP of it where it lives: a decoration
+   over its face is a bug, a decoration it strolls behind is the room. */
 const layout = await page.evaluate(() => {
   const room = document.querySelector('.room').getBoundingClientRect();
-  const pet = document.querySelector('.room-pet').getBoundingClientRect();
-  const pct = r => ({ l: Math.round((r.left - room.left) / room.width * 100),
-                      r: Math.round((r.right - room.left) / room.width * 100),
-                      t: Math.round((r.top - room.top) / room.height * 100) });
-  return { pet: pct(pet),
-           pieces: [...document.querySelectorAll('.room-piece')].map(p => pct(p.getBoundingClientRect())) };
+  const petNode = document.querySelector('.room-pet');
+  const pct = r => ({ l: (r.left - room.left) / room.width * 100,
+                      r: (r.right - room.left) / room.width * 100,
+                      t: (r.top - room.top) / room.height * 100,
+                      b: (r.bottom - room.top) / room.height * 100 });
+  const z = n => Number(getComputedStyle(n).zIndex) || 0;
+  return {
+    pet: { ...pct(petNode.getBoundingClientRect()), z: z(petNode) },
+    pieces: [...document.querySelectorAll('.room-piece')]
+      .map(p => ({ ...pct(p.getBoundingClientRect()), z: z(p) })),
+  };
 });
-const petMid = (layout.pet.l + layout.pet.r) / 2;
-console.log('   pet spans', layout.pet.l + '%-' + layout.pet.r + '%');
-ok('nothing is sitting on top of the axolotl',
-   layout.pieces.every(p => p.r <= layout.pet.l + 4 || p.l >= layout.pet.r - 4 || p.t < 40));
+console.log('   pet spans', layout.pet.l.toFixed(0) + '%-' + layout.pet.r.toFixed(0) + '%');
+const over = layout.pieces.filter(p => p.z > layout.pet.z
+  && Math.min(p.r, layout.pet.r) - Math.max(p.l, layout.pet.l) > 1
+  && Math.min(p.b, layout.pet.b) - Math.max(p.t, layout.pet.t) > 1);
+ok('nothing is drawn over the top of the axolotl', over.length === 0,
+   over.map(p => `${p.l.toFixed(0)}–${p.r.toFixed(0)}%`).join(', ') || 'its face is clear');
 
 await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);

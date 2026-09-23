@@ -43,6 +43,7 @@ const SHELL = [
   './js/ui/item-art.js',
   './js/ui/shade.js',
   './js/ui/scenes.js',
+  './js/ui/petlife.js',
   './js/ui/toast.js',
   './js/ui/fx.js',
   './js/ui/room.js',
