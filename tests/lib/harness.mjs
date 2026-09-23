@@ -59,7 +59,24 @@ const GIVE_IT_A_VOICE = () => {
   const voice = { name: 'Test Voice', lang: 'en-US', voiceURI: 'test',
                   default: true, localService: true };
   try {
-    if (window.speechSynthesis) window.speechSynthesis.getVoices = () => [voice];
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.getVoices = () => [voice];
+    /* And an engine that can actually say it.
+
+       Listing a voice is not the same as being able to speak, and the app
+       now knows the difference: a voice that fails counts as the app not
+       being able to talk, which is what makes a tablet that has lost its
+       signal fall back to look, cover, spell instead of to a speaker
+       button that does nothing. Headless Chromium has the API and no
+       engine behind it, so every call fails — which, with a voice faked in
+       and the engine left real, meant every suite was quietly testing a
+       broken tablet again. Fake both or fake neither. */
+    window.speechSynthesis.speak = utter => {
+      setTimeout(() => utter.onstart?.(new Event('start')), 0);
+      setTimeout(() => utter.onend?.(new Event('end')), 12);
+    };
+    window.speechSynthesis.cancel = () => {};
+    window.speechSynthesis.resume = () => {};
   } catch { /* a suite that removed speech entirely */ }
 };
 
