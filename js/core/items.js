@@ -250,7 +250,12 @@ export const CATALOG = [
   { id: 'plant_cactus',    name: 'Little Cactus',  category: 'floorDecor', price: 60,  blurb: 'Prickly but friendly.' },
   { id: 'plant_succulent', name: 'Succulent',      category: 'floorDecor', price: 70,  blurb: 'Almost impossible to kill.' },
   { id: 'plant_flowers',   name: 'Flower Pot',     category: 'floorDecor', price: 95,  blurb: 'Three blooms, all different.', season: 'spring' },
-  { id: 'mushrooms',       name: 'Toadstools',     category: 'floorDecor', price: 110, blurb: 'A small red cluster.', season: 'fall' },
+  /* Its own id, and not 'mushrooms'. The indoor one and the garden one were
+     both filed under that, and since the last row of a duplicate pair wins
+     the lookup, every Toadstool she bought — including the one on the
+     garden shelf — was filed as indoor furniture and could never be put out
+     in the garden at all. */
+  { id: 'toadstool_cluster', name: 'Toadstool Cluster', category: 'floorDecor', price: 110, blurb: 'A small red cluster.', season: 'fall' },
   { id: 'plant_big_leaf',  name: 'Big Leaf Plant', category: 'floorDecor', price: 165, blurb: 'Enormous cheerful leaves.' },
   { id: 'plant_tall',      name: 'Tall Palm',      category: 'floorDecor', price: 145, blurb: 'Reaches right up.', season: 'summer' },
   { id: 'plant_bonsai',    name: 'Bonsai Tree',    category: 'floorDecor', price: 190, blurb: 'Tiny and very old.', season: 'fall' },
@@ -325,7 +330,19 @@ export const CATALOG = [
   { id: 'spring_wreath',  name: 'Spring Wreath',       category: 'wallDecor',  price: null, blurb: 'Spring Egg Hunt, 2027.' },
 ];
 
-const BY_ID = new Map(CATALOG.map(i => [i.id, i]));
+/* Built by hand rather than from Map(entries), because Map keeps the LAST
+   of a duplicate pair without a word. Two rows under one id is not a near
+   miss — it decides which slot the item lives in, and it cost the garden
+   its toadstools for a whole release. */
+const BY_ID = new Map();
+for (const item of CATALOG) {
+  if (BY_ID.has(item.id)) {
+    throw new Error(`items.js: '${item.id}' is in the catalogue twice. ` +
+      'One id is one item: two rows means the second silently decides its ' +
+      'slot, its price and its name.');
+  }
+  BY_ID.set(item.id, item);
+}
 
 export const byId = id => BY_ID.get(id) || null;
 

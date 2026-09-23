@@ -51,6 +51,57 @@ ok('no priceless item can appear in the shop', rule.leaked === 0);
 ok('no special item carries a price', rule.priced === 0);
 ok('awarding a purchasable item as a prize is refused', rule.abuseBlocked && !rule.ownsCrown);
 
+/* ---- one id is one item ----
+   The Toadstools were in the catalogue twice, 50 stars for the garden and
+   110 for indoors, under the same id. The last row of a duplicate pair wins
+   every lookup, so BOTH shelves sold the indoor one: a pair bought from the
+   garden shelf was filed as indoor furniture and could never be put out in
+   the garden at all. Nothing in the app noticed for months. */
+const ids = await page.evaluate(async () => {
+  const it = await import('./js/core/items.js');
+  const art = await import('./js/ui/item-art.js');
+  const seen = {}, dupes = [], undrawn = [];
+  for (const i of it.CATALOG) {
+    if (seen[i.id]) dupes.push(i.id); else seen[i.id] = true;
+    const drawn = art.decorSVG(i.id) ||
+      art.wearableSVG(i.id, { hx: 50, hy: 56, hrx: 30, hry: 24, bx: 50, by: 84, brx: 26, bry: 18 }) ||
+      art.SURFACES[i.id];
+    if (!drawn) undrawn.push(i.id);
+  }
+  /* Every item's slot has to be a slot the shop actually has a tab for, or
+     it is on sale somewhere she can never reach. */
+  const tabbed = new Set(it.SHOP_TABS.flatMap(t => t.slots));
+  const homeless = it.shopItems().filter(i => !tabbed.has(i.category)).map(i => i.id);
+  return { total: it.CATALOG.length, dupes, undrawn, homeless };
+});
+ok('no item is in the catalogue twice', ids.dupes.length === 0,
+   ids.dupes.length ? ids.dupes.join(', ') : `${ids.total} ids, all different`);
+ok('every item in the catalogue can actually be drawn', ids.undrawn.length === 0,
+   ids.undrawn.length ? ids.undrawn.join(', ') : `${ids.total} drawings`);
+ok('every item on sale has a tab to be sold on', ids.homeless.length === 0,
+   ids.homeless.length ? ids.homeless.join(', ') : 'all reachable');
+
+/* ---- and the save of anyone who owned the broken one ---- */
+const split = await page.evaluate(async () => {
+  const raw = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+  const before = JSON.parse(JSON.stringify(raw));
+  before.collection = { items: [{ id: 'o1', itemId: 'mushrooms', source: 'Bought in the shop', earnedAt: Date.now() }] };
+  before.equipped = { ...(before.equipped || {}), floorDecor: ['mushrooms'] };
+  localStorage.setItem('spelling-adventure:v1', JSON.stringify(before));
+  const s = await import('./js/core/storage.js');
+  const after = s.load();
+  return {
+    owns: (after.collection.items || []).map(r => r.itemId),
+    floor: after.equipped.floorDecor,
+  };
+});
+ok('a save with the old Toadstools keeps them and gains the indoor pair',
+   split.owns.includes('mushrooms') && split.owns.includes('toadstool_cluster'),
+   split.owns.join(', '));
+ok('...and the pair she had standing on the floor stays on the floor',
+   split.floor.includes('toadstool_cluster') && !split.floor.includes('mushrooms'),
+   `floor: ${split.floor.join(', ') || '(empty)'}`);
+
 // ---- shop UI ----
 await page.click('.hub-tile:has-text("Shop")'); await page.waitForTimeout(600);
 ok('shop opens', await page.locator('.shop-card').count() > 0);

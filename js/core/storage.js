@@ -183,6 +183,35 @@ function migrate(state) {
     state.settings.gamesAfterDaily = true;
   }
 
+  /* The Toadstools were two catalogue rows sharing one id — 50 stars for the
+     garden, 110 for indoors — and the second row won the lookup, so every
+     pair she bought was filed as indoor furniture whichever shelf she bought
+     it from. The indoor one has its own id now.
+
+     Nothing is taken away. She gets both: which of the two she actually paid
+     for is not recorded anywhere, and the wrong guess would delete something
+     she owns. A spare decoration costs nothing; losing one she saved up for
+     is the kind of thing a child remembers. */
+  if (state.collection && Array.isArray(state.collection.items)) {
+    const had = state.collection.items.some(r => r.itemId === 'mushrooms');
+    const has = state.collection.items.some(r => r.itemId === 'toadstool_cluster');
+    if (had && !has) {
+      state.collection.items.push({
+        id: 'mig-toadstool-' + Date.now(),
+        itemId: 'toadstool_cluster',
+        source: 'Bought in the shop',
+        earnedAt: Date.now(),
+      });
+      /* If a pair was standing on the floor it stays exactly where she put
+         it, under the id that belongs indoors. */
+      const floor = state.equipped?.floorDecor;
+      if (Array.isArray(floor)) {
+        const at = floor.indexOf('mushrooms');
+        if (at !== -1) floor[at] = 'toadstool_cluster';
+      }
+    }
+  }
+
   /* Saves made before there was a garden get its sky and ground, and the
      empty lists the slots expect. */
   if (state.equipped) {

@@ -2132,6 +2132,24 @@ const DECOR = {
     ${litEllipse(40, 84, 11, 11, '#6f5943', '#3f3226', { stroke: '#3f3226', sw: 4 })}
     <circle cx="40" cy="84" r="3.5" fill="#c9c2b4"/>`,
 
+  /* Indoors. Three little ones close together in a saucer — the garden's
+     pair are big and standing in grass, and two items with the same name
+     should not also be the same picture. */
+  toadstool_cluster: () => `
+    ${contact(50, 91, 26, 5, .26)}
+    ${litEllipse(50, 88, 26, 7, '#f0e2cc', '#c7b294', { stroke: '#a89478', sw: 3 })}
+    ${litRect(30, 62, 8, 24, 4, '#fdf5e8', '#d9c9ac', { stroke: '#c9b79c', sw: 2.6 })}
+    ${litPath('M 14 64 a 20 15 0 0 1 40 0 z', '#f2867a', '#bd514a', { stroke: '#a83c33', sw: 3, join: 'round' })}
+    <ellipse cx="24" cy="56" rx="4" ry="2.8" fill="#fff4ea"/><ellipse cx="38" cy="59" rx="3.4" ry="2.4" fill="#fff4ea"/>
+    ${litRect(62, 58, 9, 28, 4.5, '#fdf5e8', '#d9c9ac', { stroke: '#c9b79c', sw: 2.8 })}
+    ${litPath('M 44 60 a 23 17 0 0 1 46 0 z', '#ef7268', '#b8433a', { stroke: '#a83c33', sw: 3.2, join: 'round' })}
+    <path d="M 48 58 a 21 15 0 0 1 14 -14" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="3.5"/>
+    <ellipse cx="58" cy="50" rx="4.6" ry="3.2" fill="#fff4ea"/><ellipse cx="74" cy="52" rx="3.8" ry="2.6" fill="#fff4ea"/>
+    <ellipse cx="66" cy="42" rx="3.2" ry="2.2" fill="#fff4ea"/>
+    ${litRect(46, 74, 7, 14, 3.5, '#fdf5e8', '#d9c9ac', { stroke: '#c9b79c', sw: 2.4 })}
+    ${litPath('M 36 76 a 14 10 0 0 1 28 0 z', '#f79a90', '#c96259', { stroke: '#a83c33', sw: 2.8, join: 'round' })}
+    <ellipse cx="44" cy="72" rx="3" ry="2.1" fill="#fff4ea"/><ellipse cx="55" cy="73" rx="2.6" ry="1.8" fill="#fff4ea"/>`,
+
   garden_bench: () => `
     ${contact(50, 96, 38, 4, .26)}
     <path d="M 14 58 h 72 M 14 68 h 72" stroke="#c09667" stroke-width="9" stroke-linecap="round"/>
