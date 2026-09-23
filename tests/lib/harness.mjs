@@ -41,7 +41,45 @@ async function loadPlaywright() {
   process.exit(2);
 }
 
-export const { chromium } = await loadPlaywright();
+const { chromium: realChromium } = await loadPlaywright();
+
+/* ---------- A voice ----------
+
+   Headless Chromium ships with no speech voices at all. That used not to
+   matter, because the app simply said nothing. It matters now: a tablet
+   that cannot talk correctly switches to look, cover, spell — so without
+   this, every suite that drives a spelling session would be testing the
+   silent fallback by accident, and the path a real tablet actually takes
+   would have no coverage at all.
+
+   A real tablet has a voice, so the test browser is given one.
+   tests/resilience.mjs takes it away again, deliberately, because that is
+   the thing that suite is about. */
+const GIVE_IT_A_VOICE = () => {
+  const voice = { name: 'Test Voice', lang: 'en-US', voiceURI: 'test',
+                  default: true, localService: true };
+  try {
+    if (window.speechSynthesis) window.speechSynthesis.getVoices = () => [voice];
+  } catch { /* a suite that removed speech entirely */ }
+};
+
+/* Wrapped rather than left to each suite to remember: a suite that forgot
+   would go green while testing something nobody uses. */
+export const chromium = {
+  async launch(opts) {
+    const browser = await realChromium.launch(opts);
+    const wrap = async ctx => { await ctx.addInitScript(GIVE_IT_A_VOICE); return ctx; };
+    const newContext = browser.newContext.bind(browser);
+    browser.newContext = async (...args) => wrap(await newContext(...args));
+    const newPage = browser.newPage.bind(browser);
+    browser.newPage = async (...args) => {
+      const page = await newPage(...args);
+      await wrap(page.context());
+      return page;
+    };
+    return browser;
+  },
+};
 
 /* ---------- Where the app is being served ---------- */
 export const BASE = process.env.BASE || 'http://127.0.0.1:8099/index.html';
