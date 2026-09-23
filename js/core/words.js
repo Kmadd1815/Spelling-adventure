@@ -47,6 +47,11 @@ export function makeWord(text, listId, extra = {}) {
     lastMissed: null,
     masteredAt: null,
 
+    /* When a mastered word comes back to be checked, and how far along the
+       ladder it is. Both null until it is mastered. See REVIEW_LADDER. */
+    reviewAt: null,
+    reviewStep: 0,
+
     createdAt: Date.now(),
   };
 }
@@ -243,6 +248,64 @@ export function pickWords({ count = 8, pool = 'active', listId = null, allowRepe
   return shuffled(chosen);
 }
 
+/* ---------- Keeping a mastered word ----------
+
+   A mastered word used to be a word she would never see again. Today's
+   Practice, Practice and the practice test all draw from the ACTIVE words,
+   and a mastered word is not active — so the only way one ever came back
+   was if she happened to retake that list's whole spelling test, or went
+   looking for it in the Mastered tab herself.
+
+   That is comfortable and wrong. Spelling is not something you learn once:
+   a word learned in September is gone by December unless something asks
+   for it, and a word that is never asked is a word she can never be found
+   to have forgotten. The star said "mastered" and quietly meant "mastered
+   in September".
+
+   So every mastered word now gets a date it comes back. Get it right and
+   the next date is further away; miss it and it is not mastered any more
+   and rejoins the rotation, which is exactly what already happens to any
+   missed word.
+
+   Two things this deliberately does NOT do:
+
+     It does not earn credit. Only the two tests fill in the dots, and a
+     review is a check rather than an assessment. But a miss still costs
+     the word its star, because a review she fails that changes nothing
+     would not have been worth asking.
+
+     It does not skip archived lists. A finished list is exactly the case
+     this is for — those are the words that used to disappear for good.
+
+   The ladder is coarse on purpose. This is a spelling list for a
+   nine-year-old, not a flashcard engine: a week, a month, a term, half a
+   year, and after that she has it. */
+export const REVIEW_LADDER = [7, 30, 90, 180];
+
+function scheduleReview(word, now) {
+  const step = Math.min(Math.max(0, word.reviewStep || 0), REVIEW_LADDER.length - 1);
+  word.reviewAt = now + REVIEW_LADDER[step] * DAY;
+}
+
+/** Is this word mastered, and is its next check due? */
+export const reviewDue = word =>
+  !!word.masteredAt && !!word.reviewAt && word.reviewAt <= Date.now();
+
+/** Everything waiting to be checked, the longest overdue first. */
+export function wordsDueForReview() {
+  return masteredWords()
+    .filter(reviewDue)
+    .sort((a, b) => (a.reviewAt || 0) - (b.reviewAt || 0));
+}
+
+/** The next check that is not due yet, for the parent's report. */
+export function nextReviewAt() {
+  const waiting = masteredWords()
+    .filter(w => w.reviewAt && w.reviewAt > Date.now())
+    .sort((a, b) => a.reviewAt - b.reviewAt);
+  return waiting.length ? waiting[0].reviewAt : null;
+}
+
 /* ---------- Recording an attempt ----------
 
    This is the ONLY way a word's mastery changes. Mini-games call this
@@ -259,9 +322,12 @@ export function pickWords({ count = 8, pool = 'active', listId = null, allowRepe
  *   false for a second look at a word she just missed. Those re-tries are
  *   for learning: they are recorded in her history but neither advance the
  *   streak nor break it again, and they earn nothing.
+ * @param {boolean} [opts.isReview=false]
+ *   a mastered word come back to be checked. It earns no credit either way,
+ *   but getting it wrong costs it its star — see REVIEW_LADDER above.
  */
 export function recordAttempt(wordId, wasCorrect, opts = {}) {
-  const { countsForMastery = true } = opts;
+  const { countsForMastery = true, isReview = false } = opts;
 
   return update(state => {
     const word = state.words.find(w => w.id === wordId);
@@ -288,7 +354,21 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
 
     let creditedNow = false;
 
-    if (countsForMastery) {
+    if (isReview) {
+      /* A check, not an assessment. Right pushes the next one further out;
+         wrong takes the star back and puts the word in the rotation, which
+         is the only reason asking was worth anything. */
+      if (wasCorrect) {
+        word.reviewStep = Math.min((word.reviewStep || 0) + 1, REVIEW_LADDER.length - 1);
+        scheduleReview(word, now);
+      } else {
+        word.streak = 0;
+        word.lastCreditDay = null;
+        word.masteredAt = null;
+        word.reviewAt = null;
+        word.reviewStep = 0;
+      }
+    } else if (countsForMastery) {
       if (wasCorrect) {
         /* Normally every correct answer counts. With `oneCreditPerDay` on,
            at most one a day does, so the streak measures days she knew it
@@ -309,7 +389,11 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
 
     const need = Math.max(1, state.settings.masteryThreshold || 3);
     const nowMastered = (word.streak || 0) >= need;
-    if (nowMastered && !word.masteredAt) word.masteredAt = now;
+    if (nowMastered && !word.masteredAt) {
+      word.masteredAt = now;
+      word.reviewStep = 0;
+      scheduleReview(word, now);   // the first check is a week away
+    }
 
     const justMastered = nowMastered && !wasMastered;
     if (justMastered) emit('word:mastered', word);
@@ -318,7 +402,9 @@ export function recordAttempt(wordId, wasCorrect, opts = {}) {
        answer that earns nothing — because today is already counted, or
        because it was a second look at one she missed — looks identical to a
        broken counter unless somebody says so. */
-    return { ok: true, word, justMastered, credits: word.streak || 0, creditedNow };
+    return { ok: true, word, justMastered, credits: word.streak || 0, creditedNow,
+             wasReview: isReview, stillRemembered: isReview && wasCorrect,
+             forgotten: isReview && !wasCorrect };
   });
 }
 

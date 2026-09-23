@@ -32,7 +32,13 @@ export function defaultState() {
       masteryRuleV2: true,      // see migrate(): moved to five tests in a row
       practiceSize: 8,          // words in Today's Practice
       practiceTestSize: 10,     // words in a practice test
-      includeMasteredInPractice: false,
+      /* Mastered words come back to be checked after a week, a month, a
+         term and half a year. There used to be a setting here called
+         includeMasteredInPractice which nothing anywhere ever read — the
+         intention was right and the mechanism was never built, and nothing
+         said so. See REVIEW_LADDER in core/words.js. */
+      reviewMastered: true,
+      reviewsPerDay: 2,         // at most, mixed into Today's Practice
 
       /* Voice */
       voiceURI: null,
@@ -209,6 +215,21 @@ function migrate(state) {
         const at = floor.indexOf('mushrooms');
         if (at !== -1) floor[at] = 'toadstool_cluster';
       }
+    }
+  }
+
+  /* Every word she has already mastered gets its first check scheduled,
+     counted from the day she mastered it rather than from today — so a word
+     she finished in the summer is due now, which is the whole point, and
+     one she finished this week waits its week like any other.
+
+     A big backlog is not a problem: Today's Practice takes at most a couple
+     of reviews a day, oldest first, so it drains gently instead of arriving
+     as a fifty-word exam. */
+  for (const w of state.words || []) {
+    if (w.masteredAt && !w.reviewAt) {
+      w.reviewStep = 0;
+      w.reviewAt = w.masteredAt + 7 * 86400000;
     }
   }
 

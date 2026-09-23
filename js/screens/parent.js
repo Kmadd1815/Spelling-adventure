@@ -481,6 +481,21 @@ export default function parentScreen(container) {
       ),
 
       el('div', { class: 'card' },
+        el('h3', { text: 'Keeping what she has learned' }),
+        el('p', { class: 'muted tiny', text:
+          'A mastered word used to leave the practice pool and never come back, which meant a word learned in September was gone by December and nothing would ever find out. Each one now comes round again to be checked after a week, then a month, then a term, then half a year.' }),
+        segmented([
+          { value: true,  label: 'Bring them back' },
+          { value: false, label: 'Leave them be' },
+        ], settings().reviewMastered !== false,
+           v => { update(st => { st.settings.reviewMastered = v; }); toast('Saved'); }),
+        el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+          'They arrive at the end of Today\u2019s Practice, a couple at a time, marked as ones she already knows. Getting one right pushes its next check further away and earns nothing \u2014 only the two tests fill in the dots. Getting it wrong takes the star back and the word rejoins the rotation, which is the only reason asking is worth anything.' }),
+        el('p', { class: 'muted tiny', style: { marginTop: '8px' }, text:
+          'This is the one thing that reaches into archived lists. A finished list is exactly the case it is for: those are the words that used to disappear for good.' })
+      ),
+
+      el('div', { class: 'card' },
         el('h3', { text: 'When she misses a word' }),
         el('p', { class: 'muted tiny', text:
           'She sees the correct spelling, then moves on. The word comes back a few words later in the same session so she has to recall it rather than copy it. That second look is practice only: it earns no stars and does not count towards mastery.' })
@@ -672,6 +687,27 @@ export default function parentScreen(container) {
       ),
 
       el('div', { class: 'card' },
+        el('h3', { text: 'Keeping what she has learned' }),
+        (() => {
+          const due = words.wordsDueForReview();
+          const next = words.nextReviewAt();
+          if (!due.length) {
+            return el('p', { class: 'muted tiny', text: next
+              ? `Nothing due. The next word comes round to be checked ${whenText(next)}.`
+              : 'Nothing mastered yet, so there is nothing to check.' });
+          }
+          return el('div', { class: 'stack-sm' },
+            el('p', { class: 'muted tiny', text:
+              `${due.length} mastered word${due.length === 1 ? '' : 's'} due to be checked. A couple arrive at the end of each Today\u2019s Practice.` }),
+            el('div', { class: 'stack-sm' }, due.slice(0, 6).map(wordLine)),
+            due.length > 6
+              ? el('p', { class: 'muted tiny', text: `\u2026 and ${due.length - 6} more.` })
+              : null
+          );
+        })()
+      ),
+
+      el('div', { class: 'card' },
         el('h3', { text: 'Needs attention' }),
         trouble.length
           ? el('div', { class: 'stack-sm' }, trouble.map(wordLine))
@@ -697,6 +733,17 @@ export default function parentScreen(container) {
           : el('p', { class: 'muted tiny', text: 'No sessions yet.' })
       )
     );
+  }
+
+  /* "in about a week" reads better to a parent glancing at a screen than a
+     date does, and it is the only thing the number is being used for. */
+  function whenText(ts) {
+    const days = Math.round((ts - Date.now()) / 86400000);
+    if (days <= 1) return 'tomorrow';
+    if (days < 14) return `in about ${days} days`;
+    if (days < 45) return 'in about a month';
+    if (days < 130) return 'in about three months';
+    return 'in about six months';
   }
 
   /* ---------- Child & pet ---------- */

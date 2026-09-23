@@ -107,6 +107,20 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       .map(word => ({ word, isRetry: false }));
   }
 
+  /* A couple of words she mastered a while back, come round to be checked.
+     They ride along with Today's Practice rather than being their own
+     chore, because a separate "revision" button is a button nobody presses.
+
+     They go at the END: the day's real words first, and the old friends as
+     a little victory lap. And they are capped, so a summer's worth of
+     mastered words drains a few at a time instead of arriving at once. */
+  let reviews = [];
+  if (kind === 'daily' && settings().reviewMastered !== false) {
+    const cap = Math.max(0, settings().reviewsPerDay ?? 2);
+    reviews = words.wordsDueForReview().slice(0, cap);
+    plan = plan.concat(reviews.map(word => ({ word, isRetry: false, isReview: true })));
+  }
+
   if (!plan.length) {
     releaseLayout();
     mount(container, emptyState(kind));
@@ -182,7 +196,9 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       }, '\u{1F50A}'),
       el('div', { class: 'muted tiny', text: entry().isRetry
         ? 'Here is that word again — you have got this'
-        : (config.feedback ? 'Listen, then spell it' : config.label) })
+        : entry().isReview
+          ? '\u2B50 One you already know — do you still?'
+          : (config.feedback ? 'Listen, then spell it' : config.label) })
     );
 
     renderHelp();
@@ -275,7 +291,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
   function submit() {
     if (locked) return;
-    const { word, isRetry } = entry();
+    const { word, isRetry, isReview } = entry();
     const attempt = typed.trim().toLowerCase();
     if (!attempt) { toast('Tap the letters to spell the word'); return; }
 
@@ -285,7 +301,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     // it is recorded in her history but cannot advance or break the streak,
     // and it earns nothing.
     const outcome = words.recordAttempt(word.id, correct,
-      { countsForMastery: config.counts && !isRetry });
+      { countsForMastery: config.counts && !isRetry, isReview: !!isReview });
     if (outcome?.justMastered) masteredThisSession.push(word);
     if (outcome?.creditedNow) creditedThisSession += 1;
 
@@ -307,7 +323,8 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       setTimeout(next, 420);
       return;
     }
-    correct ? showCorrect(word, isRetry, outcome) : showMissed(word, attempt, isRetry);
+    correct ? showCorrect(word, isRetry, outcome)
+            : showMissed(word, attempt, isRetry, !!outcome?.forgotten);
   }
 
   function showCorrect(word, isRetry, outcome) {
@@ -319,16 +336,19 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     const justMastered = masteredThisSession.includes(word);
     mount(feedback, el('div', { class: 'feedback feedback-good' },
       el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered()
+        : outcome?.stillRemembered ? 'You still remember it!'
         : isRetry ? 'You remembered it!' : pet.praiseCorrect() }),
       el('div', { class: 'correct-spelling', text: word.text }),
-      masteryDots(word, { creditedNow: !!outcome?.creditedNow })
+      outcome?.stillRemembered
+        ? el('div', { class: 'tiny muted', text: reviewLine(word) })
+        : masteryDots(word, { creditedNow: !!outcome?.creditedNow })
     ));
 
     if (justMastered) confetti(28);
     setTimeout(next, justMastered ? 2200 : 1300);
   }
 
-  function showMissed(word, attempt, isRetry) {
+  function showMissed(word, attempt, isRetry, forgotten = false) {
     stage.classList.add('showing-feedback');
     renderTiles('bad');
     tiles.classList.add('shake');
@@ -349,11 +369,25 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
         button('Next word', { cls: 'btn btn-primary', emoji: '➡️', onClick: next })
       ),
       el('div', { class: 'tiny muted', style: { marginTop: '10px' },
-        text: comingBack
-          ? 'Look closely at it — this word will come back in a moment.'
-          : 'You will see this one again next time.' })
+        text: forgotten
+          ? 'That one has gone a bit rusty — it is back in your practice for a while.'
+          : comingBack
+            ? 'Look closely at it — this word will come back in a moment.'
+            : 'You will see this one again next time.' })
     ));
   }
+
+/* How long until this word is checked again. She should see that getting it
+   right pushed it further away — that is the reward for remembering, and
+   without it a review is just an extra word with no point to it. */
+function reviewLine(word) {
+  if (!word.reviewAt) return 'Kept.';
+  const days = Math.max(1, Math.round((word.reviewAt - Date.now()) / 86400000));
+  if (days >= 150) return 'Kept \u2014 you will not see this one for about six months.';
+  if (days >= 75)  return 'Kept \u2014 back in about three months.';
+  if (days >= 21)  return 'Kept \u2014 back in about a month.';
+  return 'Kept \u2014 back in about a week.';
+}
 
   /* Where she is, and — when the answer she just got right did not move
      anything — why not.
