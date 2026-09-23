@@ -1771,18 +1771,21 @@ const DECOR = {
     <path d="M 50 50 v -10 q 7 -1 7 5" fill="none" stroke="#f6c453" stroke-width="2.6" stroke-linecap="round"/>
     <path d="M 32 74 h 36" stroke="#f6c453" stroke-width="3" stroke-linecap="round"/>`,
 
-  /* A string of hearts across the wall. */
+  /* A string of hearts across the wall. Each heart is lit like everything
+     else in here: flat fills would have it read as a sticker of a garland
+     rather than paper hearts with a front and a side. */
   heart_garland: () => `
     <path d="M 6 24 Q 50 44 94 24" fill="none" stroke="#b08a5c" stroke-width="2.6"/>
-    ${[[16, 31, '#f2849f'], [33, 37, '#ffd3e2'], [50, 40, '#f2849f'],
-       [67, 37, '#ffd3e2'], [84, 31, '#f2849f']].map(([x, y, col], i) => {
+    ${[[16, 31, '#f2849f', '#c9738c'], [33, 37, '#ffd3e2', '#e7a8bd'],
+       [50, 40, '#f2849f', '#c9738c'], [67, 37, '#ffd3e2', '#e7a8bd'],
+       [84, 31, '#f2849f', '#c9738c']].map(([x, y, light, dark], i) => {
       const r = 8 - (i % 2) * 1.6;
-      return `<path d="M ${x} ${y + r * 1.25}
-                       C ${x - r * 1.5} ${y + r * 0.2} ${x - r * 0.6} ${y - r * 0.9} ${x} ${y - r * 0.1}
-                       C ${x + r * 0.6} ${y - r * 0.9} ${x + r * 1.5} ${y + r * 0.2} ${x} ${y + r * 1.25} Z"
-                    fill="${col}" stroke="#c9738c" stroke-width="1.8" stroke-linejoin="round"/>
-              <ellipse cx="${x - r * 0.4}" cy="${y + r * 0.1}" rx="${n(r * 0.3)}" ry="${n(r * 0.2)}"
-                       fill="#fff" opacity=".45"/>`;
+      const d = `M ${n(x)} ${n(y + r * 1.25)}
+                 C ${n(x - r * 1.5)} ${n(y + r * 0.2)} ${n(x - r * 0.6)} ${n(y - r * 0.9)} ${n(x)} ${n(y - r * 0.1)}
+                 C ${n(x + r * 0.6)} ${n(y - r * 0.9)} ${n(x + r * 1.5)} ${n(y + r * 0.2)} ${n(x)} ${n(y + r * 1.25)} Z`;
+      return litPath(d, light, dark, { stroke: '#b3596e', sw: 1.8, join: 'round', round: true }) +
+        `<ellipse cx="${n(x - r * 0.4)}" cy="${n(y + r * 0.1)}" rx="${n(r * 0.3)}" ry="${n(r * 0.2)}"
+                  fill="#fff" opacity=".45"/>`;
     }).join('')}`,
 
   /* A mobile of clouds and a moon, hung from one point. */
