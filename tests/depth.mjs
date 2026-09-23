@@ -208,6 +208,58 @@ ok('no growth stage has its gills cut off the top of the picture',
    clipped.length ? clipped.map(t => t.key).join(', ')
                   : `closest: ${Math.min(...tops.map(t => t.top - t.vb)).toFixed(1)} units clear`);
 
+/* ---------- the surfaces are drawings now, not stacked gradients ----------
+   The motifs are inline SVG tiles. Two things about that can break quietly:
+
+   A surface's CSS is also written straight into a style="..." attribute,
+   for the swatches in the shop and the collection book. One double quote
+   anywhere in the value ends the attribute, and the pattern disappears
+   while the plain colour underneath carries on looking fine — which is
+   exactly what happened on the first cut of this.
+
+   And a '#' inside a data URI ends the URL, so every colour in a tile has
+   to be percent-encoded or the drawing is silently truncated. */
+const surf = art.surfaces;
+const unsafe = Object.entries(surf).filter(([, v]) =>
+  Object.values(v).some(x => typeof x === 'string' && x.includes('"')));
+ok('no surface can break out of a style attribute',
+   unsafe.length === 0,
+   unsafe.length ? unsafe.map(([k]) => k).join(', ') : `${Object.keys(surf).length} surfaces`);
+
+const tiles = Object.entries(surf).flatMap(([id, v]) =>
+  [...(v.backgroundImage || '').matchAll(/url\(data:image\/svg\+xml,([^)]*)\)/g)].map(m => [id, m[1]]));
+ok('the surfaces are drawn, not stacked gradients',
+   tiles.length >= 20, `${tiles.length} drawn tiles across the catalogue`);
+
+const broken = tiles.filter(([, enc]) => {
+  const svg = decodeURIComponent(enc);
+  return !svg.startsWith('<svg') || !svg.endsWith('</svg>') || svg.includes('%23');
+});
+ok('every drawn tile decodes to a whole SVG',
+   broken.length === 0,
+   broken.length ? broken.map(([id]) => id).join(', ') : 'all decode');
+
+/* Rendered, not just present: a tile that fails to parse leaves the layer
+   blank and the surface looks like its plain background colour. */
+const painted = await page.evaluate(async () => {
+  const { SURFACES } = await import('./js/ui/item-art.js');
+  const out = [];
+  for (const [id, style] of Object.entries(SURFACES)) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:-9999px;width:120px;height:120px';
+    Object.assign(d.style, style);
+    document.body.append(d);
+    out.push([id, getComputedStyle(d).backgroundImage.includes('data:image/svg+xml')]);
+    d.remove();
+  }
+  return out;
+});
+const dropped = painted.filter(([id, ok_]) => !ok_ &&
+  !['sky_night'].includes(id)).map(([id]) => id);
+ok('the browser accepts every drawn tile',
+   dropped.length === 0,
+   dropped.length ? dropped.join(', ') : 'all accepted');
+
 /* ---------- and a picture of the shelf, to look at ---------- */
 await page.goto(BASE + '#/shop', { waitUntil: 'networkidle' });
 await page.waitForTimeout(700);

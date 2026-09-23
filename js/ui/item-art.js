@@ -527,6 +527,190 @@ export const BEHIND_BODY = new Set(['cape', 'fairy_wings']);
    a wall or a floor at any size, and a repeating gradient does that
    perfectly at no cost. */
 
+/* ---------- The motifs ----------
+
+   Each of these is one tile of a repeating pattern, drawn rather than
+   assembled out of gradient stops. The difference is what a motif can BE: a
+   circle made of a radial-gradient is always a circle, but a flower can
+   have petals and a centre, a book can have a spine, a stone can have a
+   joint round it and a lit top edge.
+
+   They are lit from the upper left like everything else, and they are small
+   — a tile is a few hundred bytes — so a wall is still one line of CSS with
+   nothing to fetch.
+*/
+
+/* A dot with a belly and a catchlight, rather than a flat disc. */
+const dotTile = (size, r, light, dark) => tile(size, size,
+  `<defs>${tileGrad('d', light, dark, true)}</defs>
+   <circle cx='${size / 2}' cy='${size / 2}' r='${r}' fill='url(#d)'/>
+   <circle cx='${n(size / 2 - r * 0.3)}' cy='${n(size / 2 - r * 0.34)}' r='${n(r * 0.26)}'
+           fill='#ffffff' opacity='0.5'/>`);
+
+/* Five petals round a shaded centre. */
+const flowerTile = (size, r, petal, petalDark, heart) => {
+  let p = '';
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    p += `<ellipse cx='${n(size / 2 + Math.cos(a) * r * 0.62)}' cy='${n(size / 2 + Math.sin(a) * r * 0.62)}'
+            rx='${n(r * 0.52)}' ry='${n(r * 0.40)}' fill='url(#f)'
+            transform='rotate(${n(a * 57.3 + 90)} ${n(size / 2 + Math.cos(a) * r * 0.62)} ${n(size / 2 + Math.sin(a) * r * 0.62)})'/>`;
+  }
+  return tile(size, size,
+    `<defs>${tileGrad('f', petal, petalDark, true)}${tileGrad('h', '#fff6e8', heart, true)}</defs>
+     ${p}<circle cx='${size / 2}' cy='${size / 2}' r='${n(r * 0.34)}' fill='url(#h)'/>`);
+};
+
+/* Several flowers in one tile, at irregular places.
+   One flower per tile is a lattice: the eye finds the grid in about a
+   second and the meadow stops being a meadow. Eight of them scattered
+   through a big tile still repeats — everything tiled does — but there is
+   no row to follow. */
+const flowersTile = (w, h, spots) => {
+  const heads = spots.map(([x, y, r, petal, petalDark, heart], i) => {
+    let p = '';
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2 - Math.PI / 2 + i;
+      const cx = x + Math.cos(a) * r * 0.62, cy = y + Math.sin(a) * r * 0.62;
+      p += `<ellipse cx='${n(cx)}' cy='${n(cy)}' rx='${n(r * 0.52)}' ry='${n(r * 0.40)}'
+              fill='url(#p${i})' transform='rotate(${n(a * 57.3 + 90)} ${n(cx)} ${n(cy)})'/>`;
+    }
+    return p + `<circle cx='${x}' cy='${y}' r='${n(r * 0.34)}' fill='url(#h${i})'/>`;
+  }).join('');
+  const defs = spots.map(([, , , petal, petalDark, heart], i) =>
+    tileGrad(`p${i}`, petal, petalDark, true) + tileGrad(`h${i}`, '#fff6e8', heart, true)).join('');
+  return tile(w, h, `<defs>${defs}</defs>${heads}`);
+};
+
+/* A five-pointed star sitting in its own glow. */
+const starTile = (size, r, light, dark, glow) => {
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const rr = i % 2 ? r * 0.42 : r;
+    d += `${i ? 'L' : 'M'} ${n(size / 2 + Math.cos(a) * rr)} ${n(size / 2 + Math.sin(a) * rr)} `;
+  }
+  return tile(size, size,
+    `<defs>${tileGrad('s', light, dark, true)}
+       <radialGradient id='g'><stop offset='0%' stop-color='${glow}' stop-opacity='0.55'/>
+         <stop offset='100%' stop-color='${glow}' stop-opacity='0'/></radialGradient></defs>
+     <circle cx='${size / 2}' cy='${size / 2}' r='${n(r * 1.7)}' fill='url(#g)'/>
+     <path d='${d}Z' fill='url(#s)'/>`);
+};
+
+/* A stripe with a lit edge and a shaded one, so the wall has a weave. */
+const stripeTile = (w, light, mid, dark) => tile(w, 8,
+  `<rect width='${w}' height='8' fill='${mid}'/>
+   <rect x='0' width='${n(w / 2)}' height='8' fill='${light}'/>
+   <rect x='0' width='1.4' height='8' fill='#ffffff' opacity='0.4'/>
+   <rect x='${n(w / 2 - 1.4)}' width='1.4' height='8' fill='${dark}' opacity='0.5'/>`);
+
+/* A soft cloud: lit along the top, shaded underneath. */
+const cloudTile = (w, h, light, dark) => tile(w, h,
+  `<defs><linearGradient id='c' x1='0%' y1='0%' x2='0%' y2='100%'>
+     <stop offset='0%' stop-color='${light}'/><stop offset='100%' stop-color='${dark}'/></linearGradient></defs>
+   <g fill='url(#c)'>
+     <ellipse cx='${n(w * 0.30)}' cy='${n(h * 0.62)}' rx='${n(w * 0.20)}' ry='${n(h * 0.17)}'/>
+     <ellipse cx='${n(w * 0.46)}' cy='${n(h * 0.52)}' rx='${n(w * 0.17)}' ry='${n(h * 0.22)}'/>
+     <ellipse cx='${n(w * 0.62)}' cy='${n(h * 0.62)}' rx='${n(w * 0.18)}' ry='${n(h * 0.16)}'/>
+     <rect x='${n(w * 0.18)}' y='${n(h * 0.62)}' width='${n(w * 0.54)}' height='${n(h * 0.16)}' rx='${n(h * 0.08)}'/>
+   </g>
+   <ellipse cx='${n(w * 0.44)}' cy='${n(h * 0.40)}' rx='${n(w * 0.10)}' ry='${n(h * 0.07)}'
+            fill='#ffffff' opacity='0.55'/>`);
+
+/* A shelf of books: spines of different heights, and the shadow the shelf
+   above throws across the tops of them. */
+const bookTile = (() => {
+  const spines = [[0, 11, 48, '#d4594f'], [11, 9, 42, '#4f7fa8'], [20, 11, 50, '#d8a648'],
+                  [31, 8, 40, '#5f8f66'], [39, 11, 46, '#9a6bb0'], [50, 6, 36, '#c9704f']];
+  let out = `<rect width='56' height='62' fill='#c9a87c'/>`;
+  for (const [x, w, h, c] of spines) {
+    out += `<rect x='${x}' y='${62 - 8 - h}' width='${w}' height='${h}' fill='${c}'/>` +
+           `<rect x='${x}' y='${62 - 8 - h}' width='${n(w * 0.3)}' height='${h}' fill='#ffffff' opacity='0.22'/>` +
+           `<rect x='${n(x + w * 0.76)}' y='${62 - 8 - h}' width='${n(w * 0.24)}' height='${h}' fill='#000000' opacity='0.18'/>` +
+           `<rect x='${x}' y='${62 - 8 - h}' width='${w}' height='3' fill='#000000' opacity='0.22'/>`;
+  }
+  out += `<rect y='54' width='56' height='8' fill='#8a6340'/>` +
+         `<rect y='54' width='56' height='2' fill='#ffffff' opacity='0.22'/>` +
+         `<rect y='0' width='56' height='5' fill='#000000' opacity='0.22'/>`;
+  return tile(56, 62, out);
+})();
+
+/* Water: a scalloped wave with a bright crest. */
+const waveTile = (w, h, crest) => tile(w, h,
+  `<path d='M 0 ${n(h * 0.55)} q ${n(w * 0.25)} ${n(-h * 0.3)} ${n(w * 0.5)} 0
+            q ${n(w * 0.25)} ${n(h * 0.3)} ${n(w * 0.5)} 0'
+         fill='none' stroke='${crest}' stroke-opacity='0.45' stroke-width='2.4'/>
+   <path d='M 0 ${n(h * 0.5)} q ${n(w * 0.25)} ${n(-h * 0.3)} ${n(w * 0.5)} 0
+            q ${n(w * 0.25)} ${n(h * 0.3)} ${n(w * 0.5)} 0'
+         fill='none' stroke='#ffffff' stroke-opacity='0.5' stroke-width='1.6'/>`);
+
+/* A flagstone with a joint round it and light on its top edge. */
+const stoneTile = (w, h, light, dark, joint) => tile(w, h,
+  `<defs>${tileGrad('s', light, dark)}</defs>
+   <rect width='${w}' height='${h}' fill='${joint}'/>
+   <rect x='1.5' y='1.5' width='${n(w / 2 - 3)}' height='${n(h - 3)}' rx='3' fill='url(#s)'/>
+   <rect x='${n(w / 2 + 1.5)}' y='1.5' width='${n(w / 2 - 3)}' height='${n(h - 3)}' rx='3' fill='url(#s)'/>
+   <rect x='1.5' y='1.5' width='${n(w / 2 - 3)}' height='2' rx='1' fill='#ffffff' opacity='0.35'/>
+   <rect x='${n(w / 2 + 1.5)}' y='1.5' width='${n(w / 2 - 3)}' height='2' rx='1' fill='#ffffff' opacity='0.35'/>`);
+
+/* Blades of grass, tapering to a point and leaning the same way. */
+const bladeTile = (w, h, dark, light) => {
+  let out = '';
+  for (let i = 0; i < 7; i++) {
+    const x = (i + 0.5) * (w / 7), len = h * (0.42 + (i % 3) * 0.16);
+    out += `<path d='M ${n(x)} ${h} q ${n(w * 0.05)} ${n(-len * 0.6)} ${n(w * 0.11)} ${n(-len)}'
+              fill='none' stroke='${i % 2 ? light : dark}' stroke-opacity='0.38'
+              stroke-width='${n(1.4 + (i % 2) * 0.5)}' stroke-linecap='round'/>`;
+  }
+  return tile(w, h, out);
+};
+
+/* Marble: a vein that branches, not a ruled line. */
+const veinTile = (w, h, colour) => tile(w, h,
+  `<g fill='none' stroke='${colour}' stroke-linecap='round'>
+     <path d='M ${n(-w * 0.1)} ${n(h * 0.78)} q ${n(w * 0.3)} ${n(-h * 0.34)} ${n(w * 0.56)} ${n(-h * 0.5)}
+              t ${n(w * 0.54)} ${n(-h * 0.3)}' stroke-opacity='0.30' stroke-width='2'/>
+     <path d='M ${n(w * 0.22)} ${n(h * 0.62)} q ${n(w * 0.12)} ${n(h * 0.16)} ${n(w * 0.3)} ${n(h * 0.2)}'
+           stroke-opacity='0.18' stroke-width='1.3'/>
+     <path d='M ${n(w * 0.58)} ${n(h * 0.3)} q ${n(w * 0.1)} ${n(-h * 0.16)} ${n(w * 0.24)} ${n(-h * 0.18)}'
+           stroke-opacity='0.16' stroke-width='1.1'/>
+   </g>`);
+
+/* Sand: a ripple with a lit crest and a shaded trough. */
+const rippleTile = (w, h, dark) => tile(w, h,
+  `<path d='M 0 ${n(h * 0.62)} q ${n(w * 0.25)} ${n(-h * 0.28)} ${n(w * 0.5)} 0
+            q ${n(w * 0.25)} ${n(h * 0.28)} ${n(w * 0.5)} 0'
+         fill='none' stroke='${dark}' stroke-opacity='0.34' stroke-width='2.6'/>
+   <path d='M 0 ${n(h * 0.54)} q ${n(w * 0.25)} ${n(-h * 0.28)} ${n(w * 0.5)} 0
+            q ${n(w * 0.25)} ${n(h * 0.28)} ${n(w * 0.5)} 0'
+         fill='none' stroke='#ffffff' stroke-opacity='0.38' stroke-width='1.8'/>
+   <circle cx='${n(w * 0.2)}' cy='${n(h * 0.24)}' r='0.9' fill='${dark}' opacity='0.3'/>
+   <circle cx='${n(w * 0.72)}' cy='${n(h * 0.82)}' r='0.8' fill='${dark}' opacity='0.26'/>`);
+
+/* A clump of moss, rounded and lit. */
+const clumpTile = (w, h, light, dark) => tile(w, h,
+  `<defs>${tileGrad('m', light, dark, true)}</defs>
+   <ellipse cx='${n(w * 0.32)}' cy='${n(h * 0.36)}' rx='${n(w * 0.24)}' ry='${n(h * 0.20)}' fill='url(#m)'/>
+   <ellipse cx='${n(w * 0.74)}' cy='${n(h * 0.68)}' rx='${n(w * 0.20)}' ry='${n(h * 0.17)}' fill='url(#m)'/>
+   <ellipse cx='${n(w * 0.16)}' cy='${n(h * 0.82)}' rx='${n(w * 0.14)}' ry='${n(h * 0.12)}' fill='url(#m)'/>`);
+
+/* A fallen petal, shaded, with the crease down its middle. */
+const petalTile = (w, h, light, dark, edge) => tile(w, h,
+  `<defs>${tileGrad('p', light, dark, true)}</defs>
+   <g fill='url(#p)' stroke='${edge}' stroke-opacity='0.35' stroke-width='0.8'>
+     <ellipse cx='${n(w * 0.3)}' cy='${n(h * 0.34)}' rx='${n(w * 0.22)}' ry='${n(h * 0.13)}'
+              transform='rotate(-18 ${n(w * 0.3)} ${n(h * 0.34)})'/>
+     <ellipse cx='${n(w * 0.72)}' cy='${n(h * 0.7)}' rx='${n(w * 0.19)}' ry='${n(h * 0.12)}'
+              transform='rotate(24 ${n(w * 0.72)} ${n(h * 0.7)})'/>
+   </g>`);
+
+/* Linen: the faintest weave, so a plain wall is not a flat colour. */
+const linenTile = tile(6, 6,
+  `<rect width='6' height='6' fill='none'/>
+   <rect y='0' width='6' height='1' fill='#8a6340' opacity='0.05'/>
+   <rect x='0' width='1' height='6' fill='#ffffff' opacity='0.16'/>`);
+
 /* Every entry sets backgroundColor separately from backgroundImage. Using
    the `background` shorthand alongside backgroundImage silently drops the
    base colour, which leaves a patterned surface floating on nothing. */
@@ -594,16 +778,15 @@ export const SURFACES = {
   /* ---- Wallpaper ---- */
   wall_plain: {
     backgroundColor: '#f6e7d2',
-    backgroundImage: `${WALL_DEPTH}, linear-gradient(180deg, #fdf3e4, #f3e2ca)`,
+    backgroundImage: `${WALL_DEPTH}, ${linenTile}, linear-gradient(180deg, #fdf3e4, #f3e2ca)`,
   },
   wall_stripes: {
     backgroundColor: '#d3ebdd',
-    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(90deg, #e6f4ec 0 16px, #d3ebdd 16px 32px)`,
+    backgroundImage: `${WALL_DEPTH}, ${stripeTile(32, '#e6f4ec', '#d3ebdd', '#a9ccba')}`,
   },
   wall_dots: {
     backgroundColor: '#fbe4ec',
-    backgroundImage: `${WALL_DEPTH}, radial-gradient(#f3adc6 22%, transparent 24%), radial-gradient(#f3adc6 22%, transparent 24%)`,
-    backgroundSize: 'auto, auto, 28px 28px, 28px 28px',
+    backgroundImage: `${WALL_DEPTH}, ${dotTile(28, 6, '#f8c6d8', '#ea92b0')}, ${dotTile(28, 3, '#f8c6d8', '#ea92b0')}`,
     backgroundPosition: '0 0, 0 0, 0 0, 14px 14px',
   },
   /* A night sky on the wall wants the light layer turned down, or the
@@ -612,83 +795,93 @@ export const SURFACES = {
     backgroundColor: '#3f4a78',
     backgroundImage: 'radial-gradient(ellipse 95% 120% at 16% 2%, rgba(214,226,255,.16), transparent 58%), ' +
       'linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 40%, rgba(10,14,34,.28) 100%), ' +
-      'radial-gradient(#fff3cc 14%, transparent 16%), radial-gradient(#ffe9a8 10%, transparent 12%)',
-    backgroundSize: 'auto, auto, 46px 46px, 62px 62px',
+      `${starTile(46, 8, '#fff8dc', '#e8c165', '#ffe9a8')}, ${starTile(62, 5, '#fff3cc', '#dcae52', '#ffe9a8')}`,
     backgroundPosition: '0 0, 0 0, 0 0, 28px 24px',
   },
   wall_flowers: {
     backgroundColor: '#eef7e8',
-    backgroundImage: `${WALL_DEPTH}, radial-gradient(#f6a8c0 16%, transparent 18%), radial-gradient(#ffd980 12%, transparent 14%), radial-gradient(#9dd3ab 10%, transparent 12%)`,
-    backgroundSize: 'auto, auto, 54px 54px, 54px 54px, 38px 38px',
-    backgroundPosition: '0 0, 0 0, 0 0, 27px 27px, 14px 34px',
+    backgroundImage: `${WALL_DEPTH}, ${flowerTile(54, 11, '#f8bccd', '#e88ba8', '#f0b44e')}, ` +
+      `${flowerTile(38, 7, '#ffe6a8', '#e8bc5c', '#d99a4e')}`,
+    backgroundPosition: '0 0, 0 0, 0 0, 19px 24px',
   },
 
   wall_clouds: {
     backgroundColor: '#cfe6f5',
-    backgroundImage: `${WALL_DEPTH}, radial-gradient(circle at 30% 60%, #fff 18%, transparent 20%), radial-gradient(circle at 55% 45%, #fff 22%, transparent 24%), radial-gradient(circle at 75% 62%, #fff 16%, transparent 18%)`,
-    backgroundSize: 'auto, auto, 120px 80px, 120px 80px, 120px 80px',
+    backgroundImage: `${WALL_DEPTH}, ${cloudTile(120, 80, '#ffffff', '#d8e8f3')}, ` +
+      `${cloudTile(86, 58, '#ffffff', '#dceaf4')}`,
+    backgroundPosition: '0 0, 0 0, 0 0, 54px 36px',
   },
   wall_rainbow: {
     backgroundColor: '#fdf3e4',
-    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(90deg, #f6b0b0 0 18px, #f8cf9a 18px 36px, #f7e7a0 36px 54px, #b6e0b0 54px 72px, #a8cfef 72px 90px, #cbb4e4 90px 108px)`,
+    backgroundImage: `${WALL_DEPTH}, ` + tile(108, 8,
+      ['#f6b0b0', '#f8cf9a', '#f7e7a0', '#b6e0b0', '#a8cfef', '#cbb4e4'].map((c, i) =>
+        `<rect x='${i * 18}' width='18' height='8' fill='${c}'/>` +
+        `<rect x='${i * 18}' width='2.6' height='8' fill='#ffffff' opacity='0.42'/>` +
+        `<rect x='${i * 18 + 15.4}' width='2.6' height='8' fill='#000000' opacity='0.12'/>`).join('')),
   },
-  /* The shelves get their own shadow under each one, so the books sit on
-     something instead of hanging in a grid. */
   wall_books: {
     backgroundColor: '#c9a87c',
-    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(180deg, transparent 0 46px, rgba(60,40,22,.28) 46px 54px, #8a6340 54px 62px), repeating-linear-gradient(90deg, #d4594f 0 11px, #4f7fa8 11px 20px, #d8a648 20px 31px, #5f8f66 31px 39px, #9a6bb0 39px 50px, transparent 50px 56px)`,
+    backgroundImage: `${WALL_DEPTH}, ${bookTile}`,
   },
   wall_ocean: {
     backgroundColor: '#2f6f96',
-    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(180deg, rgba(255,255,255,.14) 0 3px, transparent 3px 26px), radial-gradient(circle at 22% 30%, rgba(255,255,255,.35) 5%, transparent 7%), radial-gradient(circle at 70% 60%, rgba(255,255,255,.28) 4%, transparent 6%)`,
+    backgroundImage: `${WALL_DEPTH}, ${waveTile(64, 26, '#bfe6f5')}, ` +
+      'radial-gradient(circle at 22% 30%, rgba(255,255,255,.35) 5%, transparent 7%), ' +
+      'radial-gradient(circle at 70% 60%, rgba(255,255,255,.28) 4%, transparent 6%)',
     backgroundSize: 'auto, auto, auto, 90px 90px, 70px 70px',
   },
 
   /* ---- Flooring ----
-     Seams between boards run away from the viewer; board ends close up
-     towards the back. */
-  /* Boards run across the room, so their edges bunch up towards the back:
-     that alone is the perspective. There are deliberately NO seams running
-     the other way — a continuous grid of both is what made this read as a
-     sheet of graph paper rather than as a floor. */
+     Board ends and tile joints bunch up towards the back of the room, which
+     is the perspective; the tile on top of that is the material. */
   floor_wood: {
     backgroundColor: '#d9b183',
-    backgroundImage: `${FLOOR_DEPTH}, ${WOOD_ROWS}, ` +
-      'repeating-linear-gradient(181deg, rgba(150,110,62,.10) 0 1px, transparent 1px 7px)',
+    backgroundImage: `${FLOOR_DEPTH}, ${WOOD_ROWS}, ` + tile(90, 14,
+      `<g fill='none' stroke='#96693c' stroke-linecap='round'>
+         <path d='M 4 4 q 22 2 44 1 t 40 2' stroke-opacity='0.16' stroke-width='1.2'/>
+         <path d='M -6 9 q 26 -2 52 0 t 46 1' stroke-opacity='0.12' stroke-width='1'/>
+         <path d='M 12 12 q 18 1 34 0' stroke-opacity='0.1' stroke-width='0.9'/>
+       </g>`),
   },
   floor_tile: {
     backgroundColor: '#f2ece2',
-    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, repeating-conic-gradient(#e0d2bd 0% 25%, #f7f2e8 0% 50%)`,
-    backgroundSize: 'auto, auto, 46px 46px',
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, ` + tile(46, 46,
+      `<defs>${tileGrad('a', '#faf6ee', '#e4dac6')}${tileGrad('b', '#e6dac4', '#cdbda2')}</defs>
+       <rect width='46' height='46' fill='#b9a98c'/>
+       <rect x='1' y='1' width='21' height='21' rx='2' fill='url(#a)'/>
+       <rect x='24' y='1' width='21' height='21' rx='2' fill='url(#b)'/>
+       <rect x='1' y='24' width='21' height='21' rx='2' fill='url(#b)'/>
+       <rect x='24' y='24' width='21' height='21' rx='2' fill='url(#a)'/>
+       <g fill='#ffffff' opacity='0.4'>
+         <rect x='1' y='1' width='21' height='1.4' rx='0.7'/><rect x='24' y='1' width='21' height='1.4' rx='0.7'/>
+         <rect x='1' y='24' width='21' height='1.4' rx='0.7'/><rect x='24' y='24' width='21' height='1.4' rx='0.7'/>
+       </g>`),
   },
   floor_grass: {
     backgroundColor: '#9fd08a',
-    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(105deg, rgba(90,150,80,.30) 0 3px, transparent 3px 11px)`,
+    backgroundImage: `${FLOOR_DEPTH}, ${bladeTile(26, 14, '#5a9650', '#bde0a8')}`,
   },
   floor_stone: {
     backgroundColor: '#cfc9c0',
-    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, radial-gradient(#bdb5aa 30%, transparent 32%), radial-gradient(#c9c2b8 26%, transparent 28%)`,
-    backgroundSize: 'auto, auto, 52px 38px, 44px 32px',
-    backgroundPosition: '0 0, 0 0, 0 0, 26px 19px',
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, ${stoneTile(56, 34, '#ded8ce', '#b6aea3', '#a89f92')}`,
+    backgroundPosition: '0 0, 0 0, 0 0',
   },
   floor_pond: {
     backgroundColor: '#8ecfe6',
-    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(100deg, rgba(255,255,255,.40) 0 4px, transparent 4px 16px), linear-gradient(180deg, rgba(255,255,255,.35), transparent)`,
+    backgroundImage: `${FLOOR_DEPTH}, ${waveTile(58, 22, '#eaf8ff')}, ` +
+      'linear-gradient(180deg, rgba(255,255,255,.35), transparent)',
   },
   floor_moss: {
     backgroundColor: '#8fbf7a',
-    backgroundImage: `${FLOOR_DEPTH}, radial-gradient(#79ad64 24%, transparent 26%), radial-gradient(#a4cf90 20%, transparent 22%)`,
-    backgroundSize: 'auto, 34px 34px, 26px 26px',
-    backgroundPosition: '0 0, 0 0, 17px 13px',
+    backgroundImage: `${FLOOR_DEPTH}, ${clumpTile(36, 30, '#aed799', '#6fa55e')}`,
   },
   floor_sand: {
     backgroundColor: '#eed9ab',
-    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(92deg, rgba(200,170,120,.34) 0 2px, transparent 2px 13px), radial-gradient(rgba(190,158,108,.4) 18%, transparent 20%)`,
-    backgroundSize: 'auto, auto, 18px 18px',
+    backgroundImage: `${FLOOR_DEPTH}, ${rippleTile(46, 18, '#b89460')}`,
   },
   floor_marble: {
     backgroundColor: '#eceaf0',
-    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, repeating-linear-gradient(56deg, rgba(150,148,165,.26) 0 2px, transparent 2px 9px, rgba(150,148,165,.14) 9px 10px, transparent 10px 44px)`,
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, ${veinTile(150, 104, '#8a889e')}`,
   },
   /* ---- The garden: sky ----
      These fill the top band of the garden, so they are drawn as if seen
@@ -697,15 +890,18 @@ export const SURFACES = {
   sky_day: {
     backgroundColor: '#8fc9ec',
     backgroundImage: 'radial-gradient(circle at 76% 22%, #fff6cf 5%, rgba(255,246,207,.55) 8%, transparent 13%), ' +
-      'radial-gradient(ellipse 34% 26% at 22% 34%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%), ' +
-      'radial-gradient(ellipse 26% 20% at 52% 20%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%), ' +
+      `${cloudTile(190, 110, 'rgba(255,255,255,.92)', 'rgba(226,240,250,.72)')}, ` +
       'linear-gradient(180deg, #6fb7e4 0%, #a9d8f0 55%, #dcf0fa 100%)',
+    backgroundPosition: '0 0, 20px 6px, 0 0',
+    backgroundRepeat: 'no-repeat, repeat-x, no-repeat',
   },
   sky_sunset: {
     backgroundColor: '#f3a97a',
     backgroundImage: 'radial-gradient(circle at 70% 76%, #fff1c0 6%, rgba(255,222,150,.5) 11%, transparent 18%), ' +
-      'radial-gradient(ellipse 40% 22% at 30% 46%, rgba(255,198,168,.55), rgba(255,198,168,0) 72%), ' +
+      `${cloudTile(280, 96, 'rgba(255,218,192,.6)', 'rgba(208,144,152,.42)')}, ` +
       'linear-gradient(180deg, #8f7ab5 0%, #e8899a 42%, #f6b884 72%, #fbdcae 100%)',
+    backgroundPosition: '0 0, 30px 14px, 0 0',
+    backgroundRepeat: 'no-repeat, repeat-x, no-repeat',
   },
   sky_night: {
     backgroundColor: '#2c3563',
@@ -718,8 +914,10 @@ export const SURFACES = {
   sky_rainbow: {
     backgroundColor: '#9fd2ee',
     backgroundImage: 'radial-gradient(circle at 50% 132%, transparent 56%, rgba(203,180,228,.85) 56% 59%, rgba(168,207,239,.85) 59% 62%, rgba(182,224,176,.85) 62% 65%, rgba(247,231,160,.85) 65% 68%, rgba(248,207,154,.85) 68% 71%, rgba(246,176,176,.85) 71% 74%, transparent 74%), ' +
-      'radial-gradient(ellipse 30% 22% at 20% 30%, rgba(255,255,255,.7), rgba(255,255,255,0) 70%), ' +
+      `${cloudTile(180, 100, 'rgba(255,255,255,.9)', 'rgba(222,238,248,.7)')}, ` +
       'linear-gradient(180deg, #7fbfe2, #d4ecf9)',
+    backgroundPosition: '0 0, 12px 10px, 0 0',
+    backgroundRepeat: 'no-repeat, repeat-x, no-repeat',
   },
 
   /* ---- The garden: ground ----
@@ -727,35 +925,30 @@ export const SURFACES = {
      that is what turns a green rectangle into a lawn going away from you. */
   ground_grass: {
     backgroundColor: '#8cc472',
-    backgroundImage: `${GROUND_DEPTH}, ${GRASS_ROWS}, repeating-linear-gradient(98deg, rgba(74,132,66,.34) 0 3px, transparent 3px 12px)`,
+    backgroundImage: `${GROUND_DEPTH}, ${GRASS_ROWS}, ${bladeTile(24, 15, '#4f8a48', '#aed893')}`,
   },
   ground_sand: {
     backgroundColor: '#e9d29c',
     backgroundImage: 'linear-gradient(180deg, rgba(150,116,66,.32) 0%, rgba(150,116,66,.09) 9%, rgba(255,255,255,0) 52%, rgba(255,255,255,.12) 100%), ' +
-      'repeating-linear-gradient(94deg, rgba(196,163,106,.32) 0 2px, transparent 2px 15px), radial-gradient(rgba(186,152,98,.38) 16%, transparent 18%)',
-    backgroundSize: 'auto, auto, 20px 20px',
+      `${rippleTile(50, 20, '#b89460')}`,
   },
-  /* Flagstones laid over the grass rather than scattered pebbles: the two
-     offset layers interlock, so the green only shows in the joints. */
+  /* Flagstones laid over the grass rather than scattered pebbles: the joint
+     between them is where the green shows through. */
   ground_path: {
     backgroundColor: '#6f9a5c',
-    backgroundImage: `${GROUND_DEPTH}, radial-gradient(ellipse 47% 45% at 50% 50%, #d5cdbc 97%, transparent 100%), radial-gradient(ellipse 47% 45% at 50% 50%, #c6bda9 97%, transparent 100%)`,
-    backgroundSize: 'auto, 58px 42px, 58px 42px',
-    backgroundPosition: '0 0, 0 0, 29px 21px',
+    backgroundImage: `${GROUND_DEPTH}, ${stoneTile(58, 34, '#ded6c6', '#bdb3a0', '#6f9a5c')}`,
   },
   /* Flowers scattered through grass, not confetti: small heads, spread far
      enough apart that the green still reads as the surface. */
   ground_meadow: {
     backgroundColor: '#8fc873',
-    backgroundImage: `${GROUND_DEPTH}, radial-gradient(#f7c9db 5%, transparent 7%), radial-gradient(#fbe08a 4%, transparent 6%), radial-gradient(#cdb5e8 4%, transparent 6%), repeating-linear-gradient(98deg, rgba(74,132,66,.28) 0 3px, transparent 3px 12px)`,
-    backgroundSize: 'auto, 96px 82px, 74px 96px, 118px 88px, auto',
-    backgroundPosition: '0 0, 0 0, 37px 41px, 68px 19px, 0 0',
+    backgroundImage: `${GROUND_DEPTH}, ${flowersTile(164, 124, [[18, 26, 6.5, '#fbd6e4', '#eda6c0', '#efc05a'], [70, 12, 5.5, '#ffeaa8', '#e8c35c', '#d9a24e'], [118, 38, 6, '#ddc8f0', '#b79ad8', '#efc05a'], [44, 64, 5.5, '#ffeaa8', '#e8c35c', '#d9a24e'], [96, 80, 6.5, '#fbd6e4', '#eda6c0', '#efc05a'], [142, 96, 5.5, '#ddc8f0', '#b79ad8', '#efc05a'], [24, 104, 6, '#fbd6e4', '#eda6c0', '#efc05a'], [126, 14, 5, '#ffeaa8', '#e8c35c', '#d9a24e']])}, ` +
+      `${bladeTile(24, 15, '#4f8a48', '#aed893')}`,
   },
 
   floor_petals: {
     backgroundColor: '#f6d6de',
-    backgroundImage: `${FLOOR_DEPTH}, radial-gradient(ellipse 60% 40% at 30% 40%, #f5aec0 40%, transparent 42%), radial-gradient(ellipse 50% 35% at 70% 70%, #fbc6d3 40%, transparent 42%)`,
-    backgroundSize: 'auto, 46px 40px, 38px 34px',
+    backgroundImage: `${FLOOR_DEPTH}, ${petalTile(46, 40, '#fbd2dd', '#eda7bb', '#d98ba4')}`,
   },
 };
 
@@ -763,7 +956,7 @@ export const surfaceStyle = id => SURFACES[id] || SURFACES.wall_plain;
 
 import { litRect, litEllipse, litPath, ringRect, ringPath,
          contact, inset, raised, gloss, grain, shadeFills, castShadow,
-         SHADOW } from './shade.js';
+         tile, tileGrad, SHADOW } from './shade.js';
 
 /* Re-exported so a caller that already has item-art.js does not need to
    know where the light is defined. */

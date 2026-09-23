@@ -291,3 +291,48 @@ export function castShadow(svg, dx = 2.2, dy = 2.8, opacity = 0.17) {
     .replace(/opacity="[^"]*"/g, '');
   return `<g class="${SHADOW}" opacity="${opacity}" transform="translate(${dx} ${dy})">${flat}</g>${svg}`;
 }
+
+/* ---------- Repeating surfaces ----------
+
+   A wallpaper or a floor has to fill a wall of any size, so it is a CSS
+   background rather than a drawing: there is nothing to scale and nothing
+   to download. That bought a lot, but it also meant every motif had to be
+   expressible as stacked gradients, which is why the wallpapers were
+   circles and the flowers were dots.
+
+   A background image can be an SVG written inline. That is still no file to
+   manage and still nothing to fetch — it travels inside the stylesheet —
+   but it means a motif can be an actual little drawing, shaded like
+   everything else, tiled by the browser at whatever size the wall happens
+   to be.
+*/
+
+/**
+ * One tile of a repeating pattern.
+ * @param {number} w  the tile's width in pixels
+ * @param {number} h  the tile's height
+ * @param {string} body  SVG markup drawn in a 0 0 w h box
+ */
+export function tile(w, h, body) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' ` +
+              `viewBox='0 0 ${w} ${h}'>${body}</svg>`;
+  /* Everything awkward is percent-encoded, and then the url() needs no
+     quotes at all. That matters more than it looks: a surface's style is
+     also written straight into a style="..." attribute for the shop's
+     swatches, so a single double quote anywhere in here ends the attribute
+     and the pattern silently disappears — which is exactly what happened
+     the first time. encodeURIComponent leaves ( ) and ' alone, so those
+     three are done by hand. */
+  return 'url(data:image/svg+xml,' + encodeURIComponent(svg)
+    .replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29') + ')';
+}
+
+/** A gradient inside a tile. Ids only have to be unique within their own
+    tile, because each tile is its own little document. */
+export function tileGrad(id, light, dark, round = false) {
+  return round
+    ? `<radialGradient id='${id}' cx='36%' cy='28%' r='76%'>` +
+      `<stop offset='0%' stop-color='${light}'/><stop offset='100%' stop-color='${dark}'/></radialGradient>`
+    : `<linearGradient id='${id}' x1='10%' y1='0%' x2='90%' y2='100%'>` +
+      `<stop offset='0%' stop-color='${light}'/><stop offset='100%' stop-color='${dark}'/></linearGradient>`;
+}
