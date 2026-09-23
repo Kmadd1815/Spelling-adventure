@@ -17,6 +17,7 @@ import * as events from '../core/events.js';
 import { monthName, whenText } from './event.js';
 import * as discovery from '../core/discovery.js';
 import * as safety from '../core/safety.js';
+import { weekNote } from '../core/weeknote.js';
 import { setQueue } from './spell.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
@@ -82,6 +83,15 @@ export default function parentScreen(container) {
           'Add this week\u2019s spelling list and pick the voice now. When you are done, go back to the welcome screen and she can enter her name and choose her axolotl herself.' })
       ));
     }
+
+    /* The answer to the question actually being asked, before any of the
+       numbers that need interpreting. */
+    const note = weekNote();
+    body.append(el('div', { class: 'card week-note' },
+      el('h3', { text: '\u{1F4DD} Her week' }),
+      el('div', { class: 'stack-sm' }, note.sentences.map(line =>
+        el('p', { class: 'week-line', text: line })))
+    ));
 
     body.append(
       el('div', { class: 'stat-grid' },
@@ -192,14 +202,93 @@ export default function parentScreen(container) {
       );
     };
 
+    /* The newest live list is the one a week is usually finished from. */
+    const current = live.length ? live[live.length - 1] : null;
+
     return el('div', { class: 'stack' },
       backButton(() => show({ name: 'hub' })),
-      button('New list', { cls: 'btn btn-primary btn-block', emoji: '➕', onClick: newListDialog }),
+      current
+        ? button('Start next week', { cls: 'btn btn-primary btn-block', emoji: '\u{1F4C6}',
+            onClick: () => nextWeekDialog(current) })
+        : null,
+      button('New list', { cls: current ? 'btn btn-quiet btn-block' : 'btn btn-primary btn-block',
+        emoji: '➕', onClick: newListDialog }),
       live.length ? el('div', { class: 'stack-sm' }, live.map(listRow))
         : el('div', { class: 'card center' }, el('p', { class: 'muted', text: 'No lists yet. Create one and paste this week’s words into it.' })),
       archived.length ? el('div', { class: 'section-title', text: 'Archived' }) : null,
       archived.length ? el('div', { class: 'stack-sm' }, archived.map(listRow)) : null
     );
+  }
+
+  /* Monday morning, in two taps.
+
+     Name it, paste the words, and the four jobs that come with a new week
+     happen together: the list is made, last week is put away, and the
+     words she has NOT mastered move across so they stay in the pool. That
+     last one is the whole reason this button exists — it is the job that
+     gets forgotten, and forgetting it means a word she never finishes.
+
+     Both halves are optional. A week with no new words is a week of
+     carrying the unfinished ones forward, which is a real week. */
+  function nextWeekDialog(from) {
+    const carrying = words.unmasteredIn(from.id);
+    const nameInput = el('input', { type: 'text', value: words.nextListName(from),
+      autocapitalize: 'words' });
+    const pasteInput = el('textarea', {
+      placeholder: 'Paste this week\u2019s words here, one per line.\n\nbecause\nfriend\nbelieve' });
+
+    const tickBox = () => el('input', { type: 'checkbox', checked: true,
+      style: { width: '22px', height: '22px', flex: '0 0 auto', marginTop: '2px' } });
+    const carryBox = tickBox();
+    const archiveBox = tickBox();
+    /* Not .row: that wraps, and a long note underneath a short label was
+       enough to push the whole label below its own tick box. */
+    const check = (box, label, note) => el('label', { style: {
+      display: 'flex', flexWrap: 'nowrap', alignItems: 'flex-start',
+      gap: '10px', marginTop: '14px', cursor: 'pointer' } },
+      box,
+      el('div', { style: { minWidth: '0', flex: '1 1 auto' } },
+        el('div', { text: label }),
+        el('div', { class: 'tiny muted', text: note })));
+
+    const close = modal('Start next week', [
+      field('Name', nameInput),
+      el('div', { style: { height: '12px' } }),
+      field('This week\u2019s words', pasteInput, 'Leave it empty to carry last week on.'),
+
+      check(carryBox,
+        carrying.length
+          ? `Bring forward ${carrying.length} unfinished word${carrying.length === 1 ? '' : 's'}`
+          : 'Bring forward unfinished words',
+        carrying.length
+          ? `Still learning: ${carrying.slice(0, 6).map(w => w.text).join(', ')}` +
+            (carrying.length > 6 ? `, and ${carrying.length - 6} more` : '')
+          : `Everything in ${from.name} is mastered. Nothing to bring.`),
+
+      check(archiveBox, `Put ${from.name} away`,
+        'Archived lists stop appearing in her practice. Mastered words stay in them.'),
+
+      el('div', { class: 'row', style: { marginTop: '16px' } },
+        button('Cancel', { cls: 'btn btn-quiet grow', onClick: () => close() }),
+        button('Start it', { cls: 'btn btn-primary grow', onClick: () => {
+          const rows = words.parseBulk(pasteInput.value);
+          const r = words.startNextList({
+            name: nameInput.value || words.nextListName(from),
+            rows,
+            fromListId: from.id,
+            carryForward: carryBox.checked,
+            archiveOld: archiveBox.checked,
+          });
+          close();
+          const bits = [];
+          if (r.added) bits.push(`${r.added} new word${r.added === 1 ? '' : 's'}`);
+          if (r.carried.length) bits.push(`${r.carried.length} brought forward`);
+          toast(bits.length ? `${r.list.name}: ${bits.join(', ')}` : `${r.list.name} is ready`);
+          show({ name: 'list', listId: r.list.id });
+        } })
+      ),
+    ]);
+    setTimeout(() => nameInput.select(), 60);
   }
 
   function newListDialog() {

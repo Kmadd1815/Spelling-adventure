@@ -598,6 +598,85 @@ export function addBulkToList(listId, rows) {
   });
 }
 
+/* ---------- Next week ----------
+
+   Every Monday the same four jobs come round: name the new list, type the
+   new words in, put last week's away, and remember which of last week's
+   words she still has not mastered. The fourth is the one that gets
+   forgotten, and it is the one that matters — an unmastered word that
+   quietly leaves the active pool is a word she never finishes learning.
+
+   So this does all four at once. Unmastered words are MOVED, not copied:
+   the word keeps its history — its attempts, its misses, the run it is
+   on — because it is the same word she was working on last week. Mastered
+   words stay behind in the archived list, which is exactly where a
+   finished word belongs.
+*/
+
+/** Suggests what to call the list after this one: "Week 7" becomes
+    "Week 8", "List 3" becomes "List 4", and anything else falls back to
+    the date, so the grown-up always has something to accept or type over. */
+export function nextListName(list = null) {
+  const m = list && /^(.*?)(\d+)(\D*)$/.exec(list.name.trim());
+  if (m) return `${m[1]}${Number(m[2]) + 1}${m[3]}`;
+  const d = new Date();
+  return `Week of ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
+
+/** What "carry forward" would move, so the dialog can say so before it
+    happens rather than afterwards. */
+export function unmasteredIn(listId) {
+  return wordsInList(listId).filter(w => !isMastered(w));
+}
+
+/**
+ * Starts the next list: creates it, fills it, carries last week's
+ * unfinished words into it and archives last week.
+ *
+ * @param {object} opts
+ * @param {string}  opts.name           what to call the new list
+ * @param {Array}   [opts.rows]         parseBulk() rows for the new words
+ * @param {string}  [opts.fromListId]   the list being finished
+ * @param {boolean} [opts.carryForward] move its unmastered words across
+ * @param {boolean} [opts.archiveOld]   put it away afterwards
+ */
+export function startNextList({ name, rows = [], fromListId = null,
+                                carryForward = true, archiveOld = true } = {}) {
+  const list = createList(name);
+  const { added, skipped } = rows.length
+    ? addBulkToList(list.id, rows)
+    : { added: 0, skipped: 0 };
+
+  const { carried, replaced } = update(state => {
+    if (!fromListId || !carryForward) return { carried: [], replaced: 0 };
+    const old = state.lists.find(l => l.id === fromListId);
+    if (!old) return { carried: [], replaced: 0 };
+    /* A word she is still learning that is ALSO in this week's list would
+       otherwise appear twice. The older record wins: it has the history. */
+    const fresh = new Map(state.words
+      .filter(w => w.listId === list.id)
+      .map(w => [w.text.toLowerCase(), w]));
+    const moved = [];
+    let replaced = 0;
+    for (const w of state.words) {
+      if (w.listId !== fromListId || isMastered(w)) continue;
+      const dup = fresh.get(w.text.toLowerCase());
+      if (dup) { state.words = state.words.filter(x => x !== dup); replaced++; }
+      w.listId = list.id;
+      moved.push(w.text);
+    }
+    return { carried: moved, replaced };
+  });
+
+  if (fromListId && archiveOld) setListArchived(fromListId, true);
+
+  /* A word that was typed in AND carried forward is not a new word, and
+     saying "3 new words" when one of them is last week's would be a small
+     lie in the one place the grown-up is checking the sums. */
+  return { list, added: added - replaced, skipped, carried,
+           archived: !!(fromListId && archiveOld) };
+}
+
 /* ---------- Homophones ----------
 
    A spoken word alone cannot tell "their" from "there". Third grade lists

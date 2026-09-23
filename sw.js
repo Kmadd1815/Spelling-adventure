@@ -59,6 +59,7 @@ const SHELL = [
   './js/screens/pet.js',
   './js/screens/progress.js',
   './js/screens/parent.js',
+  './js/core/weeknote.js',
   './js/screens/paper.js',
   './js/screens/shop.js',
   './js/screens/decorate.js',

@@ -2668,3 +2668,24 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   .gap-wrap { flex-direction: column; align-items: center; }
   .gap-side { order: -1; }
 }
+
+/* ---------- The week in three sentences (Parent Area) ----------
+
+   Reading, not scanning: a slightly larger line with room to breathe, so
+   three sentences at the top of a dense screen actually get read. */
+.week-note { background: linear-gradient(180deg, #fffaf3, #fff4e6); }
+.week-line {
+  font-size: 1.02rem;
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 16px;
+  position: relative;
+}
+.week-line::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0.62em;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #e8913a);
+}
