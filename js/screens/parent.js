@@ -18,6 +18,7 @@ import { monthName, whenText } from './event.js';
 import * as discovery from '../core/discovery.js';
 import * as safety from '../core/safety.js';
 import { weekNote } from '../core/weeknote.js';
+import { SIZES, textSize, setTextSize } from '../ui/textsize.js';
 import { setQueue } from './spell.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
@@ -51,6 +52,7 @@ export default function parentScreen(container) {
       list:      listDetailView,
       voice:     voiceView,
       spelling:  spellingView,
+      reading:   readingView,
       report:    reportView,
       data:      dataView,
       profile:   profileView,
@@ -131,6 +133,7 @@ export default function parentScreen(container) {
     body.append(el('div', { class: 'stack-sm' },
       item('\u{1F4DA}', 'Spelling lists', 'Add, edit and archive weekly lists', () => show({ name: 'lists' })),
       item('\u{1F50A}', 'Voice & speech', 'Choose the voice and how fast it talks', () => show({ name: 'voice' })),
+      item('\u{1F524}', 'Text size', 'Make every word on every screen bigger', () => show({ name: 'reading' })),
       item('⚙️', 'Spelling rules', 'Mastery, practice size, keyboard', () => show({ name: 'spelling' })),
       item('\u270F\uFE0F', 'Paper test', 'Read out loud, written on paper, marked by you', () => navigate('/papertest')),
       item('\u{1F4C8}', 'Progress report', 'What she knows and what she is missing', () => show({ name: 'report' })),
@@ -534,6 +537,43 @@ export default function parentScreen(container) {
   }
 
   /* ---------- Spelling rules ---------- */
+
+  /* Text size.
+
+     The preview is the point: the setting changes the whole app, so the
+     only honest way to choose it is to read a real sentence at that size
+     before leaving the screen. It applies the moment it is picked, which
+     means this screen redraws at the new size underneath the finger. */
+  function readingView() {
+    const current = textSize();
+
+    return el('div', { class: 'stack' },
+      backButton(() => show({ name: 'hub' })),
+
+      el('div', { class: 'card' },
+        el('h2', { text: 'Text size' }),
+        el('p', { class: 'muted tiny', text:
+          'Makes every word in the app bigger \u2014 her practice, the games, this screen. Only the words change size; her room, the keyboard and the pictures stay exactly where they are.' }),
+        segmented(SIZES.map(sz => ({ value: sz.key, label: sz.label })), current, key => {
+          setTextSize(key);
+          show({ name: 'reading' });
+        })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'How it looks' }),
+        el('p', { text: 'The journey took all day, because the weather was against them.' }),
+        el('p', { class: 'tiny muted', style: { marginTop: '10px' }, text:
+          'That is a sentence the way she would read it in a game. The small grey writing \u2014 this \u2014 grows with it.' })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'If she is squinting' }),
+        el('p', { class: 'muted tiny', text:
+          'Bigger is worth trying before anything else. It is remembered on this tablet and applies everywhere the moment it is set, so there is no screen left behind at the old size.' })
+      )
+    );
+  }
 
   function spellingView() {
     const s = settings();

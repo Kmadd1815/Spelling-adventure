@@ -72,6 +72,9 @@ export function defaultState() {
       starsExtraTried: 1,       // an extra practice run with any mistakes
       starsPerMastery: 5,       // each word that reaches mastery
 
+      /* Reading comfort. 'normal' is the size the app has always been. */
+      textSize: 'normal',
+
       /* Parent gate */
       parentPin: '1234',
     },

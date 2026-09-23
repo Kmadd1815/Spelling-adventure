@@ -6,6 +6,7 @@
 import * as router from './ui/router.js';
 import * as speech from './core/speech.js';
 import { applySeasonTheme } from './core/season.js';
+import { applyTextSize } from './ui/textsize.js';
 import { getState } from './core/state.js';
 import { on } from './core/bus.js';
 import { watchForUpdates } from './core/updates.js';
@@ -144,6 +145,10 @@ document.addEventListener('visibilitychange', () => {
 /* ---------- Go ---------- */
 
 applySeasonTheme();
+
+/* Before the first screen is drawn, so a bigger size never flashes past at
+   the old one — and on every screen after, because it is set on <html>. */
+applyTextSize();
 
 /* Ask Chrome not to reclaim her save file if the tablet runs short of
    space. Asking costs nothing, the answer is remembered by the browser,

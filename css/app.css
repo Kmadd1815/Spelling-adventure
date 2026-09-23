@@ -30,6 +30,9 @@
   --season-sky:  #dcecf7;
   --season-land: #d6ecc8;
 
+  /* Text size, set from the Parent Area. 1 is the size it has always been. */
+  --text-scale: 1;
+
   /* Geometry */
   --r-sm: 12px;
   --r-md: 20px;
@@ -54,11 +57,16 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Text size (Parent Area). Nearly every font-size in this file is in rem,
+   so scaling the root scales the words and leaves the layout — which is in
+   px and percentages — exactly where it was. */
+html { font-size: calc(16px * var(--text-scale)); }
+
 body {
   font-family: var(--font);
   color: var(--ink);
   background: var(--bg);
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale));
   line-height: 1.45;
   /* Stop long-press text selection popups mid-game */
   -webkit-user-select: none;
@@ -1438,7 +1446,7 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 
 /* ---------- Wider tablets ---------- */
 @media (min-width: 720px) {
-  body { font-size: 19px; }
+  body { font-size: calc(19px * var(--text-scale)); }
   .screen { padding: 22px 28px 36px; max-width: 900px; margin: 0 auto; width: 100%; }
   .hub-grid { grid-template-columns: repeat(4, 1fr); }
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
