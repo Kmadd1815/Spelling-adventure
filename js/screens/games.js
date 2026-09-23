@@ -21,7 +21,7 @@ export default function gamesScreen(container) {
      off in the Parent Area. Either way this is a locked gate with the way
      through printed on it, not a telling-off. */
   const gateOn = !!settings().gamesAfterDaily;
-  const practiceLeft = words.wordsLeftToday().length;
+  const practiceLeft = words.leftInTodaysPractice();
   const gated = gateOn && words.allWords().length > 0 && practiceLeft > 0;
 
   if (gated) {

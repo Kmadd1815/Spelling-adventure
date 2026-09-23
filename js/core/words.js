@@ -422,9 +422,43 @@ export function wordsLeftToday() {
   return activeWords().filter(w => w.lastDailyDay !== today);
 }
 
+/* ---------- What "today's practice" actually means ----------
+
+   Today's Practice shows practiceSize words. The pool it draws them from is
+   every unmastered word from every list that has not been archived, so once
+   a few weeks of lists have gone by the pool is far bigger than one
+   session: forty words is an ordinary autumn term.
+
+   Those two numbers used to be confused. "Done for today" asked whether
+   EVERY word in the pool had had a turn, which one session can never
+   achieve, so the games gate said "40 words left today — games open up
+   straight after" and then did not open after one session, or two, or four.
+   The gate measured the pool and the session covered a slice, and the gap
+   between them grew by one list a week. */
+
+/** How many words one Today's Practice covers. */
+export function dailyTarget() {
+  const pool = activeWords().length;
+  const size = Math.max(1, settings().practiceSize || 8);
+  return Math.min(size, pool);
+}
+
+/** How many of today's words she has already been through.
+    Counted across ALL words, not just active ones, because a word she
+    mastered this morning has certainly had its turn today. */
+export function coveredToday() {
+  const today = dayKey();
+  return allWords().filter(w => w.lastDailyDay === today).length;
+}
+
+/** How many are left in TODAY'S practice — not in the whole pool. */
+export function leftInTodaysPractice() {
+  return Math.max(0, dailyTarget() - coveredToday());
+}
+
 /** True once every active word has had its turn today. */
 export function dailyPracticeDone() {
-  return activeWords().length > 0 && wordsLeftToday().length === 0;
+  return activeWords().length > 0 && leftInTodaysPractice() === 0;
 }
 
 /* ---------- Lists ---------- */

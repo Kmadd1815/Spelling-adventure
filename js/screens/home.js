@@ -22,7 +22,10 @@ export default function homeScreen(container) {
   const info = pet.pet();
   const active = words.activeWords().length;
   const hasWords = words.allWords().length > 0;
-  const leftToday = words.wordsLeftToday().length;
+  /* What is left of TODAY'S practice, not of the whole pool — see
+     dailyTarget() in core/words.js. */
+  const leftToday = words.leftInTodaysPractice();
+  const todayTotal = words.dailyTarget();
   const dailyDone = words.dailyPracticeDone();
   /* Mastered words come back to be checked; see REVIEW_LADDER in
      core/words.js. Capped the same way the session caps them, so the
@@ -164,7 +167,7 @@ export default function homeScreen(container) {
       el('span', {}, 'Today\u2019s Practice')
     ));
     body.append(el('div', { class: 'center tiny muted',
-      text: `${leftToday} of ${active} ${active === 1 ? 'word' : 'words'} left today` }));
+      text: `${leftToday} of ${todayTotal} ${todayTotal === 1 ? 'word' : 'words'} left today` }));
   }
 
   const testTile = el('button', {

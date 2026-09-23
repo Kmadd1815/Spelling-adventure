@@ -90,6 +90,9 @@ export function defaultState() {
       currentStreak: 0,
       longestStreak: 0,
       lastPracticeDay: null,   // 'YYYY-MM-DD'
+      /* The day a missed day was last forgiven. One in any seven —
+         see REST_DAY_EVERY in core/rewards.js. */
+      lastRestDay: null,
       milestonesEarned: [],    // milestone ids
 
       /* What the mini-games have paid today, so the daily ceiling survives

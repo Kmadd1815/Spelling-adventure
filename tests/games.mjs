@@ -348,6 +348,56 @@ ok('the practice-first gate locks the games', await page.locator('.game-card-loc
 ok('...and offers the way through', await page.locator('button:has-text("Today’s Practice")').count() >= 1);
 await page.screenshot({ path: `${SP}/GA-gate.png` });
 
+/* ---------- and the way through has to be reachable ----------
+
+   The gate used to ask whether EVERY word in the pool had had a turn
+   today. Today's Practice only ever covers practiceSize of them, and the
+   pool is every unmastered word from every list that has not been
+   archived — so after a few weeks of lists the gate asked for five
+   sessions in a day, then six, then seven. It said "40 words left today,
+   games open up straight after", and then did not.
+
+   A term's worth of lists, and then exactly one session's work. */
+const gate = await page.evaluate(async () => {
+  const state = await import('/js/core/state.js');
+  const words = await import('/js/core/words.js');
+  state.update(s => {
+    s.settings.practiceSize = 8;
+    s.lists = [];
+    s.words = [];
+    for (let wk = 1; wk <= 10; wk++) {
+      s.lists.push({ id: 'g' + wk, name: 'Week ' + wk, week: '', description: '',
+                     archived: false, createdAt: Date.now() });
+      for (let i = 0; i < 4; i++) s.words.push({
+        id: `g${wk}_${i}`, listId: 'g' + wk, text: `word${wk}${i}`, definition: '', sentence: '',
+        hint: '', tags: [], attempts: 1, correctCount: 0, incorrectCount: 1, streak: 0,
+        lastCreditDay: null, lastDailyDay: null, recent: [], firstSeen: null, lastSeen: null,
+        lastCorrect: null, lastMissed: null, masteredAt: null, reviewAt: null, reviewStep: 0,
+        createdAt: Date.now(),
+      });
+    }
+  });
+  const pool = words.activeWords().length;
+  const asked = words.leftInTodaysPractice();
+  /* One session's worth, exactly as Today's Practice would cover it. */
+  for (const w of words.pickWords({ count: words.dailyTarget(), pool: 'daily' })) {
+    words.markCoveredToday(w.id);
+  }
+  return { pool, asked, doneAfterOne: words.dailyPracticeDone(),
+           leftAfterOne: words.leftInTodaysPractice() };
+});
+ok('the gate asks for one session, not the whole pool',
+   gate.pool === 40 && gate.asked === 8, `${gate.pool} words in the pool, ${gate.asked} asked for`);
+ok('...so one Today\u2019s Practice opens it',
+   gate.doneAfterOne && gate.leftAfterOne === 0, 'done after one session');
+/* Away and back: goto() to the hash the page is already on does not
+   re-render, so checking here without leaving first would read the screen
+   from before the session. */
+await page.goto(BASE + '#/'); await page.waitForTimeout(200);
+await goHub();
+ok('...and the games really are unlocked', await page.locator('.game-card-locked').count() === 0,
+   'no locked cards left');
+
 /* ---------- landscape ---------- */
 await page.setViewportSize({ width: 1180, height: 600 });
 await page.evaluate(async () => {

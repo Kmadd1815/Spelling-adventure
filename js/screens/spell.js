@@ -377,7 +377,9 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
     if (!isRetry) {
       results.set(word.id, { text: word.text, typed: attempt, correct });
-      if (config.marksDaily) words.markCoveredToday(word.id);
+      /* A review is a mastered word paying a visit; it is not one of the
+         day's list words, so it must not count towards finishing the day. */
+      if (config.marksDaily && !isReview) words.markCoveredToday(word.id);
       // Bring a missed word back a few words later, once.
       if (!correct && config.retry) {
         const at = Math.min(index + RETRY_GAP, plan.length);
@@ -607,7 +609,14 @@ function reviewLine(word) {
     if (streak.isNewDay && streak.streak > 1) {
       body.append(el('div', { class: 'card center' },
         el('h3', { text: `\u{1F525} ${streak.streak}-day practice streak!` }),
-        streak.isRecord ? el('p', { class: 'muted tiny', text: 'That is your best one yet.' }) : null
+        /* Say when a missed day was forgiven, or the number looks like a
+           counting mistake — and being told a day off was fine is the
+           kindest part of the whole thing. */
+        streak.usedRestDay
+          ? el('p', { class: 'muted tiny', text: 'You missed a day, and that is completely fine \u2014 everyone gets a rest day. Your streak kept going.' })
+          : streak.isRecord
+            ? el('p', { class: 'muted tiny', text: 'That is your best one yet.' })
+            : null
       ));
     }
 

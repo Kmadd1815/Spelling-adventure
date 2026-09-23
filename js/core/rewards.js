@@ -72,23 +72,62 @@ function yesterdayKey() {
   return todayKey(d);
 }
 
-/** Call once per completed activity. Returns { streak, isNewDay, isRecord }. */
+/** Whole days between two day keys, or null if either is missing. */
+function daysBetween(fromKey, toKey) {
+  if (!fromKey || !toKey) return null;
+  const a = new Date(fromKey + 'T00:00:00');
+  const b = new Date(toKey + 'T00:00:00');
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
+
+/* ---------- The rest day ----------
+
+   The streak used to be strictly consecutive: one missed day turned forty
+   into one. For a nine-year-old that punishes a birthday party, a holiday
+   or a day off sick in exactly the same way it punishes not bothering — and
+   the one thing those have in common is that none of them was her choice.
+
+   So one missed day a week is forgiven. Not a token to hoard and spend,
+   which is a thing to worry about; just a gap the streak steps over, once
+   in any seven days. Two days off in a row still starts a new one, because
+   a streak that cannot be broken is not a streak, it is a number that only
+   goes up. */
+const REST_DAY_EVERY = 7;
+
+/** Call once per completed activity.
+    @returns {{streak, isNewDay, isRecord, usedRestDay}} */
 export function touchStreak() {
   return update(state => {
     const today = todayKey();
     const p = state.progress;
 
     if (p.lastPracticeDay === today) {
-      return { streak: p.currentStreak, isNewDay: false, isRecord: false };
+      return { streak: p.currentStreak, isNewDay: false, isRecord: false, usedRestDay: false };
     }
 
-    p.currentStreak = p.lastPracticeDay === yesterdayKey() ? p.currentStreak + 1 : 1;
+    const gap = daysBetween(p.lastPracticeDay, today);
+    const sinceRest = daysBetween(p.lastRestDay, today);
+    const restAvailable = p.lastRestDay == null || sinceRest == null || sinceRest >= REST_DAY_EVERY;
+
+    let usedRestDay = false;
+    if (gap === 1) {
+      p.currentStreak = (p.currentStreak || 0) + 1;
+    } else if (gap === 2 && restAvailable) {
+      /* Exactly one day missed, and she has not already had her rest day
+         this week. The chain holds. */
+      p.currentStreak = (p.currentStreak || 0) + 1;
+      p.lastRestDay = today;
+      usedRestDay = true;
+    } else {
+      p.currentStreak = 1;
+    }
     p.lastPracticeDay = today;
 
     const isRecord = p.currentStreak > p.longestStreak;
     if (isRecord) p.longestStreak = p.currentStreak;
 
-    return { streak: p.currentStreak, isNewDay: true, isRecord };
+    return { streak: p.currentStreak, isNewDay: true, isRecord, usedRestDay };
   });
 }
 

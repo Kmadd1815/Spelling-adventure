@@ -32,6 +32,7 @@ downloaded, `PLAYWRIGHT_BROWSERS_PATH` is respected.
 | `regress` | a whole day's practice, end to end, with the payouts line by line |
 | `mastery` | days in a row, across three faked days — and what the screen says when a right answer earns no dot |
 | `review` | mastered words coming back — across a faked week, month, term and half-year |
+| `streak` | the day streak and its one rest day a week, across faked days |
 | `milestone` | a milestone fires once, and its keepsake can be worn but never bought |
 | `shop` | the wall between buying and earning, from both sides |
 | `petplay` | the pet cannot be neglected — mostly a check that nothing sad got added |
