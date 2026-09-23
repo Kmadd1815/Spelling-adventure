@@ -73,8 +73,22 @@ ok('the source is recorded', afterBuy.collection.items.find(r => r.itemId === 'w
 await page.click('.modal button:has-text("Wear it now")'); await page.waitForTimeout(800);
 ok('wearing it takes her to the pet screen', page.url().includes('/pet'));
 ok('the hat is equipped', (await save()).equipped.hat === 'wizard_hat');
+/* This used to look for the wizard hat's purple by its hex code, and the
+   shading pass broke it: a flat fill became a gradient between a lighter
+   and a darker version of that purple, so the exact code was nowhere in the
+   markup even though the hat was drawn perfectly. Asking whether wearing it
+   ADDS a hat's worth of drawing tests the same thing without caring how the
+   hat is coloured. */
 const petSvg = await page.locator('.room-pet svg').innerHTML();
-ok('the hat is actually drawn on the axolotl', petSvg.includes('6b5aa6'));
+const drawn = await page.evaluate(async () => {
+  const { petSVG } = await import('./js/ui/art.js');
+  const { coatByKey, STAGES } = await import('./js/core/pet.js');
+  const opts = { coat: coatByKey('peach'), stage: STAGES[0], alive: false };
+  return { without: petSVG(opts).length, worn: petSVG({ ...opts, hat: 'wizard_hat' }).length };
+});
+ok('the hat is actually drawn on the axolotl',
+   petSvg.length > 0 && drawn.worn > drawn.without + 200,
+   `wearing it adds ${drawn.worn - drawn.without} characters of drawing`);
 await page.screenshot({ path: SP + '/S3-wearing.png', fullPage: true });
 
 // ---- can't afford ----

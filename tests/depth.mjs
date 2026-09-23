@@ -98,6 +98,60 @@ ok('the wall is brighter at the top than at the bottom',
 ok('there is a pool of window light on the wall',
    art.surfaces.wall_plain.backgroundImage.includes('at 16% 2%'), 'light pool present');
 
+/* ---------- the long tail ----------
+   Everything in the catalogue has to have been through the light, whether
+   it was hand-shaded or run through shadeFills on the way out. There are no
+   exceptions: the one drawing made entirely of strokes, the rainbow, has
+   its depth drawn in by hand for exactly this reason. */
+const unlit = art.ids.filter(id => !art.svg[id].includes('url(#'));
+ok('every drawing in the catalogue has been through the light',
+   unlit.length === 0,
+   unlit.length ? unlit.join(', ') : `${art.ids.length} drawings`);
+
+const worn = await page.evaluate(async () => {
+  const m = await import('./js/ui/item-art.js');
+  const items = await import('./js/core/items.js');
+  const geom = { hx: 50, hy: 56, hrx: 30, hry: 24, bx: 50, by: 84, brx: 26, bry: 18 };
+  const out = {};
+  for (const it of items.CATALOG ?? []) {
+    const s = m.wearableSVG(it.id, geom);
+    if (s) out[it.id] = s;
+  }
+  return out;
+});
+const flatWorn = Object.entries(worn).filter(([, s]) => !s.includes('url(#')).map(([k]) => k);
+ok('every hat and accessory is lit too',
+   flatWorn.length === 0,
+   flatWorn.length ? flatWorn.join(', ') : `${Object.keys(worn).length} wearables`);
+
+/* A highlight is meant to be flat, and a gradient on a 3px pupil is mud. */
+const shadeTest = await page.evaluate(async () => {
+  const { shadeFills } = await import('./js/ui/shade.js');
+  return shadeFills('<circle fill="#ffffff"/><rect fill="#3a2e28"/><path fill="#ef7f7f"/><path fill="none"/>');
+});
+ok('shading leaves white, near-black and unfilled shapes alone',
+   shadeTest.includes('fill="#ffffff"') && shadeTest.includes('fill="#3a2e28"') &&
+   shadeTest.includes('fill="none"') && !shadeTest.includes('fill="#ef7f7f"'),
+   'only the mid-tone was given a gradient');
+
+/* ---------- a recoloured copy is actually a different colour ----------
+   Two keepsakes used to be built by string-replacing another drawing's hex
+   codes. Reshading those drawings changed the codes, so the replaces
+   matched nothing and both keepsakes silently kept the original colour with
+   only their outline changed: a red lamp with a pink edge, a peach rug with
+   a purple one. Nothing in the app noticed for a whole release. */
+const fills = t => new Set((t.match(/stop-color="(#[0-9a-f]{6})"/gi) || []).map(x => x.toLowerCase()));
+for (const [base, copy] of [['lamp', 'blossom_lamp'], ['rug', 'star_rug']]) {
+  const a = fills(art.svg[base]), b = fills(art.svg[copy]);
+  /* They legitimately share a stand or a backing, so the test is not that
+     they have nothing in common — it is that the recolour actually landed
+     on something. */
+  const own = [...b].filter(c => !a.has(c));
+  ok(`${copy} is really a different colour from ${base}`,
+     own.length >= 2,
+     `${own.length} of ${b.size} fills are its own`);
+}
+
 /* ---------- the axolotl ----------
    It is the one thing she looks at every single day, and it is drawn twice:
    once for real and once small for the coat picker. The portrait went stale

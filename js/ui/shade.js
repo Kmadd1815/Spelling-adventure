@@ -177,3 +177,117 @@ export function grain(x, y, w, h, rx, lines = 5, o = {}) {
   }
   return out + '</g>';
 }
+
+/* ---------- Shading a whole drawing at once ----------
+
+   The helpers above are for a drawing being built: you hand them the same
+   numbers the shape takes and they hand back the shape, already lit. That
+   is the right way round for anything with a few big masses in it — a door,
+   a bed, a tree.
+
+   The long tail is different. A party hat, a snow globe, a string of fairy
+   lights: dozens of small pieces each of which is correct as a flat colour,
+   where redrawing every one by hand would take a week and change nothing
+   anybody would name. What they need is volume, not detail.
+
+   So this walks a finished drawing and gives every flat fill a gradient of
+   its own. It is NOT the generic overlay that failed the first time this
+   was tried — there is no sheen pasted across the top. Each gradient lives
+   inside the shape it belongs to (an SVG gradient defaults to the element's
+   own bounding box), so the light follows that shape's outline exactly, and
+   round things get a round falloff while flat ones get a flat one.
+
+   Three kinds of fill are deliberately left alone:
+
+     pure white             a highlight is meant to be flat; shading it
+                            turns it grey and dirty. Off-white is NOT a
+                            highlight, it is a material — a chef's hat, a
+                            pillow, a snowball — and it needs its shaded
+                            side like anything else
+     near-black             eyes, pupils, keyholes. A gradient on a 3px dot
+                            is invisible at best and muddy at worst
+     already a gradient     a drawing that has been shaded by hand stays
+                            exactly as its author drew it
+*/
+
+/** #abc and #aabbcc to [r, g, b]. */
+function rgb(hex) {
+  const h = hex.length === 4
+    ? '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]
+    : hex;
+  return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+}
+
+const hex = ([r, g, b]) =>
+  '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v)))
+    .toString(16).padStart(2, '0')).join('');
+
+/** Towards white by k, or towards black by -k. */
+const shift = (c, k) => hex(rgb(c).map(v => k > 0 ? v + (255 - v) * k : v * (1 + k)));
+
+/** Roughly how bright a colour looks, 0 to 1. */
+const lightness = c => {
+  const [r, g, b] = rgb(c);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+};
+
+const FILL = /<(circle|ellipse|rect|path|polygon)\b([^>]*?)fill="(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6})"/g;
+
+/**
+ * @param {string} svg   a drawing's markup
+ * @param {object} [o]
+ * @param {number} [o.lift]  how far the lit side goes towards white
+ * @param {number} [o.sink]  how far the shaded side goes towards black
+ */
+export function shadeFills(svg, o = {}) {
+  const lift = o.lift ?? 0.17, sink = o.sink ?? -0.16;
+  const made = new Map();          // one gradient per colour per shape kind
+  let defs = '';
+
+  const out = svg.replace(FILL, (whole, tag, attrs, colour) => {
+    const L = lightness(colour);
+    if (L > 0.985 || L < 0.22) return whole;
+    const round = tag === 'circle' || tag === 'ellipse';
+    const key = colour.toLowerCase() + (round ? 'r' : 'f');
+    if (!made.has(key)) {
+      const id = gid();
+      made.set(key, id);
+      const light = shift(colour, lift), dark = shift(colour, sink);
+      defs += round
+        ? `<radialGradient id="${id}" cx="36%" cy="26%" r="82%">
+             <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+           </radialGradient>`
+        : `<linearGradient id="${id}" x1="${L1.x1}" y1="${L1.y1}" x2="${L1.x2}" y2="${L1.y2}">
+             <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+           </linearGradient>`;
+    }
+    return `<${tag}${attrs}fill="url(#${made.get(key)})"`;
+  });
+
+  return defs ? `<defs>${defs}</defs>${out}` : out;
+}
+
+/**
+ * The shadow a thing hanging on a wall throws onto the wall behind it.
+ *
+ * Built by redrawing the piece itself in flat dark and nudging it the way
+ * the light points, so the shadow is the shape of the thing — a wreath's
+ * shadow has a hole in the middle, a string of bunting's is a row of
+ * triangles. A rounded rectangle behind everything, which is the usual
+ * shortcut, gets all of those wrong in a way you notice without being able
+ * to say why.
+ *
+ * A wall hanging sits close to the wall, so the offset is small and the
+ * shadow keeps its edges rather than going soft.
+ */
+export function castShadow(svg, dx = 2.2, dy = 2.8, opacity = 0.17) {
+  const flat = svg
+    /* The copy has no gradients of its own, so its defs would only be dead
+       ids — and the fills that pointed at them have to become flat dark. */
+    .replace(/<defs>[\s\S]*?<\/defs>/g, '')
+    .replace(/fill="(?!none")[^"]*"/g, 'fill="#3a2c1e"')
+    .replace(/stroke="(?!none")[^"]*"/g, 'stroke="#3a2c1e"')
+    .replace(/(fill|stroke)-opacity="[^"]*"/g, '')
+    .replace(/opacity="[^"]*"/g, '');
+  return `<g class="${SHADOW}" opacity="${opacity}" transform="translate(${dx} ${dy})">${flat}</g>${svg}`;
+}

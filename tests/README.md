@@ -34,7 +34,7 @@ downloaded, `PLAYWRIGHT_BROWSERS_PATH` is respected.
 | `shop` | the wall between buying and earning, from both sides |
 | `petplay` | the pet cannot be neglected — mostly a check that nothing sad got added |
 | `fxcheck` | reactions do not make the axolotl leap sideways |
-| `depth` | one light, no clashing gradient ids, nothing floating off the floor, and the axolotl's two drawings kept in step |
+| `depth` | one light over the whole catalogue, no clashing gradient ids, nothing floating off the floor, a recoloured copy that really is a different colour, and the axolotl's two drawings kept in step |
 | `room` | the room, and the migration from the old flat scene |
 | `roomfit` | geometry that renders fine and still looks wrong |
 | `seasons` | the four seasons, each on a real date inside it |
