@@ -26,7 +26,7 @@ import { gameHeader } from '../screens/play.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
-import { gameWords } from '../core/games.js';
+import { gameWords, rampStep } from '../core/games.js';
 
 const WANT_WORDS = 5;
 const TRIES = 2;            // then it shows her and moves on
@@ -152,13 +152,20 @@ export default function fillGap(ctx) {
       ? 'Which word means this?'
       : 'What belongs in the gap?';
 
+    /* "Say the word" is the one thing here that can hand her the answer, and
+       for a homophone it hands her nothing — which is why it exists. Once
+       she has two right it goes away: by then she has the shape of the
+       game, and a sentence with a hole in it is the whole point of playing
+       this one rather than any of the others. The speaker stays, because
+       hearing the sentence is reading help, not an answer. */
+    const crutch = rampStep(won, { every: 2, max: 1 }) === 0;
     mount(helpRow,
       /* The sentence, with a pause where the word goes. Never the word. */
       speech.canSpeak()
         ? el('button', { class: 'speak-btn speak-btn-sm', type: 'button',
             'aria-label': 'Hear the sentence', onClick: sayClue }, '\u{1F50A}')
         : null,
-      speech.canSpeak()
+      speech.canSpeak() && crutch
         ? button('Say the word', { cls: 'btn btn-quiet', emoji: '\u{1F4AC}',
             onClick: () => speech.speakWord(word) })
         : null

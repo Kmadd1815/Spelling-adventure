@@ -179,6 +179,34 @@ export function gameWords(count = 6, { minLength = 1, needsClue = false } = {}) 
   return chosen;
 }
 
+/* ---------- Getting harder ----------
+
+   Axolotl Swim always sped up as she collected words, and it is the single
+   thing that makes it feel like a game rather than an exercise: a good run
+   visibly climbs. Every other game repeated at one difficulty until it ran
+   out of words.
+
+   So they all tighten now, each in its own way — a decoy letter, a subtler
+   misspelling, a cleverer opponent, one fewer spare block. The rule is that
+   the step is SMALL and it is EARNED: it only ever comes after she got one
+   right, so the game getting harder is the game agreeing she is good at it.
+   Nothing here ever makes a word she has already missed harder.
+
+   The shape of the climb lives here rather than in nine games, so there is
+   one number to turn if it turns out to be too much.
+*/
+
+/**
+ * How far a game should have tightened after `won` right answers.
+ * @param {number} won    right answers so far this game
+ * @param {object} [o]    `every` right answers per step, `max` steps
+ * @returns {number} 0 for the first word, then climbing to `max`
+ */
+export function rampStep(won, { every = 1, max = 3 } = {}) {
+  if (!Number.isFinite(won) || won <= 0) return 0;
+  return Math.max(0, Math.min(max, Math.floor(won / Math.max(1, every))));
+}
+
 /** Can this game be played right now, and if not, why not? */
 export function availability(game) {
   const pool = gameWords(game.minWords, {

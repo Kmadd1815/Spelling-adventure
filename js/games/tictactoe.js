@@ -31,6 +31,15 @@ const HER = 'her';
 const PET = 'pet';
 const FUMBLE_CHANCE = 0.28;     // how often the axolotl misspells its own word
 const SMART_CHANCE  = 0.6;      // how often it plays the clever square
+/* And how much better it gets with each square she wins. An opponent that
+   plays exactly the same all game is a puzzle she solves once; one that
+   starts sloppy and sharpens up is a game. It never becomes unbeatable —
+   there is always a chance it fumbles its own word — because an axolotl
+   that cannot lose is not much fun to beat. */
+const SHARPEN = 0.13;           // added to SMART_CHANCE per square she wins
+const STEADIER = 0.055;         // taken off FUMBLE_CHANCE per square she wins
+const SMART_CAP = 0.94;
+const FUMBLE_FLOOR = 0.1;
 
 export default function ticTacToe(ctx) {
   const pool = gameWords(12, { minLength: 2 });
@@ -208,7 +217,7 @@ export default function ticTacToe(ctx) {
 
     wait(() => {
       // It has to spell its word too, and sometimes it gets it wrong.
-      if (Math.random() < FUMBLE_CHANCE) {
+      if (Math.random() < fumbleChance()) {
         buddy.react({ mood: 'calm', text: 'Oops, I spelled mine wrong! Your go.' });
         setStatus('Your turn');
         busy = false;
@@ -227,11 +236,16 @@ export default function ticTacToe(ctx) {
     }, 1200);
   }
 
+  /* It pulls itself together as she does. Both are driven by the squares
+     she has actually won, so it sharpens up only in answer to her. */
+  const smartChance  = () => Math.min(SMART_CAP, SMART_CHANCE + wordsWon * SHARPEN);
+  const fumbleChance = () => Math.max(FUMBLE_FLOOR, FUMBLE_CHANCE - wordsWon * STEADIER);
+
   function chooseSquare() {
     const open = board.map((m, i) => (m ? null : i)).filter(i => i !== null);
     if (!open.length) return null;
 
-    if (Math.random() < SMART_CHANCE) {
+    if (Math.random() < smartChance()) {
       const winning = findLine(PET);
       if (winning !== null) return winning;
       const blocking = findLine(HER);

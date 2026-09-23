@@ -164,8 +164,13 @@ export default function crossword(ctx) {
         el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Hear the clue',
           onClick: () => speech.speak(entry.clue.speak) }, '\u{1F50A}')
       ),
+      /* How many letters is a real leg-up — with it, a five-square answer
+         is half solved before she starts. She keeps it for the first two,
+         which is long enough to learn what the game wants, and after that
+         the clue is the clue. */
       el('div', { class: 'tiny muted', text: solved.has(active)
         ? `✅ ${entry.word.text}`
+        : solved.size >= 2 ? 'Read the clue and spell it'
         : `${entry.cells.length} letters` })
     );
   }

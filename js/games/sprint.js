@@ -23,7 +23,7 @@ import { gameHeader } from '../screens/play.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
-import { gameWords } from '../core/games.js';
+import { gameWords, rampStep } from '../core/games.js';
 
 const SECONDS = 60;
 const TICK = 100;
@@ -31,12 +31,21 @@ const SHOW_RIGHT = 420;     // a beat on a hit, so it feels like it landed
 const SHOW_WRONG = 1300;    // longer on a miss: the right spelling is up
 const GOOD_RUN = 8;         // words in a minute worth a bonus
 
-/** The pool, round and round: a minute is longer than most spelling lists. */
-function* wordCycle(pool) {
+/**
+ * The pool, round and round: a minute is longer than most spelling lists.
+ *
+ * It reaches further up the list as she scores. The pool is sorted shortest
+ * first, and `reach()` says how much of it is in play — so the first words
+ * of a minute are the short ones and a good run climbs into the long ones
+ * by itself. That is the whole difficulty curve, and it costs nothing: no
+ * timer to fiddle with, no penalty, just a longer word.
+ */
+function* wordCycle(pool, reach) {
+  const byLength = pool.slice().sort((a, b) => a.text.length - b.text.length);
   let deck = [];
   for (;;) {
     if (!deck.length) {
-      deck = pool.slice();
+      deck = byLength.slice(0, Math.max(1, reach()));
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -64,12 +73,18 @@ export default function sprint(ctx) {
   const wait = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
   ctx.onCleanup(() => timers.forEach(clearTimeout));
 
-  const deck = wordCycle(pool);
+  let won = 0;
+  /* Start with the shortest third of what she is learning, and open the
+     rest up as she banks words. Never fewer than three to choose from, so
+     the same word cannot come round twice in a row at the start. Declared
+     before the deck on purpose: `reach` closes over `won`, and a generator
+     that asked for it first would be reading it before it exists. */
+  const reach = () => Math.max(3, Math.ceil(pool.length * (0.34 + 0.22 * rampStep(won, { every: 2, max: 3 }))));
+  const deck = wordCycle(pool, reach);
   let word = null;
   let typed = '';
   let locked = false;
   let over = false;
-  let won = 0;
   let played = 0;
   const missed = [];
 

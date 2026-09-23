@@ -19,10 +19,17 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
-import { gameWords } from '../core/games.js';
+import { gameWords, rampStep } from '../core/games.js';
 
 const WANT_WORDS = 5;
 const TRIES = 2;            // then it builds the word for her and moves on
+/* Letters that do not belong in the word, dropped in with the ones that do.
+   The first word has none — she gets to learn the game — and then one more
+   arrives with each word she builds. It is the right screw to turn here:
+   with exactly the right letters on the table the last few place
+   themselves, and the puzzle quietly finishes itself before she does. */
+const MOST_DECOYS = 3;
+const COMMON = 'aeiourstlnmcdgphbfkywv'.split('');
 
 /**
  * The letters of a word, shuffled — and never left in the order they
@@ -46,6 +53,19 @@ export function jumble(text) {
   /* Fifty shuffles all came back the same: swap the first two and stop. */
   out = letters.slice();
   [out[0], out[1]] = [out[1], out[0]];
+  return out;
+}
+
+/** Letters that are not in this word, to muddle the tray with. */
+export function decoysFor(text, howMany) {
+  const want = Math.max(0, howMany);
+  if (!want) return [];
+  const inWord = new Set(String(text).toLowerCase().split(''));
+  const pool = COMMON.filter(c => !inWord.has(c));
+  const out = [];
+  while (out.length < want && pool.length) {
+    out.push(...pool.splice(Math.floor(Math.random() * pool.length), 1));
+  }
   return out;
 }
 
@@ -137,8 +157,19 @@ export default function wordBuilder(ctx) {
     const word = current();
     tries = 0;
     locked = false;
-    tray = jumble(word.text).map(ch => ({ ch, used: false }));
-    slots = tray.map(() => null);
+    /* Spaces for the word, blocks for the word PLUS the decoys. Not the
+       same number any more, which is the point: the last letter is no
+       longer the only one left. */
+    const letters = jumble(word.text);
+    const spare = decoysFor(word.text, rampStep(won, { max: MOST_DECOYS }));
+    tray = letters.concat(spare).map(ch => ({ ch, used: false }));
+    /* Shuffled again with the decoys in, or they sit in a row at the end
+       wearing a label that says "not me". */
+    for (let i = tray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [tray[i], tray[j]] = [tray[j], tray[i]];
+    }
+    slots = letters.map(() => null);
     hintNode.textContent = (word.definition || '').trim();
     renderPips();
     renderSlots();
@@ -199,6 +230,12 @@ export default function wordBuilder(ctx) {
       ctx.record(word, tries === 0);
       if (tries === 0) won += 1; else missed.push(word);
       buddy.say(tries === 0 ? 'Built it!' : 'There it is!');
+      /* Say when the next one gets harder, so a difficulty step reads as
+         something she earned rather than the game turning on her. */
+      if (tries === 0 && index + 1 < picked.length
+          && rampStep(won, { max: MOST_DECOYS }) > rampStep(won - 1, { max: MOST_DECOYS })) {
+        hintNode.textContent = 'Nice! Some extra letters next time\u2026';
+      }
       wait(next, 1000);
       return;
     }

@@ -76,12 +76,26 @@ export default function wordSearch(ctx) {
     }
   }
 
+  /* The list is the answer key: every word she is hunting for is printed
+     down the side, correctly spelled, the whole time. That is right for the
+     first couple — she has to know what she is looking for — but after that
+     it is the reason Word Search is the easiest game here. So once she has
+     found two, the rest go under cover: first letter, then a dash for each
+     letter after it. She still knows how long it is and where it starts,
+     which is everything she needs to hunt; she just has to know the rest.
+
+     Found words come back in full, because seeing the word she just found
+     spelled out is the part that teaches. */
+  const veiled = text => text[0] + '\u2013'.repeat(Math.max(0, text.length - 1));
+
   function drawList() {
     clear(listNode);
+    const undercover = found.size >= 2;
     board.placed.forEach(entry => {
       const done = found.has(entry.word.id);
       listNode.append(el('div', { class: done ? 'ws-word ws-word-found' : 'ws-word' },
-        el('span', { class: 'grow', text: entry.word.text }),
+        el('span', { class: 'grow',
+          text: done || !undercover ? entry.word.text : veiled(entry.word.text) }),
         el('button', { class: 'icon-btn', type: 'button',
           'aria-label': `Hear ${entry.word.text}`,
           onClick: () => speech.speakWord(entry.word) }, '\u{1F50A}')

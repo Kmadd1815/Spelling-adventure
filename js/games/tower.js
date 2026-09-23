@@ -19,6 +19,11 @@ import { gameWords } from '../core/games.js';
 
 const WORDS_PER_ROUND = 3;
 const SPARE_BLOCKS = 6;
+/* And one fewer with each word she finishes, down to a floor. Six wrong
+   letters is a lot of room; by the third word she has the measure of it and
+   the room is what is making it easy. Never below three, because a word she
+   simply has not met needs somewhere to be wrong. */
+const FEWEST_SPARES = 3;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
 const letters = text => String(text).toLowerCase().replace(/[^a-z]/g, '');
@@ -43,6 +48,7 @@ export default function towerBuilder(ctx) {
   let target = letters(queue[0].text);
   let guessed = new Set();
   let spares = SPARE_BLOCKS;
+  let allowed = SPARE_BLOCKS;      // this word's allowance
   let blocks = 0;                // every right letter lays one
   let flags = 0;                 // one per word finished
   let solvedCount = 0;
@@ -94,7 +100,7 @@ export default function towerBuilder(ctx) {
 
   function drawSpares() {
     clear(sparesNode);
-    for (let i = 0; i < SPARE_BLOCKS; i++) {
+    for (let i = 0; i < allowed; i++) {
       sparesNode.append(el('span', {
         class: i < spares ? 'tower-spare' : 'tower-spare tower-spare-used',
         text: '\u{1F9F1}',
@@ -190,7 +196,9 @@ export default function towerBuilder(ctx) {
     if (wordIndex >= queue.length) return done();
     target = letters(queue[wordIndex].text);
     guessed = new Set();
-    spares = SPARE_BLOCKS;
+    /* One fewer with each word she has actually finished. */
+    allowed = Math.max(FEWEST_SPARES, SPARE_BLOCKS - solvedCount);
+    spares = allowed;
     busy = false;
     buddy.say('Next one!');
     drawAll();

@@ -515,19 +515,32 @@ const beforeBuild = await streaksBefore();
 await goPlay('builder');
 const trayCount = await page.locator('.build-block').count();
 const slotCount = await page.locator('.build-slot').count();
-ok('Word Builder puts out one block for every space',
+ok('the first word is just its own letters, no extras',
    trayCount === slotCount && trayCount >= 3, `${trayCount} blocks, ${slotCount} spaces`);
 
 /* Build the first word, then take a letter back out again: a child who
    taps the wrong block must be able to undo it without starting over. */
-const buildTarget = await page.evaluate(async () => {
+/* Which word is on the table. Not "the tray sorted equals the word
+   sorted" any more — from the second word on there are decoy letters in
+   there too, so it is "as many spaces as the word has letters, and every
+   letter of it somewhere in the tray". */
+const FIND_TARGET = async () => page.evaluate(async () => {
   const words = await import('/js/core/words.js');
-  const have = [...document.querySelectorAll('.build-block')]
-    .map(b => b.textContent).sort().join('');
-  const hit = words.allWords().find(w =>
-    w.text.toLowerCase().split('').sort().join('') === have);
-  return hit ? hit.text.toLowerCase() : null;
+  const tray = [...document.querySelectorAll('.build-block')].map(b => b.textContent);
+  const slots = document.querySelectorAll('.build-slot').length;
+  return (words.allWords().find(w => {
+    const text = w.text.toLowerCase();
+    if (text.length !== slots) return false;
+    const left = tray.slice();
+    return text.split('').every(ch => {
+      const at = left.indexOf(ch);
+      if (at < 0) return false;
+      left.splice(at, 1);
+      return true;
+    });
+  })?.text || '').toLowerCase() || null;
 });
+const buildTarget = await FIND_TARGET();
 ok('...and they are the letters of one of her words', !!buildTarget, JSON.stringify(buildTarget));
 
 await page.click('.build-block:not(.used)');
@@ -542,18 +555,15 @@ ok('...and the block goes back on the table',
    await page.locator('.build-block.used').count() === 0);
 
 /* Now play the whole thing through. */
+const trays = [];
 for (let round = 0; round < 8; round++) {
   if (await page.locator(RESULTS).count()) break;
-  const target = await page.evaluate(async () => {
-    const words = await import('/js/core/words.js');
-    const have = [...document.querySelectorAll('.build-block')]
-      .map(b => b.textContent).sort().join('');
-    const n = document.querySelectorAll('.build-slot').length;
-    const hit = words.allWords().find(w => w.text.length === n &&
-      w.text.toLowerCase().split('').sort().join('') === have);
-    return hit ? hit.text.toLowerCase() : null;
-  });
+  const target = await FIND_TARGET();
   if (!target) { await page.waitForTimeout(800); continue; }
+  trays.push({
+    spare: await page.locator('.build-block').count() - await page.locator('.build-slot').count(),
+    word: target,
+  });
   for (const ch of target) {
     const block = page.locator(`.build-block:not(.used)`).filter({ hasText: new RegExp(`^${ch}$`) }).first();
     if (!(await block.count())) break;
@@ -567,6 +577,15 @@ ok('a clean build finishes and pays out',
    await page.locator(RESULTS).count() === 1,
    await page.locator('.game-result h2').innerText().catch(() => '(no results)'));
 await page.screenshot({ path: `${SP}/GD-builder.png` });
+
+/* ---- and it got harder as she got them right ----
+   With exactly the word's letters on the table the last few place
+   themselves. Decoys are what stop the puzzle finishing itself. */
+ok('the tray gains a decoy letter with each word she builds',
+   trays.length >= 3 && trays[0].spare === 0 && trays[trays.length - 1].spare > trays[0].spare,
+   trays.map(t => `${t.word}+${t.spare}`).join(' '));
+ok('...and never so many that the word is lost in them',
+   trays.every(t => t.spare <= 3), trays.map(t => t.spare).join(','));
 
 const afterBuild = await streaksBefore();
 const buildCredit = Object.keys(afterBuild)
@@ -612,6 +631,23 @@ ok('...and never another word she is learning',
    spotUnit.collided === 0, `${spotUnit.collided} collisions`);
 ok('a word too short to misspell is refused rather than mangled',
    spotUnit.short === null, JSON.stringify(spotUnit.short));
+
+/* ---- and it gets harder to spot as she gets them right ----
+   A missing letter changes the word's shape and she catches it without
+   reading. A swapped one does not, and she has to actually read the middle
+   — which is the skill this game is for. */
+const spotLevels = await page.evaluate(async () => {
+  const { misspell } = await import('/js/games/spotit.js');
+  const words = ['write', 'school', 'happy', 'little', 'letter'];
+  const at = lv => words.map(w => misspell(w, [], lv));
+  const sameLength = out => out.filter((m, i) => m && m.length === words[i].length).length;
+  return { easy: at(0), hard: at(2),
+           easySame: sameLength(at(0)), hardSame: sameLength(at(2)) };
+});
+ok('the early wrong ones are a different length, so the shape gives them away',
+   spotLevels.easySame <= 1, spotLevels.easy.join(' '));
+ok('...and the later ones are the same length, so she has to read them',
+   spotLevels.hardSame >= 4, spotLevels.hard.join(' '));
 
 const beforeSpot = await streaksBefore();
 await goPlay('spotit');

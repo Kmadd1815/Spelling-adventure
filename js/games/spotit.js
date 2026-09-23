@@ -24,7 +24,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
-import { gameWords } from '../core/games.js';
+import { gameWords, rampStep } from '../core/games.js';
 
 const WANT_WORDS = 6;
 const HOLD_RIGHT = 1300;    // how long the answer stays up when she got it
@@ -72,14 +72,16 @@ const MUTATIONS = [
   },
 ];
 
-/* Two more, kept back and only used when none of those fit.
+/* Two more. They used to be kept back for when none of the others fitted;
+   they are in the run now, because both keep the word's length and length
+   is exactly what the harder levels want to give nothing away.
 
    Doubling a consonant is a real mistake (latter for later) but on a word
    that has no doubling in it the result comes out as therre or recceive,
    which is not how anybody gets it wrong. And swapping a vowel is the one
    mutation that regularly lands on a different REAL word — letter becomes
    latter — and a wrong card that is itself a word is a muddle. */
-const LAST_RESORT = [
+const DOUBLE = [
   w => {
     for (let i = 1; i < w.length - 1; i++) {
       const c = w[i];
@@ -94,11 +96,20 @@ const LAST_RESORT = [
 
 const VOWEL_SWAP = w => {
   const swap = { a: 'e', e: 'a', i: 'e', o: 'u', u: 'o' };
+  /* Every vowel it could be, not just the first one: the first often lands
+     on a real word — letter becomes latter — and giving up there would
+     throw away the only length-preserving mistake most words have. */
+  const out = [];
   for (let i = 1; i < w.length; i++) {
-    if (VOWELS.includes(w[i]) && swap[w[i]]) return w.slice(0, i) + swap[w[i]] + w.slice(i + 1);
+    if (VOWELS.includes(w[i]) && swap[w[i]]) out.push(w.slice(0, i) + swap[w[i]] + w.slice(i + 1));
   }
-  return null;
+  return out;
 };
+
+/* Every way of getting a word wrong, in one list so the levels below can
+   pick an order. 0 ie/ei, 1 a double written once, 2 the silent e dropped,
+   3 two vowels swapped round, 4 a consonant doubled, 5 the wrong vowel. */
+const ALL = [...MUTATIONS, ...DOUBLE, VOWEL_SWAP];
 
 /* A backstop against the wrong card being a real word by accident. It only
    has to cover words a child of eight has met, because those are the only
@@ -131,24 +142,36 @@ const REAL_WORDS = new Set((
  * marked wrong for tapping "there" when the answer was "their" would be
  * the app's fault, not hers.
  */
-export function misspell(text, avoid = []) {
+export function misspell(text, avoid = [], level = 0) {
   const w = String(text || '').toLowerCase().trim();
   if (w.length < 3) return null;
   const banned = new Set([w, ...avoid.map(x => String(x).toLowerCase().trim())]);
   const usable = out => out && out !== w && !banned.has(out) && !REAL_WORDS.has(out);
-  /* Start somewhere different each time so the same word does not always
-     come up wrong in the same way. */
-  const start = Math.floor(Math.random() * MUTATIONS.length);
-  for (let k = 0; k < MUTATIONS.length; k++) {
-    const out = MUTATIONS[(start + k) % MUTATIONS.length](w);
-    if (usable(out)) return out;
+
+  /* Not every misspelling is equally hard to spot, and that is the screw to
+     turn as she gets them right.
+
+     A missing or an extra letter changes the word's SHAPE — writ is
+     visibly shorter than write, leter visibly thinner than letter — and a
+     child catches that without reading, out of the corner of her eye. A
+     swapped or substituted letter changes nothing about the shape at all:
+     becuase is exactly as long and exactly as lumpy as because, and the
+     only way to catch it is to actually read the middle of the word.
+
+     That second thing is the skill this game exists for, so it is what she
+     gets once she is warmed up — and the first is what she gets while she
+     is still working out what the game wants. */
+  const order = level >= 2 ? [3, 0, 5, 4, 1, 2]   // read it: shape gives nothing away
+              : level >= 1 ? [0, 3, 1, 2, 4, 5]   // the classic ones first
+              :              [1, 2, 4, 0, 3, 5];  // shape first: easiest to see
+  for (const i of order) {
+    /* A mutation hands back one spelling, or several to choose between. */
+    const got = ALL[i](w);
+    for (const out of Array.isArray(got) ? got : [got]) {
+      if (usable(out)) return out;
+    }
   }
-  for (const mutate of LAST_RESORT) {
-    const out = mutate(w);
-    if (usable(out)) return out;
-  }
-  const last = VOWEL_SWAP(w);
-  return usable(last) ? last : null;
+  return null;
 }
 
 export default function spotIt(ctx) {
@@ -156,9 +179,11 @@ export default function spotIt(ctx) {
      her words. */
   const everything = gameWords(60).map(w => w.text);
 
+  /* The wrong card is worked out when the word comes up rather than up
+     front, because how hard it is to spot depends on how she is doing. */
   const picked = gameWords(WANT_WORDS, { minLength: 3 })
-    .map(w => ({ word: w, wrong: misspell(w.text, everything) }))
-    .filter(x => x.wrong);
+    .filter(w => misspell(w.text, everything) !== null)
+    .map(w => ({ word: w, wrong: null }));
 
   if (picked.length < 2) {
     return mount(ctx.stage, el('div', { class: 'card center stack' },
@@ -207,7 +232,12 @@ export default function spotIt(ctx) {
   }
 
   function show() {
-    const { word, wrong } = current();
+    const here = current();
+    const { word } = here;
+    /* Level 0 for the first, and a notch harder with each one she gets. */
+    here.wrong = misspell(word.text, everything, rampStep(won, { max: 2 }))
+      || misspell(word.text, everything, 0);
+    const wrong = here.wrong;
     locked = false;
     renderPips();
     verdict.textContent = '';
