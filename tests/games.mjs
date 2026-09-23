@@ -404,6 +404,260 @@ ok('a clean run finishes and pays out',
    await page.locator('.game-result h2').innerText().catch(() => '(no results)'));
 await page.screenshot({ path: `${SP}/GA-fillgap.png` });
 
+/* ---------- Sixty-Second Sprint ----------
+
+   A clock in a children's app is a thing to be careful with, so the checks
+   are about the promises: it starts at a minute, it stops when the minute
+   is up, a miss shows the right spelling rather than a telling-off, and
+   Skip costs her nothing at all. */
+/* An earlier check in this file deliberately seeds a streak on a word, so
+   "nothing has a streak" would be a lie about any of these three games.
+   What each one promises is that it does not MOVE one. */
+const streaksBefore = () => page.evaluate(() => Object.fromEntries(
+  JSON.parse(localStorage.getItem('spelling-adventure:v1')).words.map(w => [w.text, w.streak])));
+
+const beforeSprint = await streaksBefore();
+await goPlay('sprint');
+/* Capture what it says rather than what it shows: the word is spoken, not
+   written, which is the point of the game. */
+await page.evaluate(() => {
+  window.__said = [];
+  const real = window.speechSynthesis.speak.bind(window.speechSynthesis);
+  window.speechSynthesis.speak = u => { window.__said.push(u.text); return real(u); };
+});
+const clockAtStart = await page.locator('.sprint-clock').innerText();
+ok('the sprint starts with a minute on the clock',
+   /^(59|60)s$/.test(clockAtStart.trim()), JSON.stringify(clockAtStart));
+ok('...and says the word rather than writing it down',
+   await page.locator('.sprint-said').count() === 0,
+   await page.locator('.sprint-col').innerText().then(t => t.replace(/\s+/g, ' ')));
+
+const hear = async () => {
+  await page.click('.speak-btn');
+  await page.waitForTimeout(120);
+  return page.evaluate(() => window.__said.pop() || null);
+};
+
+/* One right. */
+const w1 = await hear();
+ok('the sprint says a word to spell', !!w1, JSON.stringify(w1));
+await page.keyboard.type(String(w1).toLowerCase());
+await page.keyboard.press('Enter');
+await page.waitForTimeout(600);
+ok('a word she gets right counts on the scoreboard',
+   (await page.locator('.sprint-score').innerText()).includes('1'),
+   await page.locator('.sprint-score').innerText());
+
+/* One wrong: the right spelling has to appear, and nothing scolds her. */
+const w2 = await hear();
+await page.keyboard.type('zzq');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+const shown = await page.locator('.sprint-answer').innerText();
+ok('a miss puts the right spelling up rather than a telling-off',
+   shown.trim().toLowerCase() === String(w2).toLowerCase() && !/wrong|no|oops/i.test(shown),
+   JSON.stringify(shown));
+
+/* Skip: no record, no penalty. */
+const beforeSkip = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('spelling-adventure:v1')).words
+    .reduce((n, w) => n + w.attempts, 0));
+await page.waitForTimeout(1200);
+await page.click('button:has-text("Skip")');
+await page.waitForTimeout(400);
+const afterSkip = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('spelling-adventure:v1')).words
+    .reduce((n, w) => n + w.attempts, 0));
+ok('skipping a word is not getting it wrong',
+   afterSkip === beforeSkip, `${beforeSkip} then ${afterSkip}`);
+
+await page.waitForTimeout(600);
+const ticked = await page.locator('.sprint-clock').innerText();
+ok('the clock is actually running',
+   parseInt(ticked, 10) < parseInt(clockAtStart, 10), `${clockAtStart} -> ${ticked}`);
+
+const afterSprint = await streaksBefore();
+const sprintCredit = Object.keys(afterSprint)
+  .filter(t => afterSprint[t] !== (beforeSprint[t] ?? 0));
+ok('a word spelled against a clock is not a word mastered',
+   sprintCredit.length === 0, sprintCredit.join(',') || 'no streak moved');
+await page.screenshot({ path: `${SP}/GE-sprint.png` });
+
+/* ---------- Word Builder ----------
+
+   The letters are handed to her, so the only thing that can go wrong is the
+   jumble: a word that comes up already in order is not a puzzle, and a tray
+   that is missing a letter cannot be finished at all. */
+const buildUnit = await page.evaluate(async () => {
+  const { jumble } = await import('/js/games/builder.js');
+  const words = ['cat', 'little', 'because', 'school', 'journey', 'to'];
+  let inOrder = 0, wrongLetters = 0, runs = 0;
+  for (let i = 0; i < 300; i++) {
+    for (const w of words) {
+      const got = jumble(w).join('');
+      runs++;
+      if (got === w) inOrder++;
+      if (got.split('').sort().join('') !== w.split('').sort().join('')) wrongLetters++;
+    }
+  }
+  return { inOrder, wrongLetters, runs, allSame: jumble('aaa').join('') };
+});
+ok('the jumble never hands back the word already built',
+   buildUnit.inOrder === 0 && buildUnit.runs > 1000,
+   `${buildUnit.inOrder} in ${buildUnit.runs}`);
+ok('...and never loses or invents a letter',
+   buildUnit.wrongLetters === 0, `${buildUnit.wrongLetters} broken`);
+ok('a word of all one letter does not hang the shuffle',
+   buildUnit.allSame === 'aaa', JSON.stringify(buildUnit.allSame));
+
+const beforeBuild = await streaksBefore();
+
+await goPlay('builder');
+const trayCount = await page.locator('.build-block').count();
+const slotCount = await page.locator('.build-slot').count();
+ok('Word Builder puts out one block for every space',
+   trayCount === slotCount && trayCount >= 3, `${trayCount} blocks, ${slotCount} spaces`);
+
+/* Build the first word, then take a letter back out again: a child who
+   taps the wrong block must be able to undo it without starting over. */
+const buildTarget = await page.evaluate(async () => {
+  const words = await import('/js/core/words.js');
+  const have = [...document.querySelectorAll('.build-block')]
+    .map(b => b.textContent).sort().join('');
+  const hit = words.allWords().find(w =>
+    w.text.toLowerCase().split('').sort().join('') === have);
+  return hit ? hit.text.toLowerCase() : null;
+});
+ok('...and they are the letters of one of her words', !!buildTarget, JSON.stringify(buildTarget));
+
+await page.click('.build-block:not(.used)');
+await page.waitForTimeout(150);
+const afterOne = await page.locator('.build-slot.filled').count();
+await page.click('.build-slot.filled');
+await page.waitForTimeout(150);
+const afterUndo = await page.locator('.build-slot.filled').count();
+ok('a block can be taken back out of the word',
+   afterOne === 1 && afterUndo === 0, `${afterOne} then ${afterUndo}`);
+ok('...and the block goes back on the table',
+   await page.locator('.build-block.used').count() === 0);
+
+/* Now play the whole thing through. */
+for (let round = 0; round < 8; round++) {
+  if (await page.locator(RESULTS).count()) break;
+  const target = await page.evaluate(async () => {
+    const words = await import('/js/core/words.js');
+    const have = [...document.querySelectorAll('.build-block')]
+      .map(b => b.textContent).sort().join('');
+    const n = document.querySelectorAll('.build-slot').length;
+    const hit = words.allWords().find(w => w.text.length === n &&
+      w.text.toLowerCase().split('').sort().join('') === have);
+    return hit ? hit.text.toLowerCase() : null;
+  });
+  if (!target) { await page.waitForTimeout(800); continue; }
+  for (const ch of target) {
+    const block = page.locator(`.build-block:not(.used)`).filter({ hasText: new RegExp(`^${ch}$`) }).first();
+    if (!(await block.count())) break;
+    await block.click();
+    await page.waitForTimeout(90);
+  }
+  await page.waitForTimeout(1300);
+}
+await page.waitForTimeout(700);
+ok('a clean build finishes and pays out',
+   await page.locator(RESULTS).count() === 1,
+   await page.locator('.game-result h2').innerText().catch(() => '(no results)'));
+await page.screenshot({ path: `${SP}/GD-builder.png` });
+
+const afterBuild = await streaksBefore();
+const buildCredit = Object.keys(afterBuild)
+  .filter(t => afterBuild[t] !== (beforeBuild[t] ?? 0));
+ok('having the letters in front of her is not spelling from memory',
+   buildCredit.length === 0, buildCredit.join(',') || 'no streak moved');
+
+/* ---------- Which One Is Right? ----------
+
+   Two things matter here and nothing else does. The wrong card must be a
+   plausible misspelling and never another real word, and the RIGHT spelling
+   has to be on the screen after she answers — including, especially, when
+   she answered wrong. A child who taps the wrong card and is whisked on has
+   spent the whole turn looking at a misspelling and never seen the real
+   one, which is worse than not playing. */
+const spotUnit = await page.evaluate(async () => {
+  const { misspell } = await import('/js/games/spotit.js');
+  const words = ['friend', 'because', 'journey', 'little', 'school', 'paint',
+                 'their', 'there', 'happy', 'write', 'tomorrow', 'said'];
+  const out = {};
+  for (const w of words) out[w] = misspell(w, words);
+  /* Run it a lot: the mutation is picked at random, so one call proves
+     nothing about the other four. */
+  let sameAsWord = 0, collided = 0, tries = 0;
+  for (let i = 0; i < 400; i++) {
+    for (const w of words) {
+      const got = misspell(w, words);
+      if (!got) continue;
+      tries++;
+      if (got === w) sameAsWord++;
+      if (words.includes(got)) collided++;
+    }
+  }
+  return { out, sameAsWord, collided, tries, short: misspell('at', words) };
+});
+ok('every word gets a wrong spelling to sit beside',
+   Object.values(spotUnit.out).every(Boolean),
+   Object.entries(spotUnit.out).map(([w, m]) => `${w}->${m}`).join(' '));
+ok('the wrong one is never the right one',
+   spotUnit.sameAsWord === 0 && spotUnit.tries > 1000,
+   `${spotUnit.sameAsWord} in ${spotUnit.tries}`);
+ok('...and never another word she is learning',
+   spotUnit.collided === 0, `${spotUnit.collided} collisions`);
+ok('a word too short to misspell is refused rather than mangled',
+   spotUnit.short === null, JSON.stringify(spotUnit.short));
+
+const beforeSpot = await streaksBefore();
+await goPlay('spotit');
+ok('Which One Is Right? offers exactly two spellings',
+   await page.locator('.spot-card').count() === 2,
+   `${await page.locator('.spot-card').count()} cards`);
+const askText = await page.locator('.spot-ask').innerText();
+const rightNow = await page.locator('.spot-card[data-right="1"] .spot-word').innerText();
+ok('...and does not print the answer above them',
+   !askText.toLowerCase().includes(rightNow.toLowerCase()),
+   JSON.stringify(askText));
+
+/* Tap the wrong one on purpose. */
+await page.click('.spot-card:not([data-right="1"])');
+await page.waitForTimeout(500);
+const afterWrong = await page.evaluate(() => ({
+  right: document.querySelector('.spot-card.is-right .spot-word')?.textContent || '',
+  struck: !!document.querySelector('.spot-card.is-wrong'),
+  verdict: document.querySelector('.spot-verdict')?.textContent || '',
+}));
+ok('a wrong answer leaves the right spelling on the screen',
+   afterWrong.right === rightNow && afterWrong.verdict.includes(rightNow),
+   JSON.stringify(afterWrong));
+ok('...with the wrong one struck through beside it', afterWrong.struck);
+
+/* And then play the rest of it right through to the payout. */
+for (let i = 0; i < 12; i++) {
+  if (await page.locator(RESULTS).count()) break;
+  const card = page.locator('.spot-card[data-right="1"]:not(.done)');
+  if (!(await card.count())) { await page.waitForTimeout(700); continue; }
+  await card.click();
+  await page.waitForTimeout(900);
+}
+await page.waitForTimeout(900);
+ok('Which One Is Right? finishes and pays out',
+   await page.locator(RESULTS).count() === 1,
+   await page.locator('.game-result h2').innerText().catch(() => '(no results)'));
+await page.screenshot({ path: `${SP}/GC-spotit.png` });
+
+/* Recognising a spelling is not spelling it, so it must not touch mastery. */
+const afterSpot = await streaksBefore();
+const spotCredit = Object.keys(afterSpot)
+  .filter(t => afterSpot[t] !== (beforeSpot[t] ?? 0));
+ok('...and never moves a word towards mastery',
+   spotCredit.length === 0, spotCredit.join(',') || 'no streak moved');
+
 /* ---------- the parent gate ---------- */
 await page.evaluate(async () => {
   const state = await import('/js/core/state.js');

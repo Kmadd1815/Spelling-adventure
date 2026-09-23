@@ -68,8 +68,11 @@ const SHELL = [
      make sure they are in the cache before she is ever offline. */
   './js/games/wordsearch.js',
   './js/games/fillgap.js',
+  './js/games/spotit.js',
+  './js/games/builder.js',
   './js/games/crossword.js',
   './js/games/tictactoe.js',
+  './js/games/sprint.js',
   './js/games/snake.js',
   './js/games/tower.js',
   './js/games/swim.js',

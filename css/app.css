@@ -1556,6 +1556,203 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
     linear-gradient(180deg, #d9eefb, #f4fafd);
 }
 
+/* ---------- Sixty-Second Sprint ----------
+   The clock is the game, so it is across the top where she cannot miss it,
+   and it turns red for the last ten seconds. */
+.sprint-wrap { display: flex; flex-direction: row; gap: 14px;
+               align-items: center; justify-content: center; }
+.sprint-col  { flex: 1 1 auto; align-self: stretch;
+               display: flex; flex-direction: column; align-items: center;
+               justify-content: center; gap: 12px; }
+.sprint-side { flex: 0 0 auto; }
+
+.sprint-top {
+  display: flex; align-items: center; gap: 12px;
+  width: min(30rem, 92%);
+  background: rgba(255, 253, 247, .92);
+  border-radius: 999px;
+  padding: .3rem .9rem;
+  box-shadow: 0 3px 0 rgba(120, 90, 60, .16);
+}
+.sprint-clock { font-weight: 900; font-size: 1.2rem; color: #4a3a2c; min-width: 3.1rem; }
+.sprint-clock.low { color: #c9503c; }
+.sprint-score { font-weight: 900; font-size: 1.2rem; color: #3f8a5c; min-width: 3.1rem;
+                text-align: right; }
+
+.sprint-bar {
+  flex: 1 1 auto; height: 14px; border-radius: 999px;
+  background: #ece0cd; overflow: hidden;
+}
+.sprint-bar-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(180deg, #8fd3a8, #5fb083);
+  transition: width .1s linear;
+}
+.sprint-bar-fill.low { background: linear-gradient(180deg, #f3a08e, #d9614b); }
+
+/* One line under the tiles: a tick when she got it, the real spelling when
+   she did not. It never says "wrong" — the clock is pressure enough. */
+.sprint-answer { min-height: 2.1em; display: flex; align-items: center;
+                 font-weight: 900; font-size: 1.3rem; text-transform: lowercase; }
+.sprint-answer.good { color: #3f8a5c; font-size: 1.7rem; }
+.sprint-answer.bad {
+  color: #8a5a2c; background: rgba(255, 244, 228, .95);
+  border-radius: 999px; padding: .1rem 1rem;
+  box-shadow: 0 2px 0 rgba(150, 110, 70, .14);
+}
+/* When the tablet has no voice at all, the word is shown instead of said. */
+.sprint-said {
+  font-weight: 900; font-size: 1.5rem; color: #4a3a2c; text-transform: lowercase;
+  background: rgba(255, 253, 247, .95); border-radius: 14px; padding: .2rem 1rem;
+}
+
+@media (max-width: 620px) {
+  .sprint-wrap { flex-direction: column; }
+  .sprint-side { order: -1; }
+}
+
+/* ---------- Word Builder ----------
+   Letters as wooden blocks on the playroom floor, and a row of spaces to
+   build the word in. Both are big: she is tapping them with a finger, and
+   a letter she cannot hit is a letter she gets wrong for no reason. */
+.build-wrap { display: flex; flex-direction: row; gap: 14px;
+              align-items: center; justify-content: center; }
+.build-col  { flex: 1 1 auto; align-self: stretch;
+              display: flex; flex-direction: column; align-items: center;
+              justify-content: center; gap: 12px; }
+.build-side { flex: 0 0 auto; }
+
+.build-slots, .build-tray {
+  display: flex; gap: 9px; flex-wrap: wrap; justify-content: center;
+}
+.build-tray { max-width: 30rem; }
+
+.build-slot {
+  font: inherit; cursor: pointer;
+  width: 52px; height: 62px;
+  border-radius: 12px;
+  border: 3px dashed #c7ab86;
+  background: rgba(255, 253, 247, .7);
+  font-size: 1.8rem; font-weight: 900; color: #4a3a2c; text-transform: lowercase;
+  transition: border-color .18s ease, background .18s ease, transform .12s ease;
+}
+.build-slot.filled {
+  border-style: solid; border-color: #d9b98c;
+  background: linear-gradient(180deg, #fff3d9, #f6dcb0);
+  box-shadow: 0 4px 0 rgba(140, 100, 60, .3);
+}
+.build-slot.good { border-color: var(--green);
+                   background: linear-gradient(180deg, #e6f7ec, #cdecd8);
+                   box-shadow: 0 4px 0 #6aa87f; }
+.build-slot.bad  { border-color: var(--primary);
+                   background: linear-gradient(180deg, #fdeee2, #f8d9c2); }
+.build-slots.shake { animation: shake .4s ease; }
+
+/* A chip, so the meaning does not end up printed across the blocks. */
+.build-hint { min-height: 1.9em; display: flex; align-items: center; }
+.build-hint:not(:empty) {
+  font-size: .92rem; font-weight: 700; color: #6b5642;
+  text-align: center; max-width: 30ch;
+  background: rgba(255, 253, 247, .92);
+  border-radius: 999px; padding: .22rem .9rem;
+  box-shadow: 0 2px 0 rgba(150, 110, 70, .12);
+}
+
+/* The blocks themselves: a cube with a letter on the face, lit from above,
+   and it drops into the floor when it has been used. */
+.build-block {
+  font: inherit; cursor: pointer;
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  border: 3px solid rgba(120, 84, 50, .3);
+  background: linear-gradient(180deg, #ffd9a0, #eeb069);
+  box-shadow: 0 5px 0 #cf9350;
+  font-size: 1.7rem; font-weight: 900; color: #5b3f22; text-transform: lowercase;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .18s ease;
+}
+.build-block:active { transform: translateY(4px); box-shadow: 0 1px 0 #cf9350; }
+.build-block.used {
+  opacity: .28; pointer-events: none;
+  background: #e8dbc8; box-shadow: none; border-style: dashed;
+  color: #a8957c;
+}
+
+@media (max-width: 620px) {
+  .build-wrap { flex-direction: column; }
+  .build-side { order: -1; }
+  .build-slot { width: 42px; height: 52px; font-size: 1.5rem; }
+  .build-block { width: 46px; height: 46px; font-size: 1.4rem; }
+}
+
+/* ---------- Which One Is Right? ----------
+   Two cards on a lit stage. They are big, because the whole game is looking
+   hard at the difference between them, and the letters have to be readable
+   from where a tablet actually sits. */
+.spot-wrap { display: flex; flex-direction: row; gap: 14px;
+             align-items: center; justify-content: center; }
+.spot-col  { flex: 1 1 auto; align-self: stretch;
+             display: flex; flex-direction: column; align-items: center;
+             justify-content: center; gap: 14px; }
+.spot-side { flex: 0 0 auto; }
+
+.spot-ask {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: rgba(255, 252, 245, .92);
+  border-radius: 999px;
+  padding: .3rem .4rem .3rem .4rem;
+  max-width: 34ch;
+  box-shadow: 0 3px 0 rgba(60, 40, 70, .18);
+}
+.spot-ask-text {
+  font-weight: 700; color: #5a4738; font-size: .98rem;
+  padding-right: .9rem; text-align: left;
+}
+
+.spot-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.spot-card {
+  font: inherit; cursor: pointer;
+  min-width: 190px;
+  padding: 1.1rem 1.4rem;
+  border: 4px solid #e8d9c0;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fffdf7, #fdf2df);
+  box-shadow: 0 7px 0 rgba(60, 40, 70, .28);
+  transition: transform .12s ease, box-shadow .12s ease,
+              border-color .2s ease, background .2s ease, opacity .25s ease;
+}
+.spot-card:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(60, 40, 70, .28); }
+.spot-word {
+  display: block;
+  font-size: clamp(1.5rem, 5vw, 2.4rem); font-weight: 900;
+  letter-spacing: .04em; color: #4a3a2c; text-transform: lowercase;
+}
+/* Once she has picked, both cards say what they were — the right one lights
+   up and the wrong one is struck through — and neither can be tapped. */
+.spot-card.done { pointer-events: none; }
+.spot-card.is-right { border-color: var(--green); background: #e6f6ec; }
+.spot-card.is-right .spot-word { color: #34724f; }
+.spot-card.is-wrong { opacity: .55; border-color: #d9c3c3; }
+.spot-card.is-wrong .spot-word { text-decoration: line-through;
+                                 text-decoration-thickness: 3px; color: #9a7f7f; }
+.spot-card.picked.is-wrong { opacity: .8; border-color: var(--primary); background: #fdeadb; }
+
+/* Empty until she has answered, and then a chip rather than bare text: it
+   lands on the lit part of the stage, which is nearly white. */
+.spot-verdict { min-height: 2.1em; display: flex; align-items: center; }
+.spot-verdict:not(:empty) {
+  font-weight: 900; font-size: 1.05rem;
+  padding: .3rem 1.1rem; border-radius: 999px;
+  box-shadow: 0 3px 0 rgba(60, 40, 70, .18);
+}
+.spot-verdict.good { background: #dff3e4; color: #2f6b49; }
+.spot-verdict.bad  { background: #fff0e0; color: #9a5a2c; }
+
+@media (max-width: 620px) {
+  .spot-wrap { flex-direction: column; }
+  .spot-side { order: -1; }
+  .spot-cards { flex-direction: column; }
+}
+
 /* ---------- Word Search ---------- */
 
 .ws-wrap { flex-direction: column; }

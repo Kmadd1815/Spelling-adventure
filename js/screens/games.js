@@ -70,7 +70,7 @@ export default function gamesScreen(container) {
 
   body.append(grid);
   body.append(el('p', { class: 'tiny muted center', style: { marginTop: '4px' }, text:
-    'Games are extra practice. Spelling a whole word from memory in Crossword or Tic Tac Toe still counts towards mastering it — and a game can never undo a word you know.' }));
+    'Games are extra practice and they are meant to be fun. Mastering a word happens in Today\u2019s Practice and the Spelling Test \u2014 a game can never undo a word you know.' }));
 
   body.append(button('Go home', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F3E0}',
     onClick: () => navigate('/') }));

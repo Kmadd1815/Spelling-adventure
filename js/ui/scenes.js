@@ -164,6 +164,78 @@ const jigsaw = (() => {
     piece(28, 138, '#c9a3e0', 20, true) + piece(146, 54, '#ef9f7f', -6, true));
 })();
 
+/* A curtain: folds, each one lit down one side, hung from a rail. */
+const curtain = tile(110, 160,
+  `<defs>${tileGrad('cu', '#d9607a', '#8e2f47', true)}${tileGrad('cr', '#b8506a', '#7a2a3e', true)}</defs>
+   <rect x='0' y='0' width='110' height='160' fill='url(#cu)'/>
+   ${[0, 26, 52, 78].map(x =>
+     `<path d='M ${x + 8} 0 q 7 80 0 160 h 10 q 7 -80 0 -160 z' fill='#000000' opacity='.16'/>
+      <path d='M ${x + 1} 0 q 5 80 0 160 h 4 q 5 -80 0 -160 z' fill='#ffffff' opacity='.16'/>`).join('')}
+   <rect x='0' y='0' width='110' height='11' fill='url(#cr)'/>
+   <rect x='0' y='0' width='110' height='3' fill='#ffffff' opacity='.22'/>`);
+
+/* Little lights along the front of the stage. */
+const footlights = tile(72, 30,
+  `<defs>${tileGrad('fl', '#fff6c8', '#f3c95e', true)}</defs>
+   <circle cx='20' cy='16' r='8.5' fill='url(#fl)'/>
+   <circle cx='20' cy='16' r='14' fill='#ffe9a3' opacity='.28'/>
+   <circle cx='17' cy='13' r='3' fill='#ffffff' opacity='.8'/>
+   <circle cx='54' cy='19' r='6' fill='url(#fl)'/>
+   <circle cx='54' cy='19' r='11' fill='#ffe9a3' opacity='.22'/>
+   <circle cx='52' cy='17' r='2.2' fill='#ffffff' opacity='.8'/>`);
+
+/* Wooden toy blocks, tipped out on the floor.
+
+   No letters on them, deliberately. Letters in the background of a game
+   whose foreground is letters on blocks means a child tapping the wallpaper
+   and wondering why nothing happens. They are just blocks. */
+const blocks = (() => {
+  const cube = (x, y, size, rot, i) => {
+    const c = ['#f0c078', '#e59a9a', '#8fc7d6', '#a9cf94', '#c9a9dd', '#f2c9a0'][i % 6];
+    return `<g transform='rotate(${rot} ${x + size / 2} ${y + size / 2})' opacity='.5'>
+      <rect x='${x}' y='${y}' width='${size}' height='${size}' rx='${size * 0.18}'
+        fill='${c}' stroke='rgba(90,64,40,.22)' stroke-width='1.6'/>
+      <rect x='${x + size * 0.12}' y='${y + size * 0.12}' width='${size * 0.76}'
+        height='${size * 0.24}' rx='${size * 0.1}' fill='#ffffff' opacity='.38'/>
+      <rect x='${x + size * 0.12}' y='${y + size * 0.56}' width='${size * 0.46}'
+        height='${size * 0.16}' rx='${size * 0.07}' fill='rgba(90,64,40,.14)'/>
+    </g>`;
+  };
+  return tile(420, 340,
+    cube(26, 36, 46, -10, 0) + cube(150, 14, 34, 14, 1) + cube(330, 54, 42, -6, 2) +
+    cube(64, 214, 38, 18, 3) + cube(242, 252, 48, -14, 4) + cube(370, 198, 32, 8, 5));
+})();
+
+/* A floor of boards, seen from the front. */
+const planks = tile(120, 46,
+  `<defs>${tileGrad('pk', '#e0b98a', '#bb8f5f', true)}</defs>
+   <rect x='0' y='0' width='120' height='46' fill='url(#pk)'/>
+   <path d='M 0 2 H 120 M 0 44 H 120' stroke='rgba(120,84,50,.35)' stroke-width='2'/>
+   <path d='M 46 0 V 46 M 98 0 V 46' stroke='rgba(120,84,50,.28)' stroke-width='2'/>
+   <path d='M 0 6 H 120' stroke='#ffffff' stroke-opacity='.28' stroke-width='2'/>`);
+
+/* Chequered flag bunting, for the one game with a clock on it. */
+const chequer = tile(64, 34,
+  `<rect x='0' y='0' width='64' height='34' fill='#fdfaf2'/>
+   ${[0, 1, 2, 3].map(c => [0, 1].map(r =>
+     ((c + r) % 2 ? `<rect x='${c * 16}' y='${r * 17}' width='16' height='17' fill='#4a3b33'/>` : '')
+   ).join('')).join('')}
+   <rect x='0' y='31' width='64' height='3' fill='rgba(0,0,0,.18)'/>`);
+
+/* Speed lines: the ground going past faster than it should. */
+const streaks = tile(240, 120,
+  [[10, 24, 92], [140, 52, 64], [56, 86, 120], [176, 104, 48], [96, 8, 54]]
+    .map(([x, y, w]) =>
+      `<rect x='${x}' y='${y}' width='${w}' height='6' rx='3' fill='#ffffff' opacity='.5'/>`).join(''));
+
+/* The road, with the dashes down the middle of it. */
+const road = tile(180, 88,
+  `<defs>${tileGrad('rd', '#8d8f9c', '#5e6070', true)}</defs>
+   <rect x='0' y='0' width='180' height='88' fill='url(#rd)'/>
+   <rect x='0' y='0' width='180' height='4' fill='#ffffff' opacity='.28'/>
+   <rect x='16' y='40' width='68' height='8' rx='4' fill='#ffe9a3'/>
+   <rect x='112' y='40' width='68' height='8' rx='4' fill='#ffe9a3'/>`);
+
 /* ---------- The scenes ---------- */
 
 const SCENES = {
@@ -222,6 +294,49 @@ const SCENES = {
     backgroundSize: '160px 110px, 260px 150px, 120px 200px, 100% 100%, 100% 100%',
     backgroundPosition: 'bottom left, center, center, 0 0, 0 0',
     backgroundRepeat: 'repeat-x, repeat, repeat, no-repeat, no-repeat',
+  },
+
+  /* A racetrack: chequered flags along the top, the road at the bottom and
+     the world going past in between. */
+  race: {
+    backgroundColor: '#dff0f8',
+    backgroundImage:
+      `${chequer}, ${road}, ` +
+      'radial-gradient(60% 46% at 50% 48%, rgba(255,253,246,.94) 0 40%, rgba(255,253,246,0) 82%), ' +
+      `${streaks}, ` +
+      'radial-gradient(70% 26% at 50% 78%, #9ed087 0 100%, rgba(0,0,0,0) 100%), ' +
+      'linear-gradient(180deg, #cfe9f7 0%, #eaf6fb 62%)',
+    backgroundSize: '64px 34px, 180px 88px, 100% 100%, 240px 120px, 100% 100%, 100% 100%',
+    backgroundPosition: 'top left, bottom left, 0 0, center, 0 0, 0 0',
+    backgroundRepeat: 'repeat-x, repeat-x, no-repeat, repeat, no-repeat, no-repeat',
+  },
+
+  /* The floor of a playroom with the blocks tipped out on it. */
+  blocks: {
+    backgroundColor: '#f4ece0',
+    backgroundImage:
+      `${planks}, ` +
+      'radial-gradient(52% 44% at 50% 46%, rgba(255,252,244,.96) 0 36%, rgba(255,252,244,0) 80%), ' +
+      `${blocks}, ` +
+      'linear-gradient(180deg, #eaf3f7 0%, #f6ede0 64%)',
+    backgroundSize: '120px 46px, 100% 100%, 420px 340px, 100% 100%',
+    backgroundPosition: 'bottom left, 0 0, center, 0 0',
+    backgroundRepeat: 'repeat-x, no-repeat, repeat, no-repeat',
+  },
+
+  /* A little stage: curtains down both sides, two spotlights crossing, and
+     footlights along the front. The right answer is the one in the light. */
+  stage: {
+    backgroundColor: '#2f2440',
+    backgroundImage:
+      `${curtain}, ${curtain}, ${footlights}, ` +
+      'radial-gradient(38% 92% at 26% -8%, rgba(255,245,206,.5) 0 40%, rgba(255,245,206,0) 100%), ' +
+      'radial-gradient(38% 92% at 74% -8%, rgba(214,235,255,.42) 0 40%, rgba(214,235,255,0) 100%), ' +
+      'radial-gradient(58% 50% at 50% 48%, rgba(255,247,226,.9) 0 38%, rgba(255,247,226,.42) 72%, rgba(255,247,226,0) 100%), ' +
+      'linear-gradient(180deg, #4a3560 0%, #6b4a72 58%, #8a5f6d 100%)',
+    backgroundSize: '110px 160px, 110px 160px, 72px 30px, 100% 100%, 100% 100%, 100% 100%, 100% 100%',
+    backgroundPosition: 'top left, top right, bottom left, 0 0, 0 0, 0 0, 0 0',
+    backgroundRepeat: 'repeat-y, repeat-y, repeat-x, no-repeat, no-repeat, no-repeat, no-repeat',
   },
 
   /* Fill the Gap: jigsaw pieces, some of them still missing. */

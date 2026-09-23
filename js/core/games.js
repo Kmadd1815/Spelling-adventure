@@ -73,6 +73,17 @@ export const GAMES = [
     load: () => import('../games/fillgap.js'),
   },
   {
+    id: 'spotit', name: 'Which One Is Right?', emoji: '\u{1F440}', tint: 't-purple',
+    blurb: 'Two spellings, one of them wrong. Which is the right one?',
+    buddyRole: 'Watches with you',
+    /* Recognising a spelling rather than producing one — which is what she
+       does when she reads her own writing back. */
+    minWords: 3, canMaster: false,
+    pay: { base: 3, perWord: 1, perfect: 3 },
+    scene: 'stage',
+    load: () => import('../games/spotit.js'),
+  },
+  {
     id: 'crossword', name: 'Crossword', emoji: '\u{1F9E9}', tint: 't-blue',
     blurb: 'Read the clue, then spell the word into the squares.',
     buddyRole: 'Reads the clues with you',
@@ -82,6 +93,17 @@ export const GAMES = [
     load: () => import('../games/crossword.js'),
   },
   {
+    id: 'builder', name: 'Word Builder', emoji: '\u{1F9F1}', tint: 't-orange',
+    blurb: 'The letters are all here, jumbled. Put them in the right order.',
+    buddyRole: 'Cheers you on from the side',
+    /* The gentlest game in the set: the letters are on the table, so the
+       only question is what order they go in. */
+    minWords: 2, canMaster: false,
+    pay: { base: 3, perWord: 1, perfect: 3 },
+    scene: 'blocks',
+    load: () => import('../games/builder.js'),
+  },
+  {
     id: 'tictactoe', name: 'Tic Tac Toe', emoji: '⭕', tint: 't-orange',
     blurb: 'Spell a word right to claim a square. Beat the axolotl!',
     buddyRole: 'Plays against you',
@@ -89,6 +111,17 @@ export const GAMES = [
     pay: { base: 4, perWord: 1, perfect: 3 },
     scene: 'party',
     load: () => import('../games/tictactoe.js'),
+  },
+  {
+    id: 'sprint', name: 'Sixty-Second Sprint', emoji: '\u{23F1}', tint: 't-pink',
+    blurb: 'How many words can you spell in one minute?',
+    buddyRole: 'Counts you down',
+    /* The only timed game, and the lightest: under a clock a child guesses,
+       so nothing here moves mastery and a miss costs her nothing. */
+    minWords: 1, canMaster: false,
+    pay: { base: 2, perWord: 1, perfect: 3 },
+    scene: 'race',
+    load: () => import('../games/sprint.js'),
   },
   {
     id: 'snake', name: 'Word Snake', emoji: '\u{1F40D}', tint: 't-purple',
