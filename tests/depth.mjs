@@ -260,6 +260,69 @@ ok('the browser accepts every drawn tile',
    dropped.length === 0,
    dropped.length ? dropped.join(', ') : 'all accepted');
 
+/* ---------- The game scenes ----------
+
+   A CSS background with four images and three sizes is not an error: the
+   browser cycles the short list and paints the wrong layer at the wrong
+   size, silently. Every scene here lists its layers four times over, so
+   the counts have to agree or the backdrop quietly comes out wrong. */
+const scenes = await page.evaluate(async () => {
+  const { sceneStyle } = await import('./js/ui/scenes.js');
+  const { GAMES } = await import('./js/core/games.js');
+  const names = [...new Set(GAMES.map(g => g.scene).filter(Boolean))];
+  return names.map(name => {
+    const st = sceneStyle(name);
+    if (!st) return { name, missing: true };
+    const count = (v, sep = ',') => String(v || '').split(sep).length;
+    /* Split on commas outside brackets — gradients have commas inside. */
+    const layers = v => {
+      let depth = 0, n = 1;
+      for (const ch of String(v || '')) {
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (ch === ',' && depth === 0) n++;
+      }
+      return n;
+    };
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:-9999px;width:300px;height:200px';
+    Object.assign(d.style, st);
+    document.body.append(d);
+    const painted = getComputedStyle(d).backgroundImage;
+    d.remove();
+    return {
+      name,
+      images: layers(st.backgroundImage),
+      sizes: layers(st.backgroundSize),
+      positions: layers(st.backgroundPosition),
+      repeats: layers(st.backgroundRepeat),
+      drawn: (painted.match(/data:image\/svg\+xml/g) || []).length,
+      accepted: painted !== 'none' && painted !== '',
+    };
+  });
+});
+
+ok('every game scene exists', scenes.every(s => !s.missing),
+   scenes.filter(s => s.missing).map(s => s.name).join(', ') || scenes.map(s => s.name).join(', '));
+
+const mismatched = scenes.filter(s => !s.missing &&
+  !(s.images === s.sizes && s.images === s.positions && s.images === s.repeats));
+ok('every scene lists a size, a position and a repeat for each layer',
+   mismatched.length === 0,
+   mismatched.length
+     ? mismatched.map(s => `${s.name} ${s.images}/${s.sizes}/${s.positions}/${s.repeats}`).join(', ')
+     : scenes.map(s => `${s.name} x${s.images}`).join(', '));
+
+ok('the browser accepts every scene', scenes.every(s => s.missing || s.accepted),
+   scenes.filter(s => !s.missing && !s.accepted).map(s => s.name).join(', ') || 'all accepted');
+
+/* Each scene is meant to be a drawing, not a stack of blobs. A scene whose
+   drawn tiles all failed to parse silently falls back to its gradients. */
+const flat = scenes.filter(s => !s.missing && s.drawn === 0);
+ok('every scene paints at least one drawn tile', flat.length === 0,
+   flat.length ? flat.map(s => s.name).join(', ')
+               : scenes.map(s => `${s.name} ${s.drawn}`).join(', '));
+
 /* ---------- and a picture of the shelf, to look at ---------- */
 await page.goto(BASE + '#/shop', { waitUntil: 'networkidle' });
 await page.waitForTimeout(700);

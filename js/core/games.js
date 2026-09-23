@@ -69,7 +69,7 @@ export const GAMES = [
        which one to write. */
     minWords: 2, canMaster: false,
     pay: { base: 4, perWord: 1, perfect: 4 },
-    scene: 'paper',
+    scene: 'jigsaw',
     load: () => import('../games/fillgap.js'),
   },
   {

@@ -11,6 +11,7 @@
 */
 
 import { el, mount, button } from '../ui/dom.js';
+import { sceneStyle } from '../ui/scenes.js';
 import { navigate, render as rerender } from '../ui/router.js';
 import { confetti } from '../ui/toast.js';
 import * as games from '../core/games.js';
@@ -96,7 +97,15 @@ export default function playScreen(container, { id = '' } = {}) {
       /* Every game paints its board into a .game-body, so the backdrop is
          applied here rather than six times over. */
       const board = stage.querySelector('.game-body');
-      if (board && game.scene) board.classList.add('game-scene', `scene-${game.scene}`);
+      if (board && game.scene) {
+        board.classList.add('game-scene', `scene-${game.scene}`);
+        /* The drawn version, on top of the class. Inline wins, so the CSS
+           rule stays as the fallback for anything that has not been drawn
+           yet — and the event screens keep their own scene-* classes
+           untouched, because they never come through here. */
+        const drawn = sceneStyle(game.scene);
+        if (drawn) Object.assign(board.style, drawn);
+      }
     })
     .catch(err => {
       console.error('[play] could not load', game.id, err);

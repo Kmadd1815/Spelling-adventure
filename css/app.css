@@ -1692,7 +1692,16 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .ttt-wrap { flex-direction: column; align-items: center; }
 .ttt-board-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .ttt-side { width: 100%; max-width: 320px; }
-.ttt-status { font-weight: 800; color: var(--ink-soft); font-size: .92rem; min-height: 1.4em; }
+/* A pill, not bare text: this line sits directly on the party scene, and
+   words printed straight onto bunting are words a child cannot read. */
+.ttt-status {
+  font-weight: 800; color: var(--ink-soft); font-size: .92rem; min-height: 1.4em;
+  align-self: center;
+  background: rgba(255, 252, 245, .92);
+  border-radius: 999px;
+  padding: .18rem .9rem;
+  box-shadow: 0 2px 0 rgba(150, 110, 70, .1);
+}
 
 .ttt-board {
   display: grid;
@@ -2269,8 +2278,12 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
    drawn as a real hole rather than a row of underscores, which a child
    reads as part of the word. */
 .gap-wrap { display: flex; flex-direction: row; gap: 14px;
-            align-items: flex-start; justify-content: center; }
-.gap-col  { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+            align-items: center; justify-content: center; }
+/* Centred down the board, not stacked at the top: left to sit at the top the
+   sentence and the answer leave the bottom half of the screen empty. */
+.gap-col  { flex: 1 1 auto; align-self: stretch;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 12px; }
 .gap-side { flex: 0 0 auto; }
 
 .gap-clue {
@@ -2287,6 +2300,30 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 }
 .gap-clue.gap-meaning { font-style: italic; }
 .gap-revealed { background: #eaf7ee; border-color: #a9d9ba; }
+
+/* The slot the answer goes into: the hole in the jigsaw, drawn as a hole.
+   A dashed outline around an empty space is the one shape every child
+   already knows means "something belongs here". */
+.gap-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 18px 12px;
+  min-width: 250px;
+  border-radius: 20px;
+  border: 3px dashed #d9bf9a;
+  background: rgba(255, 253, 247, .82);
+  box-shadow: 0 6px 0 rgba(150, 110, 70, .1);
+  transition: border-color .2s ease, background .2s ease;
+}
+.gap-slot-label {
+  font-size: .72rem; font-weight: 800; letter-spacing: .09em;
+  text-transform: uppercase; color: #a98e6c;
+}
+.gap-slot .answer-tiles { min-height: 58px; }
+/* Right: the piece clicks in, so the outline goes solid. */
+.gap-slot.slot-good { border-style: solid; border-color: var(--green);
+                      background: rgba(223, 243, 228, .85); }
+.gap-slot.slot-good .gap-slot-label { color: #4b8f66; }
+.gap-slot.slot-bad  { border-color: var(--primary); background: rgba(253, 234, 219, .8); }
 
 @media (max-width: 620px) {
   .gap-wrap { flex-direction: column; align-items: center; }

@@ -93,13 +93,21 @@ export default function fillGap(ctx) {
   /* ---------- Layout ---------- */
   const clueNode = el('div', { class: 'gap-clue' });
   const kindNode = el('div', { class: 'muted tiny center' });
-  const tiles    = el('div', { class: 'answer-tiles answer-tiles-sm' });
+  const tiles    = el('div', { class: 'answer-tiles' });
   const helpRow  = el('div', { class: 'row', style: { justifyContent: 'center' } });
   const pips     = el('div', { class: 'spell-progress' });
   const keyboard = el('div', { class: 'keyboard keyboard-sm' });
 
+  /* The answer sits in a piece-shaped slot rather than floating loose under
+     the sentence: the board is a jigsaw with a hole in it, and this is the
+     hole. It also gives the lower half of the screen something to be. */
+  const slot = el('div', { class: 'gap-slot' },
+    el('div', { class: 'gap-slot-label', text: 'The missing piece' }),
+    tiles
+  );
+
   const body = el('div', { class: 'game-body gap-wrap' },
-    el('div', { class: 'gap-col' }, pips, clueNode, kindNode, helpRow, tiles),
+    el('div', { class: 'gap-col' }, pips, clueNode, kindNode, helpRow, slot),
     el('div', { class: 'gap-side' }, buddy.node)
   );
 
@@ -118,6 +126,8 @@ export default function fillGap(ctx) {
   }
 
   function renderTiles(state = 'typing') {
+    slot.classList.toggle('slot-good', state === 'good');
+    slot.classList.toggle('slot-bad', state === 'bad');
     clear(tiles);
     typed.split('').forEach(ch => {
       let cls = 'tile';
