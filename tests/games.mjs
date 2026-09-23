@@ -520,15 +520,26 @@ ok('the first word is just its own letters, no extras',
 
 /* Build the first word, then take a letter back out again: a child who
    taps the wrong block must be able to undo it without starting over. */
-/* Which word is on the table. Not "the tray sorted equals the word
-   sorted" any more — from the second word on there are decoy letters in
-   there too, so it is "as many spaces as the word has letters, and every
-   letter of it somewhere in the tray". */
+/* Which word is on the table.
+
+   By its MEANING, which is on the screen next to it. Reading the tray
+   instead — "these letters, sorted, are that word" — worked only while the
+   tray held exactly the word's letters. With decoys in it, several of her
+   words can be spelled from the same tray, and the test would confidently
+   build the wrong one, get it wrong twice, and run out of turns. */
 const FIND_TARGET = async () => page.evaluate(async () => {
   const words = await import('/js/core/words.js');
-  const tray = [...document.querySelectorAll('.build-block')].map(b => b.textContent);
   const slots = document.querySelectorAll('.build-slot').length;
-  return (words.allWords().find(w => {
+  const hint = (document.querySelector('.build-hint')?.textContent || '').trim();
+  const all = words.allWords();
+
+  const byMeaning = hint && all.find(w =>
+    (w.definition || '').trim() === hint && w.text.length === slots);
+  if (byMeaning) return byMeaning.text.toLowerCase();
+
+  /* No meaning written down for this one: fall back to the letters. */
+  const tray = [...document.querySelectorAll('.build-block')].map(b => b.textContent);
+  return (all.find(w => {
     const text = w.text.toLowerCase();
     if (text.length !== slots) return false;
     const left = tray.slice();
@@ -556,7 +567,7 @@ ok('...and the block goes back on the table',
 
 /* Now play the whole thing through. */
 const trays = [];
-for (let round = 0; round < 8; round++) {
+for (let round = 0; round < 14; round++) {
   if (await page.locator(RESULTS).count()) break;
   const target = await FIND_TARGET();
   if (!target) { await page.waitForTimeout(800); continue; }
