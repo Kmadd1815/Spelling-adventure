@@ -25,7 +25,7 @@ const n = v => Math.round(v * 100) / 100;
    The gills grow fuller with each stage, so growth is visible at a glance.
 */
 
-/** Point on a quadratic bezier — used to hang fronds along a gill stalk. */
+/** Point on a quadratic bezier — used to hang barbs along a gill stalk. */
 function qPoint(p0, c, p1, t) {
   const m = 1 - t;
   return {
@@ -34,40 +34,73 @@ function qPoint(p0, c, p1, t) {
   };
 }
 
+/** Direction the stalk is heading at t — the barbs hang off its normal. */
+function qTangent(p0, c, p1, t) {
+  const m = 1 - t;
+  return {
+    x: 2 * m * (c.x - p0.x) + 2 * t * (p1.x - c.x),
+    y: 2 * m * (c.y - p0.y) + 2 * t * (p1.y - c.y),
+  };
+}
+
 /* Vertical position of each stalk's root, and how far its tip lifts. The
    top stalk sweeps up, the middle goes straight out, the bottom droops. */
 const GILL_ROOT = [-0.44, -0.02, 0.38];
 const GILL_LIFT = [0.46, 0.06, -0.30];
 
+/* The feathering. An axolotl's gills are not antennae with knobs on the
+   end — they are fronds, a central stalk with soft filaments down both
+   sides, longest in the middle and swept back towards the tip. */
+const BARBS = 9;          // filaments per side of a stalk
+const SWEEP = 0.52;       // radians the filaments lean back towards the tip
+const TAPER = 0.55;       // <1 keeps them full further along the stalk
+const BARB_LEN = 0.28;    // longest filament, as a fraction of head height
+
 /**
- * One gill, in two passes. The dark pass draws every piece slightly larger
- * underneath, so the whole feathery shape ends up with a single clean
- * outline instead of a tangle of overlapping strokes.
+ * One gill, in two passes. The dark pass draws every piece slightly fatter
+ * underneath, so the whole frond ends up inside a single clean outline
+ * instead of a tangle of overlapping strokes.
  */
 function gill(hx, hy, rx, ry, c, side, i, g, pass) {
   const dark = pass === 'under';
+  const ink = dark ? c.dark : c.gill;
+  const pad = dark ? 1.9 : 0;
+
   const root = { x: hx + side * rx * 0.80, y: hy + ry * GILL_ROOT[i] };
-  const len  = rx * 0.58 * g;
+  const len  = rx * 0.62 * g;
   const lift = ry * GILL_LIFT[i] * g;
   const tip  = { x: root.x + side * len, y: root.y - lift };
-  const ctrl = { x: root.x + side * len * 0.45, y: root.y - lift * 1.5 - ry * 0.10 };
+  const ctrl = { x: root.x + side * len * 0.45, y: root.y - lift * 1.35 - ry * 0.09 };
 
-  const w = ry * 0.13 * g;
-  const stalk = `<path d="M ${n(root.x)} ${n(root.y)} Q ${n(ctrl.x)} ${n(ctrl.y)} ${n(tip.x)} ${n(tip.y)}"
-      fill="none" stroke="${dark ? c.dark : c.gill}" stroke-width="${n(dark ? w + 3.2 : w)}" stroke-linecap="round"/>`;
+  /* The stalk itself, thinning to a point. */
+  let out = `<path d="M ${n(root.x)} ${n(root.y)} Q ${n(ctrl.x)} ${n(ctrl.y)} ${n(tip.x)} ${n(tip.y)}"
+      fill="none" stroke="${ink}" stroke-width="${n(ry * 0.10 * g + pad)}" stroke-linecap="round"/>`;
 
-  const pad = dark ? 1.6 : 0;
-  const puff = (cx, cy, r) =>
-    `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r + pad)}" fill="${dark ? c.dark : c.gill}"/>`;
+  for (let k = 1; k <= BARBS; k++) {
+    const t = k / (BARBS + 1);
+    const p = qPoint(root, ctrl, tip, t);
+    const tg = qTangent(root, ctrl, tip, t);
+    const m = Math.hypot(tg.x, tg.y) || 1;
+    const ux = tg.x / m, uy = tg.y / m;            // along the stalk
+    /* Short at the root, short at the tip, fullest in between. */
+    const bell = Math.sin(Math.PI * t) ** TAPER;
+    const L = ry * BARB_LEN * g * bell;
 
-  const mid = qPoint(root, ctrl, tip, 0.55);
-  const R1 = ry * 0.17 * g, R2 = ry * 0.13 * g, R3 = ry * 0.12 * g, R4 = ry * 0.10 * g;
+    for (const s of [-1, 1]) {
+      /* The stalk's normal, tilted back towards the tip. */
+      const nx = -uy * s, ny = ux * s;
+      const bx = nx * Math.cos(SWEEP) + ux * Math.sin(SWEEP);
+      const by = ny * Math.cos(SWEEP) + uy * Math.sin(SWEEP);
+      /* A slight inward pull on the control point gives each filament the
+         gentle curl that makes the gill look soft rather than spiky. */
+      out += `<path d="M ${n(p.x)} ${n(p.y)}
+                       Q ${n(p.x + bx * L * 0.55 - ux * L * 0.12)} ${n(p.y + by * L * 0.55 - uy * L * 0.12)}
+                         ${n(p.x + bx * L)} ${n(p.y + by * L)}"
+                fill="none" stroke="${ink}" stroke-width="${n(ry * 0.055 * g + pad)}" stroke-linecap="round"/>`;
+    }
+  }
 
-  return stalk
-    + puff(mid.x, mid.y - ry * 0.13 * g, R4)
-    + puff(tip.x, tip.y, R1)
-    + puff(tip.x - side * ry * 0.15 * g, tip.y - ry * 0.14 * g, R2)
-    + puff(tip.x - side * ry * 0.08 * g, tip.y + ry * 0.16 * g, R3);
+  return out;
 }
 
 /**
