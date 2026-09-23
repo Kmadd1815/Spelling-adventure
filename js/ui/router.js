@@ -7,6 +7,7 @@ import { emit } from '../core/bus.js';
 const routes = new Map();
 let currentCleanup = null;
 let currentPath = null;
+let currentUp = null;
 
 export function route(path, config) {
   routes.set(path, config);
@@ -19,9 +20,22 @@ export function navigate(path, { replace = false } = {}) {
   else location.hash = target;
 }
 
+/* The arrow in the top bar goes UP one level, not back through history.
+
+   Those are not the same thing and the difference is the whole point. Play
+   three mini-games and the history behind you is games, play, games, play,
+   games, play — pressing back walks her back through every game she just
+   finished, one at a time, which is not what an arrow at the top left of a
+   children's app means. It means "out of here". A screen says where out of
+   it is (`back: '/games'` in the route table), and the arrow goes there.
+
+   The browser's own back gesture still retraces history, because that is
+   what a browser's back gesture is for. */
 export function goBack(fallback = '/') {
-  if (history.length > 1 && currentPath !== '/') history.back();
-  else navigate(fallback, { replace: true });
+  const up = typeof currentUp === 'string' && currentUp !== currentPath
+    ? currentUp
+    : fallback;
+  navigate(up);
 }
 
 export function currentRoute() {
@@ -44,6 +58,7 @@ export function render() {
   try { currentCleanup?.(); } catch (err) { console.error('[router] cleanup failed', err); }
   currentCleanup = null;
   currentPath = path;
+  currentUp = typeof config.back === 'string' ? config.back : null;
 
   const screen = document.getElementById('screen');
   clear(screen);

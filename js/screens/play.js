@@ -23,12 +23,18 @@ import { update } from '../core/state.js';
 import { maybeDiscover } from '../core/discovery.js';
 import { showDiscovery } from '../ui/discovery.js';
 
+/* Back to the hub REPLACES this screen in history rather than stacking a
+   new one on top of it. Five games played is otherwise ten entries deep,
+   and the tablet's own back gesture then walks her back through every game
+   she has already finished. Leaving a game is not somewhere to return to. */
+const toHub = () => navigate('/games', { replace: true });
+
 export default function playScreen(container, { id = '' } = {}) {
   const game = games.byId(id);
   if (!game) {
     mount(container, el('div', { class: 'card center stack' },
       el('h2', { text: 'Game not found' }),
-      button('Back to games', { cls: 'btn btn-primary', onClick: () => navigate('/games') })
+      button('Back to games', { cls: 'btn btn-primary', onClick: toHub })
     ));
     return;
   }
@@ -85,7 +91,7 @@ export default function playScreen(container, { id = '' } = {}) {
     },
 
     /** Leave without finishing. Nothing is paid and nothing is lost. */
-    quit() { navigate('/games'); },
+    quit() { toHub(); },
 
     finish,
   };
@@ -113,7 +119,7 @@ export default function playScreen(container, { id = '' } = {}) {
       mount(container, el('div', { class: 'card center stack' },
         el('h2', { text: 'That game would not open' }),
         el('p', { class: 'muted', text: 'Try again in a moment.' }),
-        button('Back to games', { cls: 'btn btn-primary', onClick: () => navigate('/games') })
+        button('Back to games', { cls: 'btn btn-primary', onClick: toHub })
       ));
     });
 
@@ -238,10 +244,10 @@ export default function playScreen(container, { id = '' } = {}) {
       button('Play again', { cls: 'btn btn-green grow', emoji: '\u{1F501}',
         onClick: rerender }),
       button('Other games', { cls: 'btn btn-primary grow', emoji: '\u{1F3AE}',
-        onClick: () => navigate('/games') })
+        onClick: toHub })
     ));
     body.append(button('Go home', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F3E0}',
-      onClick: () => navigate('/') }));
+      onClick: () => navigate('/', { replace: true }) }));
 
     return body;
   }

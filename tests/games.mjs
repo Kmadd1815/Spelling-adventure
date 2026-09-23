@@ -658,6 +658,51 @@ const spotCredit = Object.keys(afterSpot)
 ok('...and never moves a word towards mastery',
    spotCredit.length === 0, spotCredit.join(',') || 'no streak moved');
 
+/* ---------- getting out again ----------
+
+   The arrow at the top left means "out of here", and for three games in a
+   row it was meaning "back through every game you just played". Playing a
+   few games stacks up history: games, play, games, play, games, play. The
+   arrow goes UP a level now — out of the game to the hub, out of the hub
+   to home — and leaving a game replaces it rather than stacking another
+   entry, so the tablet's own back gesture does not replay them either. */
+const hash = () => page.evaluate(() => location.hash);
+const tapBack = async () => {
+  await page.click('#backBtn');
+  await page.waitForTimeout(350);
+  return hash();
+};
+
+await resetDay();
+await page.goto(BASE + '#/games');
+await page.waitForTimeout(400);
+const depthBefore = await page.evaluate(() => history.length);
+for (const id of ['builder', 'spotit', 'wordsearch']) {
+  await page.goto(BASE + '#/play?id=' + id);
+  await page.waitForTimeout(500);
+  await page.click('.game-head .icon-btn');       // the game's own ✕
+  await page.waitForTimeout(400);
+}
+ok('leaving a game does not stack up history',
+   (await page.evaluate(() => history.length)) - depthBefore <= 4,
+   `history grew by ${(await page.evaluate(() => history.length)) - depthBefore} over three games`);
+ok('...and three games later she is on the hub', (await hash()) === '#/games',
+   await hash());
+
+/* Now the thing she actually reported: into a game, then the top arrow. */
+await page.goto(BASE + '#/play?id=builder');
+await page.waitForTimeout(500);
+ok('the arrow out of a game lands on the games hub', (await tapBack()) === '#/games',
+   'not the last game she played');
+ok('...and the arrow out of the hub lands on home', (await tapBack()) === '#/',
+   'home, not another game');
+
+/* And from deeper in: the arrow knows the room is above the shop. */
+await page.goto(BASE + '#/shop');
+await page.waitForTimeout(400);
+ok('the arrow out of the shop goes to her room', (await tapBack()) === '#/pet',
+   await hash());
+
 /* ---------- the parent gate ---------- */
 await page.evaluate(async () => {
   const state = await import('/js/core/state.js');

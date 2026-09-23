@@ -33,21 +33,21 @@ import { byId as gameById } from './core/games.js';
 
 router.route('/',         { title: 'Spelling Adventure', back: false, render: homeScreen });
 router.route('/setup',    { title: 'Welcome', back: false, stars: false, render: setupScreen });
-router.route('/daily',    { title: "Today's Practice", back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'daily' }) });
-router.route('/practice', { title: 'Practice',          back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'extra' }) });
-router.route('/test',     { title: 'Practice Test',     back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'practiceTest' }) });
-router.route('/fulltest', { title: 'Spelling Test',     back: true, render: (c, p) => spellScreen(c, { ...p, kind: 'fullTest' }) });
-router.route('/words',    { title: 'My Words',  back: true, render: wordsScreen });
-router.route('/pet',      { title: 'My Pet',    back: true, render: petScreen });
-router.route('/progress', { title: 'My Progress', back: true, render: progressScreen });
-router.route('/decorate', { title: 'Decorate', back: true, render: decorateScreen });
-router.route('/shop',     { title: 'Shop', back: true, render: shopScreen });
-router.route('/garden',   { title: 'The Garden', back: true, render: gardenScreen });
-router.route('/games',    { title: 'Mini-Games', back: true, render: gamesScreen });
-router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', back: true, render: playScreen });
+router.route('/daily',    { title: "Today's Practice", back: '/', render: (c, p) => spellScreen(c, { ...p, kind: 'daily' }) });
+router.route('/practice', { title: 'Practice',          back: '/', render: (c, p) => spellScreen(c, { ...p, kind: 'extra' }) });
+router.route('/test',     { title: 'Practice Test',     back: '/', render: (c, p) => spellScreen(c, { ...p, kind: 'practiceTest' }) });
+router.route('/fulltest', { title: 'Spelling Test',     back: '/', render: (c, p) => spellScreen(c, { ...p, kind: 'fullTest' }) });
+router.route('/words',    { title: 'My Words',  back: '/', render: wordsScreen });
+router.route('/pet',      { title: 'My Pet',    back: '/', render: petScreen });
+router.route('/progress', { title: 'My Progress', back: '/', render: progressScreen });
+router.route('/decorate', { title: 'Decorate', back: '/pet', render: decorateScreen });
+router.route('/shop',     { title: 'Shop', back: '/pet', render: shopScreen });
+router.route('/garden',   { title: 'The Garden', back: '/', render: gardenScreen });
+router.route('/games',    { title: 'Mini-Games', back: '/', render: gamesScreen });
+router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', back: '/games', render: playScreen });
 router.route('/event',    { title: p => (liveEvent() || eventById(p.preview))?.name || 'Event',
-                            back: true, render: eventScreen });
-router.route('/parent',   { title: 'Parent Area', back: true, stars: false, render: parentScreen });
+                            back: '/', render: eventScreen });
+router.route('/parent',   { title: 'Parent Area', back: '/', stars: false, render: parentScreen });
 
 /* ---------- Top bar ---------- */
 
@@ -93,10 +93,13 @@ on('storage:failed', () => toast(
   { ms: 9000 }));
 on('storage:ok', () => toast('Saving again \u2014 all good.', { ms: 3200 }));
 
-// Before the child has finished setup, "back" belongs on the welcome screen
-// rather than a hub she has not reached yet.
-document.getElementById('backBtn').addEventListener('click', () =>
-  router.goBack(getState().child.setupComplete ? '/' : '/setup'));
+/* The arrow goes up a level, not back through history — see goBack() in
+   ui/router.js. Before the child has finished setup there is no level to
+   go up to, so it belongs on the welcome screen. */
+document.getElementById('backBtn').addEventListener('click', () => {
+  if (!getState().child.setupComplete) return router.navigate('/setup', { replace: true });
+  router.goBack('/');
+});
 document.getElementById('starCount').addEventListener('click', () => router.navigate('/progress'));
 
 /* ---------- Speech unlock ----------
