@@ -918,6 +918,29 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   }
 }
 
+/* ---------- The paper test ----------
+   Two screens with one job each: read a word out without showing it, then
+   show it as clearly as possible so it can be compared with a pencil. */
+.paper-count { display: flex; gap: 6px; justify-content: center; margin: 10px 0 4px; }
+.paper-speak {
+  width: 108px; height: 108px; font-size: 2.6rem;
+  margin: 14px auto 4px; display: block;
+  box-shadow: 0 6px 0 #4f93ba;
+}
+/* The answer, for marking. As big as it goes, because the job is comparing
+   it letter by letter with what is on the paper. */
+.paper-answer {
+  font-size: clamp(2.4rem, 12vw, 4.4rem);
+  font-weight: 900; letter-spacing: .02em;
+  color: var(--ink); line-height: 1.1;
+  margin: 10px 0 4px; text-transform: lowercase;
+}
+.paper-letters {
+  font-size: clamp(.9rem, 3.4vw, 1.3rem);
+  font-weight: 800; letter-spacing: .32em;
+  color: var(--ink-soft);
+}
+
 /* The numbered steps on the "moving it to another tablet" card. */
 .move-step {
   flex: 0 0 auto;

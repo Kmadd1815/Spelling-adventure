@@ -122,6 +122,7 @@ export default function parentScreen(container) {
       item('\u{1F4DA}', 'Spelling lists', 'Add, edit and archive weekly lists', () => show({ name: 'lists' })),
       item('\u{1F50A}', 'Voice & speech', 'Choose the voice and how fast it talks', () => show({ name: 'voice' })),
       item('⚙️', 'Spelling rules', 'Mastery, practice size, keyboard', () => show({ name: 'spelling' })),
+      item('\u270F\uFE0F', 'Paper test', 'Read out loud, written on paper, marked by you', () => navigate('/papertest')),
       item('\u{1F4C8}', 'Progress report', 'What she knows and what she is missing', () => show({ name: 'report' })),
       item('\u{1F9D2}', 'Child & pet', 'Name and companion', () => show({ name: 'profile' })),
       item('\u{1F4BE}', 'Backup & reset', 'Save a copy, restore, or start over', () => show({ name: 'data' }))

@@ -259,6 +259,10 @@ export const ACTIVITY = {
   daily:        { key: 'daily',        label: "Today's Practice" },
   practiceTest: { key: 'practiceTest', label: 'Practice test' },
   fullTest:     { key: 'fullTest',     label: 'Spelling test' },
+  /* The same test, done on paper with a pencil and marked by a grown-up.
+     It pays like a spelling test because it IS one, and a harder one: the
+     app cannot show her a keyboard to lean on. */
+  paperTest:    { key: 'paperTest',    label: 'Paper test' },
   extra:        { key: 'extra',        label: 'Extra practice' },
 };
 
@@ -285,10 +289,11 @@ export function payForActivity({ kind, firstTryCorrect = 0, attempted = 0, maste
     add(perfect ? 'Extra practice, all correct!' : 'Extra practice',
         perfect ? s.starsExtraClean : s.starsExtraTried);
   } else {
-    const base = { daily: s.starsDaily, practiceTest: s.starsPracticeTest, fullTest: s.starsFullTest }[kind] || 0;
+    const base = { daily: s.starsDaily, practiceTest: s.starsPracticeTest,
+                   fullTest: s.starsFullTest, paperTest: s.starsFullTest }[kind] || 0;
     add(`Finished ${ACTIVITY[kind]?.label || 'the activity'}`, base);
     add(`${firstTryCorrect} spelled right the first try`, firstTryCorrect * s.starsPerFirstTry);
-    if (kind === 'fullTest' && perfect) add('Perfect score!', s.starsPerfectTest);
+    if ((kind === 'fullTest' || kind === 'paperTest') && perfect) add('Perfect score!', s.starsPerfectTest);
   }
 
   add(`${mastered} new ${mastered === 1 ? 'word' : 'words'} mastered`, mastered * s.starsPerMastery);

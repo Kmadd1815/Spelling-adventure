@@ -19,6 +19,7 @@ import wordsScreen    from './screens/words.js';
 import petScreen      from './screens/pet.js';
 import progressScreen from './screens/progress.js';
 import parentScreen   from './screens/parent.js';
+import paperTestScreen from './screens/paper.js';
 import shopScreen     from './screens/shop.js';
 import decorateScreen from './screens/decorate.js';
 import setupScreen    from './screens/setup.js';
@@ -48,6 +49,7 @@ router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', bac
 router.route('/event',    { title: p => (liveEvent() || eventById(p.preview))?.name || 'Event',
                             back: '/', render: eventScreen });
 router.route('/parent',   { title: 'Parent Area', back: '/', stars: false, render: parentScreen });
+router.route('/papertest', { title: 'Paper Test', back: '/parent', stars: false, render: paperTestScreen });
 
 /* ---------- Top bar ---------- */
 
