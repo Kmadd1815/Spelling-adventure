@@ -27,6 +27,7 @@ downloaded, `PLAYWRIGHT_BROWSERS_PATH` is respected.
 
 | | |
 |---|---|
+| `resilience` | what happens when the tablet lets her down: a half-written save, no room to save, no voice |
 | `shell` | every module is in the service worker's offline list. No browser; instant. |
 | `regress` | a whole day's practice, end to end, with the payouts line by line |
 | `mastery` | days in a row, across three faked days — and what the screen says when a right answer earns no dot |

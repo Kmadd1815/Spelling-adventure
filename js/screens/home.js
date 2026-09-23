@@ -13,6 +13,7 @@ import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import * as events from '../core/events.js';
 import { gardenOpen, gateLine } from '../core/garden.js';
 import { speak } from '../core/speech.js';
+import { settings } from '../core/state.js';
 
 export default function homeScreen(container) {
   const season = currentSeason();
@@ -23,6 +24,11 @@ export default function homeScreen(container) {
   const hasWords = words.allWords().length > 0;
   const leftToday = words.wordsLeftToday().length;
   const dailyDone = words.dailyPracticeDone();
+  /* Mastered words come back to be checked; see REVIEW_LADDER in
+     core/words.js. Capped the same way the session caps them, so the
+     number on screen is the number she will actually be asked. */
+  const reviewsDue = settings().reviewMastered === false ? 0
+    : Math.min(words.wordsDueForReview().length, Math.max(0, settings().reviewsPerDay ?? 2));
 
   /* Now and then the axolotl mentions the time of year rather than saying
      one of its usual hellos. Often enough to notice, rarely enough that it
@@ -114,11 +120,29 @@ export default function homeScreen(container) {
         onClick: () => navigate('/parent') })
     ));
   } else if (active === 0) {
+    /* Everything mastered. That used to be the end of the road on this
+       screen — a congratulations card and no button — which quietly made
+       the review words unreachable in exactly the situation they exist
+       for: a finished list, where the schedule is the only thing still
+       asking her anything. */
     body.append(el('div', { class: 'card center' },
       el('div', { style: { fontSize: '2rem' }, text: '\u{1F31F}' }),
       el('h2', { text: 'You mastered every word!' }),
-      el('p', { class: 'muted', text: 'Time for a new list. You can still practice your mastered words any time.' })
+      el('p', { class: 'muted', text: reviewsDue
+        ? 'Time for a new list \u2014 and there are some old ones to say hello to.'
+        : 'Time for a new list. You can still practice your mastered words any time.' })
     ));
+    if (reviewsDue) {
+      body.append(el('button', {
+        class: 'btn btn-primary btn-lg btn-block', type: 'button',
+        onClick: () => navigate('/daily'),
+      },
+        el('span', { class: 'emoji', style: { fontSize: '1.6rem' }, text: '\u2B50' }),
+        el('span', {}, 'Do you still remember?')
+      ));
+      body.append(el('div', { class: 'center tiny muted',
+        text: `${reviewsDue} word${reviewsDue === 1 ? '' : 's'} you learned a while back.` }));
+    }
   } else if (dailyDone) {
     // Every active word has had its turn today. The button goes quiet rather
     // than vanishing, so finishing the day's work is visibly an ending.

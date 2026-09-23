@@ -178,6 +178,37 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     });
   }
 
+  /* ---------- Look, cover, spell ----------
+
+     Every way of finding out what the word is goes through the speech
+     engine — the speaker button, "Hear it", even "Show me", which spells it
+     out ALOUD. On a tablet with no voice data, or with text-to-speech
+     switched off, all of them are silent no-ops and she is looking at an
+     empty row of tiles being asked to spell a word nobody has told her.
+     Nothing on screen said why; it just looked like a normal session.
+
+     So when the tablet cannot speak, the word is SHOWN instead: a few
+     seconds to look at it, then it is covered and she spells it from
+     memory. That is how spelling is taught in schools, it needs no audio
+     and nothing extra from a grown-up, and it turns a dead app into a
+     working one. */
+  const LOOK_MS = 3600;
+  let lookTimer = null;
+  cleanupFns.push(() => clearTimeout(lookTimer));
+
+  function flashWord() {
+    const word = currentWord();
+    const card = prompt.querySelector('.look-word');
+    if (!card) return;
+    card.textContent = word.text;
+    card.classList.remove('covered');
+    clearTimeout(lookTimer);
+    lookTimer = setTimeout(() => {
+      card.textContent = '';
+      card.classList.add('covered');
+    }, LOOK_MS);
+  }
+
   function showWord({ speakIt = false } = {}) {
     typed = '';
     locked = false;
@@ -188,17 +219,36 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
     const word = currentWord();
     const withSentence = words.shouldSpeakSentence(word);
+    const label = entry().isRetry
+      ? 'Here is that word again — you have got this'
+      : entry().isReview
+        ? '\u2B50 One you already know — do you still?'
+        : (config.feedback ? 'Listen, then spell it' : config.label);
+
+    if (!speech.canSpeak()) {
+      mount(prompt,
+        el('div', { class: 'look-word covered' }),
+        el('button', {
+          class: 'btn btn-quiet', type: 'button',
+          onClick: () => flashWord(),
+        }, '\u{1F440}  Show me again'),
+        el('div', { class: 'muted tiny', text: entry().isRetry
+          ? 'Here is that word again — you have got this'
+          : entry().isReview
+            ? '\u2B50 One you already know — do you still?'
+            : 'Look at it, then spell it' })
+      );
+      renderHelp();
+      flashWord();
+      return;
+    }
 
     mount(prompt,
       el('button', {
         class: 'speak-btn', type: 'button', 'aria-label': 'Hear the word',
         onClick: () => sayWord({ withSentence }),
       }, '\u{1F50A}'),
-      el('div', { class: 'muted tiny', text: entry().isRetry
-        ? 'Here is that word again — you have got this'
-        : entry().isReview
-          ? '\u2B50 One you already know — do you still?'
-          : (config.feedback ? 'Listen, then spell it' : config.label) })
+      el('div', { class: 'muted tiny', text: label })
     );
 
     renderHelp();
@@ -207,6 +257,26 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
   function renderHelp() {
     const word = currentWord();
+    if (!speech.canSpeak()) {
+      /* Slower, In a sentence and Hint are all spoken. The sentence and the
+         hint are text, so they can still be read; the rest would be
+         buttons that do nothing. */
+      mount(helpRow,
+        word.sentence
+          ? button('In a sentence', { cls: 'btn btn-quiet', emoji: '\u{1F4AC}',
+              onClick: () => toast(word.sentence.replace(new RegExp(word.text, 'ig'), '\u2026'), { ms: 5000 }) })
+          : null,
+        (config.feedback && word.hint)
+          ? button('Hint', { cls: 'btn btn-quiet', emoji: '\u{1F4A1}',
+              onClick: () => toast(word.hint, { ms: 4000 }) })
+          : null,
+        physicalUsed
+          ? button('Letters', { cls: 'btn btn-quiet', emoji: '\u2328',
+              onClick: () => stage.classList.toggle('physical-kb') })
+          : null
+      );
+      return;
+    }
     mount(helpRow,
       button('Slower', { cls: 'btn btn-quiet', emoji: '\u{1F422}',
         onClick: () => speech.speakWordSlowly(word) }),
@@ -362,10 +432,14 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
       el('div', { class: 'your-try', text: attempt }),
       el('div', { class: 'correct-spelling', text: word.text }),
       el('div', { class: 'row', style: { justifyContent: 'center', marginTop: '10px' } },
-        button('Hear it', { cls: 'btn btn-quiet', emoji: '\u{1F50A}',
-          onClick: () => speech.speakWord(word) }),
-        button('Show me', { cls: 'btn btn-quiet', emoji: '\u{1F524}',
-          onClick: () => speech.spellOut(word) }),
+        speech.canSpeak()
+          ? button('Hear it', { cls: 'btn btn-quiet', emoji: '\u{1F50A}',
+              onClick: () => speech.speakWord(word) })
+          : null,
+        speech.canSpeak()
+          ? button('Show me', { cls: 'btn btn-quiet', emoji: '\u{1F524}',
+              onClick: () => speech.spellOut(word) })
+          : null,
         button('Next word', { cls: 'btn btn-primary', emoji: '➡️', onClick: next })
       ),
       el('div', { class: 'tiny muted', style: { marginTop: '10px' },

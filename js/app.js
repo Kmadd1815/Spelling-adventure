@@ -10,6 +10,7 @@ import { getState } from './core/state.js';
 import { on } from './core/bus.js';
 import { watchForUpdates } from './core/updates.js';
 import { requestPersistence } from './core/safety.js';
+import * as storage from './core/storage.js';
 import { toast } from './ui/toast.js';
 
 import homeScreen     from './screens/home.js';
@@ -69,6 +70,28 @@ on('stars:awarded', ({ amount, reason }) => {
   if (amount > 0 && String(reason).startsWith('milestone:')) toast(`+${amount} stars`, { gold: true });
 });
 on('milestone:earned', m => toast(`${m.emoji}  ${m.title}`, { gold: true, ms: 4200 }));
+
+/* ---------- Saying so when the save is in trouble ----------
+
+   Both of these used to go to the console and nowhere else, which on a
+   tablet is nowhere at all. They are the two ways months of work disappear
+   without anybody finding out until it is too late to do anything. */
+const outcome = storage.loadOutcome();
+if (outcome === 'recovered') {
+  toast('Your progress was rescued from the backup copy.', { ms: 5200 });
+} else if (outcome === 'lost') {
+  /* The worst news in the app. It has to be said plainly and it has to say
+     what to do, because "No words yet" reads as "nobody added a list". */
+  toast('Something went wrong with the saved progress. A grown-up can restore a backup in the Parent Area.',
+        { ms: 9000 });
+}
+
+/* Out of space, or storage switched off. Said once, when it first happens,
+   because otherwise she plays for an hour and none of it is kept. */
+on('storage:failed', () => toast(
+  'Progress is not being saved right now. Ask a grown-up to check the tablet\u2019s storage.',
+  { ms: 9000 }));
+on('storage:ok', () => toast('Saving again \u2014 all good.', { ms: 3200 }));
 
 // Before the child has finished setup, "back" belongs on the welcome screen
 // rather than a hub she has not reached yet.

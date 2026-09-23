@@ -403,7 +403,9 @@ export default function parentScreen(container) {
         wrap.append(el('div', { class: 'card', style: { background: '#fdeadb' } },
           el('h3', { text: 'No speech voices installed' }),
           el('p', { class: 'tiny', text:
-            'Android needs a speech engine for the app to say words aloud. Open Settings → System → Languages & input → Text-to-speech output, make sure "Speech Recognition & Synthesis by Google" is the preferred engine, and install the English (United States) voice data.' })
+            'Android needs a speech engine for the app to say words aloud. Open Settings → System → Languages & input → Text-to-speech output, make sure "Speech Recognition & Synthesis by Google" is the preferred engine, and install the English (United States) voice data.' }),
+          el('p', { class: 'tiny', style: { marginTop: '8px' }, text:
+            'Until then she can still practise: with no voice, the word is SHOWN for a few seconds and then covered up, and she spells it from memory. It works, but hearing the word is the better exercise \u2014 it is the one that makes her turn a sound into letters.' })
         ));
         return;
       }

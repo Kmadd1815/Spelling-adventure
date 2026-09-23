@@ -190,6 +190,44 @@ ok('the word is still due even with reviews switched off',
    off.out.due === 1,
    'the setting decides whether the daily session asks, not whether the clock runs');
 
+/* ---------- she can actually get to them ----------
+   A word she has mastered and a list she has finished are the same thing
+   from the home screen's point of view: it congratulates her and offers no
+   Today's Practice button, because there is nothing left to practise. That
+   made the reviews unreachable in exactly the case they exist for — the
+   finished list, where the schedule is the only thing still asking her
+   anything. The model was right and the front door was shut. */
+{
+  const page = await pageAt(8);
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.evaluate(s => localStorage.setItem('spelling-adventure:v1', s), mastered);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(700);
+
+  const home = await page.evaluate(async () => {
+    const w = await import('./js/core/words.js');
+    return {
+      active: w.activeWords().length,
+      due: w.wordsDueForReview().length,
+      offered: [...document.querySelectorAll('button')]
+        .some(b => !b.disabled && /remember/i.test(b.textContent)),
+    };
+  });
+  ok('with every word mastered there is still nothing to practise',
+     home.active === 0 && home.due > 0, `${home.due} due, ${home.active} active`);
+  ok('...and the home screen still offers a way to the reviews',
+     home.offered, 'the button is on the screen');
+
+  /* And it has to go somewhere that actually asks her something. */
+  await page.goto(BASE + '#/daily', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(800);
+  const asked = await page.evaluate(() => document.body.innerText.includes('already know'));
+  ok('...which opens a session made of the words that are due',
+     asked, 'Today\u2019s Practice asks the review words');
+  await page.context().close();
+}
+
 await browser.close();
 const t = tally();
 console.log(`\nreview: ${t.passed} pass, ${t.failed} fail`);

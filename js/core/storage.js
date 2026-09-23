@@ -4,6 +4,8 @@
    Because that blob is the only copy of months of progress, this module
    also keeps a rolling secondary copy and owns backup export/import. */
 
+import { emit } from './bus.js';
+
 const KEY        = 'spelling-adventure:v1';
 const BACKUP_KEY = 'spelling-adventure:v1:autobackup';
 const SCHEMA_VERSION = 1;
@@ -286,10 +288,41 @@ export function load() {
   try {
     return migrate(JSON.parse(raw));
   } catch (err) {
+    /* A CORRUPT save used to go straight to a blank app — every word, every
+       star and every mastered dot gone — while a perfectly good auto-backup
+       sat in the next key along, untouched. The backup is written for
+       exactly this ("so a half-finished write can't take both copies down
+       at once") and the one path that could not read it was the one that
+       needed it, because the fallback above only ran when the primary was
+       MISSING, and a truncated write leaves it present and unparseable.
+
+       This is what a half-written save actually looks like, and it is worse
+       than starting fresh: the screen says "No words yet", which reads as
+       "nobody ever added a list" rather than "everything is gone". */
     console.error('[storage] save file is corrupt', err);
+    let backup = null;
+    try { backup = localStorage.getItem(BACKUP_KEY); } catch { /* ignore */ }
+    if (backup && backup !== raw) {
+      try {
+        const state = migrate(JSON.parse(backup));
+        console.warn('[storage] recovered from the auto-backup');
+        recovered = true;
+        return state;
+      } catch (err2) {
+        console.error('[storage] the auto-backup is corrupt too', err2);
+      }
+    }
+    lost = true;
     return defaultState();
   }
 }
+
+/* Whether the last load had to fall back, so a screen can say so. Silence
+   is the wrong answer to either of these: one is good news she should know
+   about, the other is the worst news in the app. */
+let recovered = false;
+let lost = false;
+export const loadOutcome = () => (lost ? 'lost' : recovered ? 'recovered' : 'ok');
 
 let writeTimer = null;
 let backupCounter = 0;
@@ -307,10 +340,18 @@ export function flush(state) {
     // Second copy every 10th write, so a half-finished write can't take
     // both copies down at once.
     if (backupCounter++ % 10 === 0) localStorage.setItem(BACKUP_KEY, json);
+    if (saveFailed) { saveFailed = false; emit('storage:ok'); }
   } catch (err) {
+    /* Out of space, or storage switched off. Nothing is being written and
+       she will carry on playing for an hour before anyone finds out — so
+       say so, once, rather than only in a console nobody has open. */
     console.error('[storage] could not save', err);
+    if (!saveFailed) { saveFailed = true; emit('storage:failed', err); }
   }
 }
+
+let saveFailed = false;
+export const isSaving = () => !saveFailed;
 
 /* ---------- Backup / restore ----------
    This is the real safety net: browser storage can be cleared by the OS,

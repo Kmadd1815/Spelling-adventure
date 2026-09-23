@@ -18,6 +18,19 @@ const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
 
 export const isSupported = !!synth;
 
+/* Whether this tablet can ACTUALLY say a word out loud right now.
+   `isSupported` only says the browser has the API; a tablet with the voice
+   data not downloaded, or text-to-speech switched off in Android settings,
+   has the API and no voices, and then every spoken word in the app is a
+   silent no-op. Spelling with no audio is not hard, it is impossible — she
+   is being asked to spell a word nobody has told her.
+
+   Call this AFTER ready(), or it will say no while the voice list is still
+   filling in. */
+export function canSpeak() {
+  return !!synth && voiceCache.length > 0;
+}
+
 let voiceCache = [];
 let readyPromise = null;
 let unlocked = false;
@@ -151,10 +164,20 @@ export function speak(text, opts = {}) {
 
   const utter = new SpeechSynthesisUtterance(String(text));
   const voice = chooseVoice();
-  if (voice) {
-    utter.voice = voice;
-    utter.lang = voice.lang;
-  } else {
+  /* Android reloads its voice list when the TTS engine updates or a
+     language pack is added or removed, so the voice chosen a moment ago can
+     already be stale. Assigning a stale one throws, and the throw comes out
+     of speak() — which is called from a click handler — so the word is
+     simply never said and nothing else on the screen happens either.
+     Falling back to the device default is always better than that. */
+  try {
+    if (voice) {
+      utter.voice = voice;
+      utter.lang = voice.lang;
+    } else {
+      utter.lang = 'en-US';
+    }
+  } catch {
     utter.lang = 'en-US';
   }
 
