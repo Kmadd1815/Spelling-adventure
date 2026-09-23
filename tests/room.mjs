@@ -138,6 +138,35 @@ await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 await page.screenshot({ path: SP + '/D3-decorated-home.png' });
 
+/* ---- a picture cannot end up on the floorboards ----
+
+   She has no way to do this: equipping reads the slot off the item itself.
+   But the room draws whatever the SAVE says is in a slot, and a save can
+   come from a backup, an older version, or a half-finished write. */
+await page.waitForTimeout(450);        // let the app's own save settle first
+await page.evaluate(() => {
+  const raw = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+  raw.equipped.floorDecor = ['frame', 'clock'];       // both belong on the wall
+  raw.equipped.wallDecor  = ['potted_plant'];         // and this belongs on the floor
+  raw.equipped.rug = 'frame';
+  localStorage.setItem('spelling-adventure:v1', JSON.stringify(raw));
+});
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(700);
+const filed = await page.evaluate(async () => {
+  const it = await import('/js/core/items.js');
+  const e = it.equipped();
+  return { floor: e.floorDecor, wall: e.wallDecor, rug: e.rug,
+           pieces: document.querySelectorAll('.room .room-piece').length };
+});
+ok('a wall thing written into the floor slot is not put on the floor',
+   filed.floor.length === 0, JSON.stringify(filed.floor));
+ok('...and a floor thing written onto the wall is not hung up',
+   filed.wall.length === 0, JSON.stringify(filed.wall));
+ok('...and a picture in the rug slot is not laid down as a rug',
+   filed.rug === null, JSON.stringify(filed.rug));
+
+
 await browser.close();
 console.log('\n--- PAGE ERRORS ---');
 console.log(errors.length ? [...new Set(errors)].join('\n') : 'none');

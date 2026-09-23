@@ -405,11 +405,25 @@ export function grant(itemId, source = 'Earned') {
 /* ---------- What is on show ----------
    Owning is forever. This is the handful of choices layered on top. */
 
+/* What is out, slot by slot.
+
+   Filtered by the item's own category on the way out, which sounds like
+   belt and braces and is not. equip() decides the slot from the item, so
+   she has no way to hang a picture on the floor — but the room draws
+   whatever the SAVE says is in a slot, and a save can be restored from a
+   backup written by an older version, hand-edited, or half-corrupted. One
+   line here means a picture on the floorboards is not a thing this app can
+   draw, whatever it is handed. */
 export function equipped() {
   const e = getState().equipped;
+  const belongs = (id, slot) => !!id && byId(id)?.category === slot;
   const out = {};
   for (const [slot, spec] of Object.entries(SLOTS)) {
-    out[slot] = spec.max > 1 ? (e[slot] || []).slice() : (e[slot] ?? null);
+    if (spec.max > 1) {
+      out[slot] = (e[slot] || []).filter(id => belongs(id, slot)).slice(0, spec.max);
+    } else {
+      out[slot] = belongs(e[slot], slot) ? e[slot] : null;
+    }
   }
   return out;
 }

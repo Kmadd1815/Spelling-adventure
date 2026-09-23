@@ -196,6 +196,19 @@ ok('all three wall decorations are actually on the wall',
 
 await page.screenshot({ path: `${SP}/R-full-room.png` });
 
+/* ---------- the axolotl is visibly the one talking ----------
+
+   The line above the room used to be a rounded box: a caption, not speech.
+   It has a tail now, and the tail follows the axolotl about. */
+const bubble = await page.evaluate(() => {
+  const b = document.querySelector('.room-speech');
+  if (!b) return null;
+  const tail = getComputedStyle(b, '::after');
+  return { tail: tail.borderTopWidth, x: b.style.getPropertyValue('--tail-x') };
+});
+ok('the speech bubble has a tail', bubble && parseFloat(bubble.tail) > 4,
+   JSON.stringify(bubble));
+
 /* ---------- the axolotl has somewhere to walk ---------- */
 const walk = await page.evaluate(async () => {
   const pet = document.querySelector('.room-pet');
@@ -218,6 +231,12 @@ ok('...and a tail and a head that can move on their own', walk.tail && walk.head
    `tail ${walk.tail}, head ${walk.head}`);
 ok('it goes somewhere rather than standing on one spot',
    walk.started !== walk.moved, `${walk.started} then ${walk.moved}`);
+
+const aimed = await page.evaluate(() => {
+  const b = document.querySelector('.room-speech');
+  return b ? b.style.getPropertyValue('--tail-x') : '';
+});
+ok('...and the tail follows it', /px$/.test(aimed), JSON.stringify(aimed));
 
 /* ---------- every window's pane is inside its own window ---------- */
 const WINDOWS = ['window_plain', 'window_round', 'window_cottage',

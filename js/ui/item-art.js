@@ -2007,48 +2007,141 @@ const DECOR = {
     ${litEllipse(50, 36, 33, 18, '#8cc87a', '#548c4c', { stroke: '#548c4c', sw: 4 })}
     <ellipse cx="38" cy="30" rx="15" ry="7" fill="#a8d898" opacity=".26"/>`,
 
-  /* ---- Water. Flat on the ground, seen at an angle. ---- */
-  /* ---- Water. Flat on the ground, seen at an angle ----
-     A pond is a hole, so it is dark at the far edge and light towards the
-     near one, with the bank throwing a shadow onto the water underneath it.
-     Flat blue with white dashes on it reads as a puddle sticker. */
-  pond_small: () => `
-    ${litEllipse(50, 62, 44, 26, '#98aa80', '#6d7f5a', { stroke: '#6d7f5a', sw: 4, cy: '20%' })}
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#4f93ad"/>
-    ${litEllipse(50, 61, 36, 20, '#a7dcec', '#4a8ba6', { cy: '78%', r: '92%' })}
-    <ellipse cx="50" cy="57" rx="31" ry="15" fill="#bfe8f3" opacity=".35"/>
-    ${gloss(26, 52, 26, 3.6, { rot: -5, peak: .42 })}
-    ${gloss(54, 67, 18, 3, { rot: -4, peak: .3 })}`,
+  /* ---- Water ----
 
-  pond_lily: () => `
-    ${litEllipse(50, 62, 44, 26, '#98aa80', '#6d7f5a', { stroke: '#6d7f5a', sw: 4, cy: '20%' })}
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#3f8f80"/>
-    ${litEllipse(50, 61, 36, 20, '#97dccb', '#3f8578', { cy: '78%', r: '92%' })}
-    ${gloss(28, 52, 22, 3.4, { rot: -5, peak: .36 })}
-    ${[[34, 58, 11], [64, 66, 9], [52, 50, 8]].map(([x, y, r]) =>
-      `<ellipse cx="${n2(x + 1)}" cy="${n2(y + 1.6)}" rx="${r}" ry="${n2(r * 0.62)}" fill="#1e4a44" opacity=".22"/>` +
-      `<path d="M ${x} ${y} m ${-r} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${r * 2} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${-r * 2} 0 z"
-             fill="#5aa05f" stroke="#3f7a46" stroke-width="2.4"/>` +
-      `<path d="M ${n2(x - r * 0.7)} ${n2(y - r * 0.2)} a ${n2(r * 0.8)} ${n2(r * 0.4)} 0 0 1 ${n2(r * 0.9)} ${n2(-r * 0.22)}"
-             fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>`).join('')}
-    ${litEllipse(64, 64, 4.6, 4.6, '#ffd3e2', '#e79ab8', { stroke: '#dd91ad', sw: 1.8 })}
-    <circle cx="64" cy="64" r="1.8" fill="#fff3c9"/>`,
+     These read as rugs for a long time, and the reason is worth writing
+     down: a pond drawn as a flat blue oval with some white dashes on it IS
+     a rug. What makes water water is none of those things.
 
-  pond_stars: () => `
-    ${litEllipse(50, 62, 44, 26, '#78805f', '#545c44', { stroke: '#545c44', sw: 4, cy: '20%' })}
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#2b3566"/>
-    ${litEllipse(50, 61, 36, 20, '#5d6ba8', '#28315e', { cy: '80%', r: '90%' })}
-    ${[[34, 54, 3.4], [58, 52, 2.4], [46, 66, 2.8], [68, 64, 2.2], [26, 62, 2]].map(([x, y, r]) => {
-      let d = '';
-      for (let i = 0; i < 10; i++) {
-        const a = (Math.PI / 5) * i - Math.PI / 2;
-        const rr = i % 2 ? r * 0.42 : r;
-        d += `${i ? 'L' : 'M'} ${n2(x + Math.cos(a) * rr)} ${n2(y + Math.sin(a) * rr * 0.72)} `;
-      }
-      return `<path d="${d}Z" fill="#fdf3cf"/>`;
-    }).join('')}
-    ${gloss(30, 67, 17, 3, { rot: -4, peak: .28 })}
-    <path d="M 28 68 h 16" stroke="#aeb8e8" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>`,
+     It is that the water is BELOW the grass — so there is a lip of earth
+     with a thickness to it, and the bank on the far side throws a shadow
+     down onto the surface, and you can see through the near shallows to the
+     bottom while the far side is a hole you cannot see into.
+
+     And it is that the surface is doing something. A reflection of the sky
+     lying across it, broken where it moves; rings spreading from where
+     something touched it; a shine that slides. `pondWater` builds all of
+     that once, and each pond puts its own things on top. */
+  ...(() => {
+    /* Its own ids, because two ponds on one page — and the shop shelf shows
+       all three at once — would otherwise share a gradient, and in SVG the
+       first one wins for everybody. */
+    let seq = 0;
+
+    const ripple = (x, y, r, op) =>
+      `<ellipse cx="${n2(x)}" cy="${n2(y)}" rx="${n2(r)}" ry="${n2(r * 0.42)}"
+                fill="none" stroke="#ffffff" stroke-opacity="${op}" stroke-width="1.5"/>`;
+
+    /* The hole in the ground, filled. `deep` is the far water you cannot
+       see into, `shallow` the near water you can. */
+    const pondWater = ({ deep, shallow, floor, bank, bankDark, sky = '#dff2fb' }) => {
+      const u = `pw${(++seq).toString(36)}`;
+      return `
+      ${contact(50, 84, 40, 7, .2)}
+
+      <!-- The ground around it, and the lip of earth the grass sits on. The
+           lip is what makes the water lower than everything else. -->
+      ${litEllipse(50, 63, 45, 27, bank, bankDark, { stroke: bankDark, sw: 3.4, cy: '18%' })}
+      <ellipse cx="50" cy="66" rx="39" ry="22.5" fill="#6b5236" opacity=".55"/>
+      ${litEllipse(50, 64, 38.5, 22, '#8a6a46', '#5b432c', { cy: '16%', r: '90%' })}
+
+      <!-- The water itself: dark at the far edge where it is a hole, and
+           opening out towards the near edge where the bottom comes up. -->
+      <defs>
+        <radialGradient id="${u}" cx="50%" cy="86%" r="86%">
+          <stop offset="0%"  stop-color="${shallow}"/>
+          <stop offset="46%" stop-color="${deep}"/>
+          <stop offset="100%" stop-color="${deep}"/>
+        </radialGradient>
+        <clipPath id="${u}c"><ellipse cx="50" cy="63" rx="36.5" ry="20.5"/></clipPath>
+      </defs>
+      <ellipse cx="50" cy="63" rx="36.5" ry="20.5" fill="url(#${u})"/>
+
+      <g clip-path="url(#${u}c)">
+        <!-- The far bank's shadow, lying on the water under the lip. -->
+        <ellipse cx="50" cy="38" rx="42" ry="20" fill="#0d2233" opacity=".34"/>
+        <!-- The near shallows: the bottom showing through, only where the
+             water is thin enough to see it. Any stronger than this and it
+             stops being a bottom under water and becomes a pale shape
+             lying on top of it. -->
+        <ellipse cx="50" cy="79" rx="27" ry="9.5" fill="${floor}" opacity=".32"/>
+        <ellipse cx="50" cy="81.5" rx="19" ry="6" fill="${floor}" opacity=".26"/>
+        <!-- Sky lying on the surface, broken into bands the way a reflection
+             on moving water is. -->
+        <g class="ia-shimmer" opacity=".4">
+          <ellipse cx="42" cy="55" rx="19" ry="2.4" fill="${sky}"/>
+          <ellipse cx="56" cy="60" rx="13" ry="1.8" fill="${sky}" opacity=".7"/>
+          <ellipse cx="38" cy="65" rx="9.5" ry="1.4" fill="${sky}" opacity=".55"/>
+          <ellipse cx="61" cy="69.5" rx="7" ry="1.2" fill="${sky}" opacity=".4"/>
+        </g>
+        <!-- Rings, spreading from somewhere over towards the right. -->
+        <g class="ia-rings">
+          ${ripple(63, 68, 6, .5)}${ripple(63, 68, 11, .3)}${ripple(63, 68, 16.5, .16)}
+        </g>
+      </g>
+
+      <!-- The waterline: bright where the light hits the near edge, and a
+           thin dark line at the far one where the bank goes in. -->
+      <path d="M 14 66 a 36.5 20.5 0 0 0 72 0" fill="none"
+            stroke="#ffffff" stroke-opacity=".4" stroke-width="2"/>
+      <path d="M 14 61 a 36.5 20.5 0 0 1 72 0" fill="none"
+            stroke="#12303f" stroke-opacity=".3" stroke-width="2"/>`;
+    };
+
+    /* Reeds on the far bank, because a perfect oval is the other half of
+       why it looks like a rug. */
+    const reeds = (x, y, tint = '#5f9e53') => [0, 1, 2].map(i => {
+      const bx = x + (i - 1) * 4.6, h = 13 + (i % 2) * 5, lean = (i - 1) * 2.6;
+      return `<path d="M ${n2(bx)} ${n2(y)} q ${n2(lean)} ${n2(-h * 0.6)} ${n2(lean * 1.7)} ${n2(-h)}"
+                    fill="none" stroke="${tint}" stroke-width="2.4" stroke-linecap="round"/>
+              <ellipse cx="${n2(bx + lean * 1.7)}" cy="${n2(y - h)}" rx="1.7" ry="3.4"
+                       fill="#9a7a52" transform="rotate(${n2(lean * 4)} ${n2(bx + lean * 1.7)} ${n2(y - h)})"/>`;
+    }).join('');
+
+    /* A stone or two on the rim, sitting half in the water. A function, not
+       a constant: built once it would bake three gradient ids into every
+       copy of the drawing, and two copies of an id in one page is how a
+       drawing ends up wearing another drawing's colours. */
+    const stones = () => [[19, 70, 5.4], [80, 67, 4.4], [30, 78, 3.6]].map(([x, y, r]) =>
+      litEllipse(x, y, r, r * 0.66, '#cbc3b6', '#8b8275', { stroke: '#7d7468', sw: 1.6 })).join('');
+
+    return {
+      pond_small: () => `
+        ${pondWater({ deep: '#2c6f8c', shallow: '#7cc6dc', floor: '#c8b489',
+                      bank: '#98aa80', bankDark: '#6d7f5a' })}
+        ${reeds(24, 52)}${reeds(74, 50, '#6fae5f')}
+        ${stones()}`,
+
+      pond_lily: () => `
+        ${pondWater({ deep: '#1f6b5e', shallow: '#6fc7b4', floor: '#b3a878',
+                      bank: '#98aa80', bankDark: '#6d7f5a', sky: '#d8f4ec' })}
+        ${[[34, 60, 11], [63, 67, 9], [53, 52, 8]].map(([x, y, r]) =>
+          `<ellipse cx="${n2(x + 1)}" cy="${n2(y + 1.8)}" rx="${r}" ry="${n2(r * 0.62)}" fill="#0d3a33" opacity=".3"/>` +
+          `<path d="M ${x} ${y} m ${-r} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${r * 2} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${-r * 2} 0 z"
+                 fill="#5aa05f" stroke="#3f7a46" stroke-width="2.4"/>` +
+          `<path d="M ${n2(x - r * 0.7)} ${n2(y - r * 0.2)} a ${n2(r * 0.8)} ${n2(r * 0.4)} 0 0 1 ${n2(r * 0.9)} ${n2(-r * 0.22)}"
+                 fill="none" stroke="#fff" stroke-opacity=".32" stroke-width="2"/>`).join('')}
+        ${litEllipse(63, 64, 4.8, 4.8, '#ffd3e2', '#e79ab8', { stroke: '#dd91ad', sw: 1.8 })}
+        <circle cx="63" cy="64" r="1.9" fill="#fff3c9"/>
+        ${reeds(22, 54)}`,
+
+      pond_stars: () => `
+        ${pondWater({ deep: '#141c3f', shallow: '#3f4d8a', floor: '#2a3566',
+                      bank: '#78805f', bankDark: '#545c44', sky: '#aab6ee' })}
+        ${[[34, 55, 3.6], [58, 52, 2.5], [46, 67, 2.9], [69, 64, 2.2], [26, 63, 2]].map(([x, y, r]) => {
+          let d = '';
+          for (let i = 0; i < 10; i++) {
+            const a = (Math.PI / 5) * i - Math.PI / 2;
+            const rr = i % 2 ? r * 0.42 : r;
+            d += `${i ? 'L' : 'M'} ${n2(x + Math.cos(a) * rr)} ${n2(y + Math.sin(a) * rr * 0.72)} `;
+          }
+          return `<path class="ia-twinkle" d="${d}Z" fill="#fdf3cf"
+                        style="animation-delay:${n2((x + y) % 4)}s"/>`;
+        }).join('')}
+        ${litEllipse(70, 50, 7, 6.6, '#fff8dd', '#e8d9a0', { stroke: '#cbbd86', sw: 1.4 })}
+        ${reeds(23, 53, '#5c6a52')}`,
+    };
+  })(),
 
   /* ---- Fences. Edge to edge: the garden tiles four across the back. ---- */
   /* ---- Fences. Edge to edge: the garden tiles four across the back ----

@@ -95,7 +95,27 @@ export function roam(room, { band = ROOM_BAND } = {}) {
 
   const after = (ms, fn) => { timer = setTimeout(fn, ms); };
 
-  const standAt = x => { pet.style.left = `${x - width / 2}%`; };
+  /* The speech bubble lives outside the room box, above it, so it is found
+     from the room's parent. Missing is fine — the decorating screen has a
+     room and nobody talking in it. */
+  const bubble = room.parentElement?.querySelector?.('.room-speech') || null;
+
+  /* Point the bubble's tail at wherever the axolotl is standing. Worked out
+     in pixels against the bubble's own width, because the bubble and the
+     room are different sizes and a percentage of one is not a percentage
+     of the other. Clamped so the tail stays under the bubble rather than
+     sliding off the end of it. */
+  function pointTail(x) {
+    if (!bubble) return;
+    const r = room.getBoundingClientRect();
+    const b = bubble.getBoundingClientRect();
+    if (!r.width || !b.width) return;
+    const petPx = r.left + (x / 100) * r.width;
+    const px = Math.max(15, Math.min(b.width - 15, petPx - b.left));
+    bubble.style.setProperty('--tail-x', `${px.toFixed(1)}px`);
+  }
+
+  const standAt = x => { pet.style.left = `${x - width / 2}%`; pointTail(x); };
   const leanTo = deg => { lean.style.transform = `rotate(${deg}deg)`; };
 
   /** Walk there, then do whatever comes next. */
@@ -166,7 +186,10 @@ export function roam(room, { band = ROOM_BAND } = {}) {
   }
 
   standAt(here);
-  after(rand(900, 2600), next);
+  /* Once more after a beat: the bubble's text arrives with the screen and
+     its width settles after the first layout, and a tail aimed at the old
+     width points at nothing in particular. */
+  after(120, () => { pointTail(here); after(rand(900, 2600), next); });
 
   return () => {
     stopped = true;

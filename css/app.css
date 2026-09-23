@@ -874,13 +874,38 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   border-radius: var(--r-pill);
   padding: 5px 12px; font-weight: 800; font-size: .8rem;
 }
+/* What the axolotl is saying.
+
+   It used to be a plain rounded box at the top of the room, which is a
+   caption, not speech — you had to read it to work out who was talking.
+   It has a tail now, and the tail slides along the bottom of the bubble to
+   stay pointed at the axolotl as it walks about (ui/petlife.js sets
+   --tail-x). That is the whole difference between a label on a picture and
+   somebody in the picture talking. */
 .room-speech {
   position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
   z-index: 12; max-width: 74%;
-  background: #fff; border-radius: var(--r-md);
-  padding: 8px 14px; font-weight: 800; font-size: .95rem;
+  background: #fff;
+  border: 2px solid rgba(122, 96, 77, .16);
+  border-radius: 18px;
+  padding: 8px 15px 9px; font-weight: 800; font-size: .95rem;
   text-align: center; box-shadow: var(--shadow);
 }
+/* Two triangles: the back one is the bubble's outline, the front one is
+   the white fill sitting just inside it. */
+.room-speech::before,
+.room-speech::after {
+  content: ''; position: absolute; top: 100%;
+  left: var(--tail-x, 50%);
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  transition: left .5s ease-in-out;
+  pointer-events: none;
+}
+.room-speech::before { border-top: 13px solid rgba(122, 96, 77, .22); }
+.room-speech::after  { border-top: 11px solid #fff; margin-top: -2.5px; }
 
 /* A seasonal line is longer than "Hello, friend!", and on a phone a centred
    bubble that wide reaches back under the season chip. Below this width the
@@ -1024,6 +1049,33 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   .pet-walking .pet-body,
   .pet-alive .pet-head { animation: none; }
   .room-pet { transition: none !important; }
+}
+
+/* ---------- Water that is doing something ----------
+
+   A pond drawn perfectly still is a picture of a pond. None of this is
+   fast or large — it is the difference between water and a blue rug, and
+   at this size that difference is almost entirely movement. */
+.ia-shimmer { animation: pondShimmer 7s ease-in-out infinite; transform-origin: 50% 63%; }
+@keyframes pondShimmer {
+  0%, 100% { transform: translateX(0)     scaleX(1);    opacity: .5; }
+  50%      { transform: translateX(1.6px) scaleX(1.05); opacity: .34; }
+}
+/* Rings spreading out and fading, the way they do after something lands. */
+.ia-rings { animation: pondRings 5.4s ease-out infinite; transform-origin: 63% 68%; }
+@keyframes pondRings {
+  0%   { transform: scale(.35); opacity: 0; }
+  18%  { opacity: .95; }
+  78%, 100% { transform: scale(1.25); opacity: 0; }
+}
+.ia-twinkle { animation: pondTwinkle 4.6s ease-in-out infinite; }
+@keyframes pondTwinkle {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ia-shimmer, .ia-rings, .ia-twinkle { animation: none; }
+  .ia-rings { opacity: .5; }
 }
 
 /* ---------- Floating reaction effects ---------- */
