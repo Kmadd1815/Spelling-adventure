@@ -30,13 +30,14 @@ const n2 = n;   // alias, so nested template helpers read clearly
    growing upward past that line. */
 
 const HATS = {
-  bow: g => {
+  bow: (g, c = {}) => {
+    const main = c.main || '#ef6f8e', light = c.light || '#f78ba6', line = c.line || '#b34a66';
     const w = g.hrx * 0.30, y = g.hy - g.hry * 0.86;
     const loop = side => `<ellipse cx="${n(g.hx + side * w * 0.72)}" cy="${n(y)}"
-        rx="${n(w * 0.62)}" ry="${n(w * 0.46)}" fill="#ef6f8e" stroke="#b34a66" stroke-width="2"
+        rx="${n(w * 0.62)}" ry="${n(w * 0.46)}" fill="${main}" stroke="${line}" stroke-width="2"
         transform="rotate(${side * 18} ${n(g.hx + side * w * 0.72)} ${n(y)})"/>`;
     return loop(-1) + loop(1) +
-      `<circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.30)}" fill="#f78ba6" stroke="#b34a66" stroke-width="2"/>`;
+      `<circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.30)}" fill="${light}" stroke="${line}" stroke-width="2"/>`;
   },
 
   party_hat: g => {
@@ -211,34 +212,38 @@ const HATS = {
     <circle cx="${n(x)}" cy="${n(y)}" r="${n(r * 0.46)}" fill="#ffd980" stroke="#e0b44c" stroke-width="1.8"/></g>`;
   },
 
-  headband: g => {
+  headband: (g, c = {}) => {
+    const main = c.main || '#6fb3d9', gem = c.light || '#f2849f', line = c.line || '#b3596e';
     const y = g.hy - g.hry * 0.60;
     return `<path d="M ${n(g.hx - g.hrx * 0.94)} ${n(y + g.hry * 0.22)}
                      Q ${n(g.hx)} ${n(y - g.hry * 0.34)} ${n(g.hx + g.hrx * 0.94)} ${n(y + g.hry * 0.22)}"
-                  fill="none" stroke="#6fb3d9" stroke-width="${n(g.hry * 0.17)}" stroke-linecap="round"/>
+                  fill="none" stroke="${main}" stroke-width="${n(g.hry * 0.17)}" stroke-linecap="round"/>
             <circle cx="${n(g.hx + g.hrx * 0.36)}" cy="${n(y - g.hry * 0.14)}" r="${n(g.hrx * 0.10)}"
-                    fill="#f2849f" stroke="#b3596e" stroke-width="1.8"/>`;
+                    fill="${gem}" stroke="${line}" stroke-width="1.8"/>`;
   },
 
-  sun_hat: g => {
+  sun_hat: (g, c = {}) => {
+    const main = c.main || '#f0d79a', light = c.light || '#f7e2b0',
+          line = c.line || '#c9a462', band = c.band || '#e2566f';
     const y = g.hy - g.hry * 0.56;
     return `<ellipse cx="${n(g.hx)}" cy="${n(y)}" rx="${n(g.hrx * 1.12)}" ry="${n(g.hry * 0.30)}"
-                     fill="#f0d79a" stroke="#c9a462" stroke-width="2.4"/>
+                     fill="${main}" stroke="${line}" stroke-width="2.4"/>
             <path d="M ${n(g.hx - g.hrx * 0.52)} ${n(y)} a ${n(g.hrx * 0.52)} ${n(g.hry * 0.52)} 0 0 1 ${n(g.hrx * 1.04)} 0 z"
-                  fill="#f7e2b0" stroke="#c9a462" stroke-width="2.4" stroke-linejoin="round"/>
+                  fill="${light}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
             <path d="M ${n(g.hx - g.hrx * 0.50)} ${n(y - g.hry * 0.04)} q ${n(g.hrx * 0.50)} ${n(g.hry * 0.18)} ${n(g.hrx * 1.0)} 0"
-                  fill="none" stroke="#e2566f" stroke-width="${n(g.hry * 0.12)}"/>`;
+                  fill="none" stroke="${band}" stroke-width="${n(g.hry * 0.12)}"/>`;
   },
 
-  beanie: g => {
+  beanie: (g, c = {}) => {
+    const main = c.main || '#8a7fc4', light = c.light || '#a79ade', line = c.line || '#5f568f';
     const y = g.hy - g.hry * 0.32;
     return `<path d="M ${n(g.hx - g.hrx * 0.82)} ${n(y)} a ${n(g.hrx * 0.82)} ${n(g.hry * 0.72)} 0 0 1 ${n(g.hrx * 1.64)} 0 z"
-                  fill="#8a7fc4" stroke="#5f568f" stroke-width="2.4" stroke-linejoin="round"/>
+                  fill="${main}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
             <rect x="${n(g.hx - g.hrx * 0.88)}" y="${n(y - g.hry * 0.10)}"
                   width="${n(g.hrx * 1.76)}" height="${n(g.hry * 0.26)}" rx="${n(g.hry * 0.13)}"
-                  fill="#a79ade" stroke="#5f568f" stroke-width="2.4"/>
+                  fill="${light}" stroke="${line}" stroke-width="2.4"/>
             <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.76)}" r="${n(g.hrx * 0.14)}"
-                    fill="#fff6e8" stroke="#c9b8a4" stroke-width="2"/>`;
+                    fill="${c.bobble || '#fff6e8'}" stroke="#c9b8a4" stroke-width="2"/>`;
   },
 
   chef_hat: g => {
@@ -287,16 +292,17 @@ const HATS = {
 };
 
 const ACCESSORIES = {
-  bowtie: g => {
+  bowtie: (g, c = {}) => {
+    const main = c.main || '#e2566f', light = c.light || '#f0778c', line = c.line || '#a23b50';
     const y = g.hy + g.hry * 1.02, w = g.hrx * 0.26;
     return `
       <path d="M ${n(g.hx - w)} ${n(y - w * 0.62)} L ${n(g.hx - w * 0.16)} ${n(y)}
                L ${n(g.hx - w)} ${n(y + w * 0.62)} Z"
-            fill="#e2566f" stroke="#a23b50" stroke-width="2" stroke-linejoin="round"/>
+            fill="${main}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
       <path d="M ${n(g.hx + w)} ${n(y - w * 0.62)} L ${n(g.hx + w * 0.16)} ${n(y)}
                L ${n(g.hx + w)} ${n(y + w * 0.62)} Z"
-            fill="#e2566f" stroke="#a23b50" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.24)}" fill="#f0778c" stroke="#a23b50" stroke-width="1.8"/>`;
+            fill="${main}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.24)}" fill="${light}" stroke="${line}" stroke-width="1.8"/>`;
   },
 
   /* Birthday Week. A sash across the chest, following the body rather than
@@ -329,15 +335,16 @@ const ACCESSORIES = {
       <circle cx="${n(x)}" cy="${n(y)}" r="${n(g.hrx * 0.10)}" fill="#ffd980" stroke="#c9922c" stroke-width="2"/>`;
   },
 
-  scarf: g => {
+  scarf: (g, c = {}) => {
+    const main = c.main || '#e2566f', stripe = c.light || '#f7b955', line = c.line || '#a23b50';
     const y = g.hy + g.hry * 0.98, w = g.brx * 0.52, h = g.bry * 0.20;
     return `
       <rect x="${n(g.hx - w)}" y="${n(y - h / 2)}" width="${n(w * 2)}" height="${n(h)}"
-            rx="${n(h * 0.45)}" fill="#e2566f" stroke="#a23b50" stroke-width="2"/>
-      <rect x="${n(g.hx - w * 0.62)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="#f7b955"/>
-      <rect x="${n(g.hx + w * 0.26)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="#f7b955"/>
+            rx="${n(h * 0.45)}" fill="${main}" stroke="${line}" stroke-width="2"/>
+      <rect x="${n(g.hx - w * 0.62)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="${stripe}"/>
+      <rect x="${n(g.hx + w * 0.26)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="${stripe}"/>
       <rect x="${n(g.hx + w * 0.30)}" y="${n(y)}" width="${n(h * 0.9)}" height="${n(h * 2.1)}"
-            rx="${n(h * 0.35)}" fill="#e2566f" stroke="#a23b50" stroke-width="2"/>`;
+            rx="${n(h * 0.35)}" fill="${main}" stroke="${line}" stroke-width="2"/>`;
   },
 
   goggles: g => {
@@ -352,7 +359,8 @@ const ACCESSORIES = {
             <rect x="${n(g.hx - g.hrx * 0.13)}" y="${n(y - 2.5)}" width="${n(g.hrx * 0.26)}" height="5" rx="2" fill="#4d7f92"/>`;
   },
 
-  cape: g => {
+  cape: (g, c = {}) => {
+    const main = c.main || '#c0405e', light = c.light || '#d9647e', line = c.line || '#8a2b42';
     const topY = g.hy + g.hry * 0.92;
     /* A cape has to be wider than the body it hangs behind, or the body
        simply covers it. This sweeps well past the silhouette on both sides. */
@@ -362,10 +370,10 @@ const ACCESSORIES = {
                Q ${n(g.bx - w)} ${n(g.by + g.bry * 0.20)} ${n(g.bx - w * 0.86)} ${n(g.by + g.bry * 1.14)}
                Q ${n(g.bx)} ${n(g.by + g.bry * 0.84)} ${n(g.bx + w * 0.86)} ${n(g.by + g.bry * 1.14)}
                Q ${n(g.bx + w)} ${n(g.by + g.bry * 0.20)} ${n(g.bx + g.brx * 0.40)} ${n(topY)} Z"
-            fill="#c0405e" stroke="#8a2b42" stroke-width="2.6" stroke-linejoin="round"/>
+            fill="${main}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
       <path d="M ${n(g.bx - w * 0.72)} ${n(g.by + g.bry * 0.70)}
                Q ${n(g.bx)} ${n(g.by + g.bry * 0.44)} ${n(g.bx + w * 0.72)} ${n(g.by + g.bry * 0.70)}"
-            fill="none" stroke="#d9647e" stroke-width="2.4" opacity=".8"/>
+            fill="none" stroke="${light}" stroke-width="2.4" opacity=".8"/>
       <rect x="${n(g.bx - g.brx * 0.46)}" y="${n(topY - g.bry * 0.12)}"
             width="${n(g.brx * 0.92)}" height="${n(g.bry * 0.22)}"
             rx="${n(g.bry * 0.11)}" fill="#f6c453" stroke="#c9922c" stroke-width="2.2"/>`;
@@ -458,17 +466,18 @@ const ACCESSORIES = {
             rx="${n(h * 0.07)}" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`;
   },
 
-  sweater: g => {
+  sweater: (g, c = {}) => {
+    const main = c.main || '#e2566f', line = c.line || '#a23b50', knit = c.light || '#fff6e8';
     const top = g.hy + g.hry * 0.96;
     return `<path d="M ${n(g.bx - g.brx * 0.82)} ${n(top + g.bry * 0.20)}
                      Q ${n(g.bx)} ${n(top - g.bry * 0.16)} ${n(g.bx + g.brx * 0.82)} ${n(top + g.bry * 0.20)}
                      L ${n(g.bx + g.brx * 0.90)} ${n(g.by + g.bry * 0.70)}
                      Q ${n(g.bx)} ${n(g.by + g.bry * 1.00)} ${n(g.bx - g.brx * 0.90)} ${n(g.by + g.bry * 0.70)} Z"
-                  fill="#e2566f" stroke="#a23b50" stroke-width="2.6" stroke-linejoin="round"/>
+                  fill="${main}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
             <path d="M ${n(g.bx - g.brx * 0.86)} ${n(g.by + g.bry * 0.10)} Q ${n(g.bx)} ${n(g.by + g.bry * 0.34)} ${n(g.bx + g.brx * 0.86)} ${n(g.by + g.bry * 0.10)}"
-                  fill="none" stroke="#fff6e8" stroke-width="${n(g.bry * 0.13)}"/>
+                  fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.13)}"/>
             <path d="M ${n(g.bx - g.brx * 0.88)} ${n(g.by + g.bry * 0.42)} Q ${n(g.bx)} ${n(g.by + g.bry * 0.66)} ${n(g.bx + g.brx * 0.88)} ${n(g.by + g.bry * 0.42)}"
-                  fill="none" stroke="#fff6e8" stroke-width="${n(g.bry * 0.13)}"/>`;
+                  fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.13)}"/>`;
   },
 
   fairy_wings: g => {
@@ -513,14 +522,80 @@ const ACCESSORIES = {
  * but none of them has a big enough mass to be worth hand-lighting, and
  * doing it here means a new hat arrives already lit.
  */
+/* ---------- Colourways ----------
+
+   The same drawing in another colour, registered as its own item.
+
+   This is here because of something she said about the shop: she will not
+   love every single thing in it, and she is not going to spend stars she
+   worked for on something she only quite likes. The fix is more to choose
+   between — and a child who wants the bow but not in pink is not asking for
+   a new drawing, she is asking for the bow in blue.
+
+   Done by handing the drawing a palette, NOT by find-and-replacing hex
+   codes in a finished drawing. That shortcut is how this project once ended
+   up with a red lamp wearing a pink outline: the codes it replaced turned
+   out to belong to something else as well. A drawing that takes its colours
+   as an argument cannot be wrong about which ones are its own. */
+export const COLOURWAYS = {
+  /* Bows */
+  bow_blue:    { of: 'bow',      c: { main: '#6fb3d9', light: '#8ac6e6', line: '#3f7ba0' } },
+  bow_mint:    { of: 'bow',      c: { main: '#7fcfc6', light: '#9fdfd6', line: '#44928a' } },
+  bow_gold:    { of: 'bow',      c: { main: '#f6c453', light: '#ffd980', line: '#c49331' } },
+  bow_violet:  { of: 'bow',      c: { main: '#a78bc9', light: '#c0a8dd', line: '#7a5fa0' } },
+
+  /* Headbands */
+  headband_pink:  { of: 'headband', c: { main: '#f2849f', light: '#fff0a8', line: '#c98d34' } },
+  headband_mint:  { of: 'headband', c: { main: '#7fcfc6', light: '#f7b955', line: '#c98d34' } },
+  headband_berry: { of: 'headband', c: { main: '#b1648a', light: '#ffe2ef', line: '#8a4a68' } },
+
+  /* Beanies */
+  beanie_red:   { of: 'beanie', c: { main: '#e2566f', light: '#f0778c', line: '#a23b50' } },
+  beanie_moss:  { of: 'beanie', c: { main: '#6fae5f', light: '#8cc87a', line: '#4c7d41' } },
+  beanie_night: { of: 'beanie', c: { main: '#4a5680', light: '#6a77a3', line: '#333c5c',
+                                     bobble: '#ffe9a8' } },
+
+  /* Sun hats */
+  sun_hat_pink: { of: 'sun_hat', c: { main: '#f4c9d6', light: '#fde3ea',
+                                      line: '#c98fa4', band: '#7fcfc6' } },
+  sun_hat_sky:  { of: 'sun_hat', c: { main: '#bcd9ea', light: '#dcecf6',
+                                      line: '#7fa6bd', band: '#f7b955' } },
+
+  /* Bow ties */
+  bowtie_navy: { of: 'bowtie', c: { main: '#42537d', light: '#5f74a3', line: '#2b3859' } },
+  bowtie_mint: { of: 'bowtie', c: { main: '#5fb5ac', light: '#7fcfc6', line: '#3d8a82' } },
+  bowtie_plum: { of: 'bowtie', c: { main: '#9a6aa8', light: '#b98bc6', line: '#6f4a7c' } },
+
+  /* Scarves */
+  scarf_forest: { of: 'scarf', c: { main: '#4c7d41', light: '#f0d79a', line: '#36592e' } },
+  scarf_ocean:  { of: 'scarf', c: { main: '#3f7ba0', light: '#c8e8f4', line: '#2b5772' } },
+  scarf_candy:  { of: 'scarf', c: { main: '#f2849f', light: '#fff6e8', line: '#b3596e' } },
+
+  /* Capes */
+  cape_sea:     { of: 'cape', c: { main: '#2f6f8c', light: '#5e9cb8', line: '#1f4c60' } },
+  cape_forest:  { of: 'cape', c: { main: '#3f7a46', light: '#63a56b', line: '#2a5530' } },
+  cape_midnight:{ of: 'cape', c: { main: '#37406b', light: '#5b6596', line: '#242b4c' } },
+
+  /* Jumpers */
+  sweater_sky:    { of: 'sweater', c: { main: '#6fb3d9', line: '#3f7ba0', light: '#fff6e8' } },
+  sweater_moss:   { of: 'sweater', c: { main: '#7fb96c', line: '#4c7d41', light: '#fff6e8' } },
+  sweater_butter: { of: 'sweater', c: { main: '#f6c453', line: '#c49331', light: '#7a5a14' } },
+};
+
 export function wearableSVG(itemId, geom) {
-  const fn = HATS[itemId] || ACCESSORIES[itemId];
-  return fn ? shadeFills(fn(geom)) : '';
+  const way = COLOURWAYS[itemId];
+  const fn = HATS[way?.of || itemId] || ACCESSORIES[way?.of || itemId];
+  return fn ? shadeFills(fn(geom, way?.c)) : '';
 }
 
 /** Accessories that sit behind the body (a cape) rather than in front. */
 /* Worn things that belong behind the body rather than in front of it. */
-export const BEHIND_BODY = new Set(['cape', 'fairy_wings']);
+const BEHIND_BASE = ['cape', 'fairy_wings'];
+export const BEHIND_BODY = new Set([
+  ...BEHIND_BASE,
+  /* Every colourway of something that hangs behind hangs behind too. */
+  ...Object.entries(COLOURWAYS).filter(([, w]) => BEHIND_BASE.includes(w.of)).map(([id]) => id),
+]);
 
 /* ============================ SURFACES ============================
    Wallpaper and flooring are CSS backgrounds, not drawings: they must fill
@@ -1640,6 +1715,145 @@ const DECOR = {
     <text x="33" y="76" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">A</text>
     <text x="63" y="76" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">C</text>
     <text x="48" y="48" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">B</text>`,
+
+  /* ---- More to put out ----
+
+     Because a shop she does not want anything from is a shop she stops
+     visiting, and stars she will not spend are stars that stopped meaning
+     anything. These are new drawings rather than new colours: things a
+     nine-year-old would actually choose to have in her room. */
+
+  /* A beanbag: a heavy squashy shape, so the light sits on the top of it
+     and the bottom spreads where it meets the floor. */
+  beanbag: () => `
+    ${contact(50, 90, 30, 6, .28)}
+    ${litPath(`M 50 40 Q 84 44 86 72 Q 86 90 50 90 Q 14 90 14 72 Q 16 44 50 40 Z`,
+              '#f2a6b8', '#c76b83', { stroke: '#b05a72', sw: 3, join: 'round' })}
+    <path d="M 22 74 Q 50 84 78 74" fill="none" stroke="#b05a72" stroke-opacity=".5" stroke-width="2.6"/>
+    ${gloss(28, 52, 26, 6, { rot: -12, peak: .5 })}`,
+
+  /* A tea set on a tray. Three small round things, so three chances for
+     the light to do its job — but they only read as crockery if the pot has
+     a spout and a lid and the cups have saucers under them. Without those
+     it is beige lumps on a plate. */
+  tea_set: () => `
+    ${contact(50, 91, 30, 6, .26)}
+    ${litEllipse(50, 80, 33, 11, '#d9bfa0', '#a8865f', { stroke: '#8a6f54', sw: 2.6 })}
+    ${litEllipse(50, 77, 33, 10, '#eed9ba', '#c2a37c', { stroke: '#8a6f54', sw: 2.4 })}
+
+    <!-- the pot: body, spout, handle, lid and a knob to pick it up by -->
+    <path d="M 44 60 q 11 4 0 8" fill="none" stroke="#cf8ca2" stroke-width="3.6" stroke-linecap="round"/>
+    ${litEllipse(34, 64, 14, 12, '#ffd9e4', '#e29db3', { stroke: '#cf8ca2', sw: 2.4 })}
+    <path d="M 22 60 q -8 4 -2 10" fill="none" stroke="#cf8ca2" stroke-width="3.4" stroke-linecap="round"/>
+    ${litEllipse(34, 53, 11, 4, '#ffeef3', '#f0c8d6', { stroke: '#cf8ca2', sw: 2 })}
+    <circle cx="34" cy="49" r="2.8" fill="#fff6e8" stroke="#cf8ca2" stroke-width="1.8"/>
+
+    <!-- two cups, each on its own saucer -->
+    ${litEllipse(63, 74, 11, 3.6, '#f2f8fc', '#cfe0ea', { stroke: '#9cc0d2', sw: 1.8 })}
+    ${litPath('M 56 62 q 0 9 7 9 q 7 0 7 -9 z', '#e8f4fb', '#b7d6e6',
+              { stroke: '#9cc0d2', sw: 2, join: 'round' })}
+    <path d="M 70 64 q 5 3 0 6" fill="none" stroke="#9cc0d2" stroke-width="2.2"/>
+    ${litEllipse(63, 62, 7, 2.6, '#fff6e8', '#e6d3bb')}
+
+    ${litEllipse(79, 69, 9, 3.2, '#fff6e8', '#e2d0b6', { stroke: '#c0aa8c', sw: 1.6 })}
+    ${litPath('M 74 59 q 0 7 5.5 7 q 5.5 0 5.5 -7 z', '#fffaf0', '#e0d0b8',
+              { stroke: '#c0aa8c', sw: 1.8, join: 'round' })}
+    ${litEllipse(79.5, 59, 5.5, 2, '#f7e2c8', '#ddc4a2')}`,
+
+  /* A music box, open, with something turning inside it. */
+  music_box: () => `
+    ${contact(50, 90, 26, 5, .26)}
+    ${litRect(24, 58, 52, 30, 5, '#d98fa8', '#a85d78', { stroke: '#8f4a63', sw: 2.8 })}
+    <path d="M 24 44 h 52 v 14 h -52 z" fill="#c07a94" opacity=".35"/>
+    ${litPath('M 24 58 L 30 40 L 70 40 L 76 58 Z', '#e9a9bd', '#bf7390',
+              { stroke: '#8f4a63', sw: 2.6, join: 'round' })}
+    ${litEllipse(50, 54, 7, 7, '#fff6e8', '#e0cdb4', { stroke: '#bfa98e', sw: 2 })}
+    <path d="M 50 50 v -10 q 7 -1 7 5" fill="none" stroke="#f6c453" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 32 74 h 36" stroke="#f6c453" stroke-width="3" stroke-linecap="round"/>`,
+
+  /* A string of hearts across the wall. */
+  heart_garland: () => `
+    <path d="M 6 24 Q 50 44 94 24" fill="none" stroke="#b08a5c" stroke-width="2.6"/>
+    ${[[16, 31, '#f2849f'], [33, 37, '#ffd3e2'], [50, 40, '#f2849f'],
+       [67, 37, '#ffd3e2'], [84, 31, '#f2849f']].map(([x, y, col], i) => {
+      const r = 8 - (i % 2) * 1.6;
+      return `<path d="M ${x} ${y + r * 1.25}
+                       C ${x - r * 1.5} ${y + r * 0.2} ${x - r * 0.6} ${y - r * 0.9} ${x} ${y - r * 0.1}
+                       C ${x + r * 0.6} ${y - r * 0.9} ${x + r * 1.5} ${y + r * 0.2} ${x} ${y + r * 1.25} Z"
+                    fill="${col}" stroke="#c9738c" stroke-width="1.8" stroke-linejoin="round"/>
+              <ellipse cx="${x - r * 0.4}" cy="${y + r * 0.1}" rx="${n(r * 0.3)}" ry="${n(r * 0.2)}"
+                       fill="#fff" opacity=".45"/>`;
+    }).join('')}`,
+
+  /* A mobile of clouds and a moon, hung from one point. */
+  cloud_mobile: () => `
+    <path d="M 50 8 V 20" stroke="#b08a5c" stroke-width="2.4"/>
+    <path d="M 22 22 H 78" fill="none" stroke="#b08a5c" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M 26 22 V 38 M 50 22 V 48 M 74 22 V 34" stroke="#cbb79a" stroke-width="1.8"/>
+    ${litEllipse(26, 46, 13, 9, '#ffffff', '#d8e6ef', { stroke: '#b7cad8', sw: 2 })}
+    <circle cx="20" cy="44" r="6.5" fill="#f2f8fc"/><circle cx="31" cy="43" r="8" fill="#f8fcff"/>
+    ${litEllipse(74, 42, 11, 8, '#ffffff', '#d8e6ef', { stroke: '#b7cad8', sw: 2 })}
+    <circle cx="69" cy="40" r="5.5" fill="#f2f8fc"/><circle cx="78" cy="40" r="6.5" fill="#f8fcff"/>
+    ${litPath('M 50 54 a 11 11 0 1 0 8 18 a 13 13 0 1 1 -8 -18 z', '#ffe9a8', '#e8c35c',
+              { stroke: '#cba845', sw: 2, join: 'round' })}`,
+
+  /* A pinboard with a few things pinned to it. */
+  pinboard: () => `
+    ${litRect(12, 18, 76, 58, 4, '#d9b98c', '#b0905f', { stroke: '#8a6f54', sw: 3 })}
+    ${litRect(17, 23, 66, 48, 2, '#e8cfa6', '#c8a878')}
+    ${litRect(24, 30, 22, 18, 1.5, '#fff6e8', '#e2d4bd', { stroke: '#c9b89c', sw: 1.6 })}
+    <path d="M 28 36 h 14 M 28 40 h 10" stroke="#b7a68c" stroke-width="1.8" stroke-linecap="round"/>
+    ${litRect(52, 36, 24, 20, 1.5, '#ffe2ef', '#ecc3d4', { stroke: '#d3a3b8', sw: 1.6 })}
+    <path d="M 57 46 q 6 -8 12 0" fill="none" stroke="#c9738c" stroke-width="2"/>
+    ${litRect(30, 52, 20, 14, 1.5, '#d8eefa', '#b3d6e8', { stroke: '#8fb8cd', sw: 1.6 })}
+    ${[[35, 30, '#e2566f'], [64, 36, '#6fb3d9'], [40, 52, '#f6c453']].map(([x, y, col]) =>
+      `<circle cx="${x}" cy="${y}" r="3.2" fill="${col}" stroke="rgba(90,64,40,.3)" stroke-width="1.2"/>
+       <circle cx="${x - 1}" cy="${y - 1}" r="1.1" fill="#fff" opacity=".7"/>`).join('')}`,
+
+  /* A bird bath for the garden: a bowl on a stem with water in it. */
+  bird_bath: () => `
+    ${contact(50, 92, 24, 5, .28)}
+    ${litPath('M 40 90 L 44 56 L 56 56 L 60 90 Z', '#cbc3b6', '#8b8275',
+              { stroke: '#7d7468', sw: 2.6, join: 'round' })}
+    ${litEllipse(50, 90, 20, 6, '#cbc3b6', '#8b8275', { stroke: '#7d7468', sw: 2.6 })}
+    ${litEllipse(50, 50, 30, 12, '#ded6c8', '#a29887', { stroke: '#7d7468', sw: 3 })}
+    <ellipse cx="50" cy="48" rx="24" ry="8.5" fill="#4f93ad"/>
+    ${litEllipse(50, 48, 23, 8, '#a7dcec', '#4a8ba6', { cy: '78%', r: '92%' })}
+    <g class="ia-rings" style="transform-origin:56% 48%">
+      <ellipse cx="56" cy="48" rx="6" ry="2.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.4"/>
+      <ellipse cx="56" cy="48" rx="11" ry="4.2" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/>
+    </g>
+    ${litEllipse(28, 40, 7, 6, '#f2849f', '#c9738c', { stroke: '#a85d78', sw: 1.8 })}
+    <circle cx="25" cy="38" r="1.4" fill="#3a2e28"/>
+    <path d="M 22 40 l -4 1 4 1 z" fill="#f6c453"/>`,
+
+  /* A lantern on a post, for the garden path. */
+  lantern_post: () => `
+    ${contact(50, 92, 18, 4, .28)}
+    <path d="M 50 92 V 40" stroke="#5f6a52" stroke-width="6" stroke-linecap="round"/>
+    ${litEllipse(50, 92, 15, 5, '#6b7660', '#454e3c', { stroke: '#3c452f', sw: 2.4 })}
+    ${litPath('M 34 40 L 50 22 L 66 40 Z', '#6b7660', '#454e3c',
+              { stroke: '#3c452f', sw: 2.4, join: 'round' })}
+    ${litRect(36, 40, 28, 26, 2, '#fff2c4', '#f0d68a', { stroke: '#3c452f', sw: 2.6 })}
+    <path d="M 50 40 V 66 M 36 53 H 64" stroke="#3c452f" stroke-width="2"/>
+    <circle cx="50" cy="53" r="6.5" fill="#fff8dd" opacity=".9"/>
+    <circle cx="50" cy="53" r="12" fill="#ffe9a3" opacity=".22"/>`,
+
+  /* A ring of toadstools, which is a thing a child will absolutely want. */
+  mushroom_ring: () => `
+    ${contact(50, 84, 34, 7, .24)}
+    ${[[22, 74, 1], [38, 80, .82], [58, 80, .9], [76, 73, 1.05],
+       [30, 64, .7], [68, 64, .75], [50, 60, .62]].map(([x, y, k]) => {
+      const r = 11 * k;
+      return `${litPath(`M ${n(x - r * 0.34)} ${n(y)} q 0 ${n(-r * 0.8)} ${n(r * 0.34)} ${n(-r * 0.8)}
+                         q ${n(r * 0.34)} 0 ${n(r * 0.34)} ${n(r * 0.8)} z`,
+                        '#fff6e8', '#ded0bb', { stroke: '#bfae95', sw: 1.6, join: 'round' })}
+              ${litPath(`M ${n(x - r)} ${n(y - r * 0.72)} a ${n(r)} ${n(r * 0.86)} 0 0 1 ${n(r * 2)} 0 z`,
+                        '#ef8d8d', '#c05252', { stroke: '#a84545', sw: 2, join: 'round' })}
+              ${[[-0.45, -0.25], [0.2, -0.42], [0.5, -0.18]].map(([dx, dy]) =>
+                `<ellipse cx="${n(x + r * dx)}" cy="${n(y - r * 0.72 + r * dy)}"
+                          rx="${n(r * 0.17)}" ry="${n(r * 0.12)}" fill="#fff6e8" opacity=".9"/>`).join('')}`;
+    }).join('')}`,
 
   stool: () => `
     ${contact(50, 90, 26, 5, .26)}

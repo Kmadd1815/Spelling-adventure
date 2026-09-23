@@ -207,6 +207,54 @@ export const CATALOG = [
   { id: 'sweater',      name: 'Stripy Sweater',  category: 'accessory', price: 175, blurb: 'Knitted with love.' },
   { id: 'fairy_wings',  name: 'Fairy Wings',     category: 'accessory', price: 330, blurb: 'They shimmer.' },
 
+  /* ---- More to put out ---- */
+  { id: 'beanbag',      name: 'Squashy Beanbag', category: 'floorDecor', price: 130, blurb: 'For flopping into.' },
+  { id: 'tea_set',      name: 'Tea Set',         category: 'floorDecor', price: 155, blurb: 'Three cups, no waiting.' },
+  { id: 'music_box',    name: 'Music Box',       category: 'floorDecor', price: 240, blurb: 'It plays when you open it.' },
+  { id: 'heart_garland', name: 'Heart Garland',  category: 'wallDecor', price: 70,  blurb: 'Five hearts on a string.' },
+  { id: 'cloud_mobile', name: 'Cloud Mobile',    category: 'wallDecor', price: 120, blurb: 'Clouds and a little moon.' },
+  { id: 'pinboard',     name: 'Pinboard',        category: 'wallDecor', price: 160, blurb: 'Notes, a drawing, a photo.' },
+  { id: 'bird_bath',    name: 'Bird Bath',       category: 'gardenDecor', price: 175, blurb: 'Somebody is already using it.' },
+  { id: 'lantern_post', name: 'Lantern Post',    category: 'gardenDecor', price: 210, blurb: 'Lights the path home.' },
+  { id: 'mushroom_ring', name: 'Toadstool Ring', category: 'gardenDecor', price: 245, blurb: 'Seven of them, in a ring.' },
+
+  /* ---- The same things in other colours ----
+
+     She will not love every single item in here, and she is not going to
+     spend stars she worked for on something she only quite likes. So the
+     answer to "there isn't enough I want" is not only more drawings, it is
+     more of what she already wants: a child who likes the bow but not in
+     pink is not asking for a new hat.
+
+     Each of these is the same drawing handed a different palette — see
+     COLOURWAYS in ui/item-art.js — so it is genuinely the item she likes,
+     in the colour she likes, and it costs what the original costs. */
+  { id: 'bow_blue',     name: 'Blue Bow',        category: 'hat', price: 40,  blurb: 'The same neat bow, in blue.' },
+  { id: 'bow_mint',     name: 'Mint Bow',        category: 'hat', price: 40,  blurb: 'Soft sea green.' },
+  { id: 'bow_gold',     name: 'Gold Bow',        category: 'hat', price: 45,  blurb: 'A little bit fancy.' },
+  { id: 'bow_violet',   name: 'Violet Bow',      category: 'hat', price: 40,  blurb: 'Quietly purple.' },
+  { id: 'headband_pink',  name: 'Pink Headband',  category: 'hat', price: 55, blurb: 'With a sunny bead.' },
+  { id: 'headband_mint',  name: 'Mint Headband',  category: 'hat', price: 55, blurb: 'Cool and fresh.' },
+  { id: 'headband_berry', name: 'Berry Headband', category: 'hat', price: 60, blurb: 'Deep pink, pale bead.' },
+  { id: 'sun_hat_pink', name: 'Rose Sun Hat',    category: 'hat', price: 60,  blurb: 'Pale pink with a green band.', season: 'summer' },
+  { id: 'sun_hat_sky',  name: 'Sky Sun Hat',     category: 'hat', price: 60,  blurb: 'Pale blue with a gold band.', season: 'summer' },
+  { id: 'beanie_red',   name: 'Berry Beanie',    category: 'hat', price: 75,  blurb: 'Warm and red.', season: 'winter' },
+  { id: 'beanie_moss',  name: 'Moss Beanie',     category: 'hat', price: 75,  blurb: 'Green as a hedge.', season: 'winter' },
+  { id: 'beanie_night', name: 'Midnight Beanie', category: 'hat', price: 85,  blurb: 'Deep blue, gold bobble.', season: 'winter' },
+
+  { id: 'bowtie_navy',  name: 'Navy Bow Tie',    category: 'accessory', price: 45, blurb: 'Very smart.' },
+  { id: 'bowtie_mint',  name: 'Mint Bow Tie',    category: 'accessory', price: 45, blurb: 'Smart, but softer.' },
+  { id: 'bowtie_plum',  name: 'Plum Bow Tie',    category: 'accessory', price: 50, blurb: 'For special occasions.' },
+  { id: 'scarf_forest', name: 'Forest Scarf',    category: 'accessory', price: 75, blurb: 'Green with gold stripes.', season: 'fall' },
+  { id: 'scarf_ocean',  name: 'Ocean Scarf',     category: 'accessory', price: 75, blurb: 'Blue with pale stripes.', season: 'winter' },
+  { id: 'scarf_candy',  name: 'Candy Scarf',     category: 'accessory', price: 75, blurb: 'Pink with cream stripes.', season: 'winter' },
+  { id: 'sweater_sky',    name: 'Sky Sweater',    category: 'accessory', price: 175, blurb: 'Knitted in blue.' },
+  { id: 'sweater_moss',   name: 'Moss Sweater',   category: 'accessory', price: 175, blurb: 'Knitted in green.' },
+  { id: 'sweater_butter', name: 'Butter Sweater', category: 'accessory', price: 175, blurb: 'Warm yellow, dark stitching.' },
+  { id: 'cape_sea',       name: 'Sea Cape',       category: 'accessory', price: 220, blurb: 'Deep blue, swooshes the same.' },
+  { id: 'cape_forest',    name: 'Forest Cape',    category: 'accessory', price: 220, blurb: 'Green as the garden.' },
+  { id: 'cape_midnight',  name: 'Midnight Cape',  category: 'accessory', price: 240, blurb: 'Almost black, almost blue.' },
+
   /* ---- More wallpaper ---- */
   { id: 'wall_clouds',  name: 'Cloudy Sky',      category: 'wallpaper', price: 110, blurb: 'Soft and drifting.', season: 'winter' },
   { id: 'wall_rainbow', name: 'Rainbow Stripes', category: 'wallpaper', price: 185, blurb: 'Every colour at once.' },
