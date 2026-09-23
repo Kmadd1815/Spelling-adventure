@@ -122,6 +122,98 @@ const after = await page.evaluate(async () => {
 ok('the reminder goes quiet once a copy exists', !after.due && after.says === 'Last copy saved today.',
    JSON.stringify(after));
 
+/* ---------- moving to another tablet ----------
+
+   This is the one path in the whole app where losing is permanent, and it
+   was the one path nothing tested. Everything above proves a backup file
+   gets WRITTEN. None of it proved the file can be read back onto a device
+   that has never seen this app — which is the only reason the file exists.
+
+   So: take the copy just saved, wipe the browser the way a brand new
+   tablet is wiped, restore the file, and check that months of her progress
+   actually came back. Not "it loaded" — the mastered words, the stars, the
+   treasures she bought, what is out in her room, her pet's name and her
+   practice days, item by item. */
+const before = await page.evaluate(() => {
+  const st = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+  return {
+    name: st.child.petName, child: st.child.name,
+    stars: st.progress.stars, days: st.progress.currentStreak,
+    words: st.words.length,
+    mastered: st.words.filter(w => w.masteredAt).map(w => w.text).sort(),
+    streaks: Object.fromEntries(st.words.map(w => [w.text, w.streak])),
+    owns: st.collection.items.length,
+    equipped: JSON.stringify(st.equipped),
+    birthday: st.settings.birthday,
+  };
+});
+
+/* A brand new tablet: nothing in storage at all, including the rolling
+   auto-backup, so there is nowhere to recover from except the file. */
+await page.evaluate(() => localStorage.clear());
+await page.goto(BASE, { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(500);
+const fresh = await page.evaluate(async () => {
+  const st = await import('/js/core/state.js');
+  return { setup: st.getState().child.setupComplete, words: st.getState().words.length };
+});
+ok('a tablet that has never seen the app starts empty',
+   fresh.setup === false && fresh.words === 0, JSON.stringify(fresh));
+
+/* Restore the file, exactly as the Parent Area does: read it, parse it,
+   and put it in. Deliberately through storage.parseBackup rather than by
+   pasting the raw JSON, because parseBackup is what the button calls and
+   it is where an old backup gets migrated forward. */
+const restored = await page.evaluate(async fileText => {
+  const storage = await import('/js/core/storage.js');
+  const st = await import('/js/core/state.js');
+  const next = storage.parseBackup(fileText);
+  st.replaceState(next);
+  storage.flush(next);
+  const s = st.getState();
+  return {
+    name: s.child.petName, child: s.child.name,
+    stars: s.progress.stars, days: s.progress.currentStreak,
+    words: s.words.length,
+    mastered: s.words.filter(w => w.masteredAt).map(w => w.text).sort(),
+    streaks: Object.fromEntries(s.words.map(w => [w.text, w.streak])),
+    owns: s.collection.items.length,
+    equipped: JSON.stringify(s.equipped),
+    birthday: s.settings.birthday,
+  };
+}, text);
+
+ok('her words all come back', restored.words === before.words,
+   `${before.words} before, ${restored.words} after`);
+ok('...and the ones she had mastered are still mastered',
+   JSON.stringify(restored.mastered) === JSON.stringify(before.mastered),
+   `${before.mastered.join(',')} -> ${restored.mastered.join(',')}`);
+ok('...with every word where it was on the way to mastery',
+   JSON.stringify(restored.streaks) === JSON.stringify(before.streaks),
+   JSON.stringify(restored.streaks));
+ok('her stars and practice days come back',
+   restored.stars === before.stars && restored.days === before.days,
+   `${restored.stars} stars, ${restored.days} days`);
+ok('her treasures come back', restored.owns === before.owns,
+   `${before.owns} -> ${restored.owns}`);
+ok('...and her room is still arranged the way she left it',
+   restored.equipped === before.equipped, restored.equipped.slice(0, 80));
+ok('her pet is still her pet, with the same name',
+   restored.name === before.name && restored.child === before.child,
+   `${restored.child} and ${restored.name}`);
+ok('...and settings a grown-up chose come with her',
+   restored.birthday === before.birthday, String(restored.birthday));
+
+/* And the app itself agrees, not just the save file. */
+await page.goto(BASE + '#/', { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(700);
+ok('the restored tablet opens on her room, not on the welcome screen',
+   await page.locator('.room').count() === 1,
+   (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ').slice(0, 70));
+await page.screenshot({ path: `${SP}/K3-restored.png` });
+
 /* ---------- persistence and size are reported, never crash ---------- */
 const health = await page.evaluate(async () => {
   const s = await import('/js/core/safety.js');

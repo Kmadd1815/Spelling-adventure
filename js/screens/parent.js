@@ -810,6 +810,7 @@ export default function parentScreen(container) {
       backButton(() => show({ name: 'hub' })),
 
       backupCard(fileInput),
+      movingCard(),
 
       el('div', { class: 'card' },
         el('h3', { text: 'Start over' }),
@@ -950,6 +951,28 @@ export default function parentScreen(container) {
       button('Restore from a copy', { cls: 'btn btn-quiet btn-block', emoji: '\u{1F4C2}',
         onClick: () => fileInput.click() }),
       fileInput
+    );
+  }
+
+  /* The instructions for a thing you do once, months from now, and will
+     not remember. It is three steps and they are all here rather than in
+     somebody's head. */
+  function movingCard() {
+    const step = (n, text) => el('div', { class: 'word-row' },
+      el('div', { class: 'move-step', text: String(n) }),
+      el('div', { class: 'grow tiny', text })
+    );
+    return el('div', { class: 'card' },
+      el('h2', { text: 'Moving it to another tablet' }),
+      el('p', { class: 'muted tiny', text:
+        'Everything she has done travels in the backup file, so this works \u2014 her words, her mastered list, her stars, her treasures and the way her room is arranged all come back.' }),
+      el('div', { class: 'stack-sm', style: { margin: '12px 0' } },
+        step(1, 'On this tablet: Save a copy, above, and send it somewhere the other tablet can reach \u2014 your cloud drive, or email it to yourself.'),
+        step(2, 'On the new tablet: open the same web address in Chrome, then use Chrome\u2019s menu to Add to Home screen. It becomes an app icon and works without internet after that.'),
+        step(3, 'On the new tablet: Grown-ups \u2192 Backup & reset \u2192 Restore from a copy, and pick the file.')
+      ),
+      el('p', { class: 'muted tiny', text:
+        'Two things worth knowing. This is a move, not a sync: the old tablet keeps its own copy, so whichever one she plays on from then is the real one \u2014 clear the other, or put it away. And if the voice she likes does not exist on the new tablet, the app picks the best one there instead; you can change it under Voice.' })
     );
   }
 

@@ -918,6 +918,15 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   }
 }
 
+/* The numbered steps on the "moving it to another tablet" card. */
+.move-step {
+  flex: 0 0 auto;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-weight: 900; font-size: .8rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
 .surface-swatch {
   border-radius: var(--r-md);
   box-shadow: inset 0 0 0 2px rgba(122, 96, 77, .18);
