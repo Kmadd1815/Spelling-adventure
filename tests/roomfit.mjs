@@ -32,6 +32,28 @@ const SEED = window_ => {
       .map((id, i) => ({ id: 'o' + i, itemId: id, source: 'test', earnedAt: now })) } }));
 };
 
+/* A shadow is not part of the thing that throws it. The door correctly drops
+   one onto the floor IN FRONT of it, so measuring the whole drawing would
+   report that the door has sunk through the floorboards. Everything that is
+   a shadow carries the class ui/item-art.js gives it, so it can be left out.
+
+   This is installed into the page rather than passed to one evaluate,
+   because two checks below need it and a helper defined inside an evaluate
+   does not exist for the next one. */
+const INK_BOX = () => {
+  window.inkBox = svg => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const el of svg.querySelectorAll('*')) {
+      if (!el.getBBox || el.closest('defs') || el.classList.contains('ia-shadow')) continue;
+      let r; try { r = el.getBBox(); } catch { continue; }
+      if (!r.width && !r.height) continue;
+      x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y);
+      x1 = Math.max(x1, r.x + r.width); y1 = Math.max(y1, r.y + r.height);
+    }
+    return x0 === Infinity ? null : { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+  };
+};
+
 /* The box a piece's INK actually occupies, in room percentages. A piece's
    node is its whole square; most of that square is empty space around the
    drawing, which is why placing things by their nodes is what let the door
@@ -42,7 +64,8 @@ function INK(sel) {
   return [...room.querySelectorAll(sel)].map(n => {
     const svg = n.querySelector('svg');
     if (!svg || !svg.getBBox) return null;
-    const g = svg.getBBox(), b = n.getBoundingClientRect();
+    const g = window.inkBox(svg), b = n.getBoundingClientRect();
+    if (!g) return null;
     return {
       id: n.dataset.what || '',
       l: 100 * (b.left + b.width * (g.x / 100) - R.left) / R.width,
@@ -59,6 +82,7 @@ const overlap = (a, b) =>
 
 const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
+await page.addInitScript(INK_BOX);
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 
@@ -107,7 +131,7 @@ for (const id of WINDOWS) {
     const room = document.querySelector('.room');
     const R = room.getBoundingClientRect();
     const node = document.querySelector('.room-window');
-    const svg = node.querySelector('svg'), g = svg.getBBox();
+    const svg = node.querySelector('svg'), g = window.inkBox(svg);
     const nb = node.getBoundingClientRect();
     const pct = (px, along) => along === 'x'
       ? 100 * (px - R.left) / R.width : 100 * (px - R.top) / R.height;

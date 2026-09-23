@@ -522,92 +522,165 @@ export const BEHIND_BODY = new Set(['cape', 'fairy_wings']);
 /* Every entry sets backgroundColor separately from backgroundImage. Using
    the `background` shorthand alongside backgroundImage silently drops the
    base colour, which leaves a patterned surface floating on nothing. */
+/* ---------- Depth, shared by every surface ----------
+
+   A wall and a floor are the two biggest things on the screen, so whatever
+   they do to the eye, the whole room does. Flat colour makes a room look
+   like a diagram of a room. Three cheap layers fix that, and they go on
+   top of whatever pattern the surface already has:
+
+     - light falls from above, so the top of the wall is brighter than the
+       bottom and the floor is brightest at the front;
+     - light does not reach into the join between them, so there is a dark
+       band along the top of the floor. This one line of shadow does more
+       for the room than any amount of detail in the furniture;
+     - the window is in the top left corner, so there is a warm pool of
+       daylight there.
+*/
+const WALL_DEPTH =
+  'radial-gradient(ellipse 95% 120% at 16% 2%, rgba(255,246,222,.34), rgba(255,246,222,0) 58%), ' +
+  'linear-gradient(180deg, rgba(255,255,255,.17) 0%, rgba(255,255,255,0) 40%, rgba(62,42,26,.13) 100%)';
+
+/* The floor's own light, and the shadow in the join above it. */
+const FLOOR_DEPTH =
+  'linear-gradient(180deg, rgba(70,48,28,.32) 0%, rgba(70,48,28,.07) 13%, ' +
+  'rgba(255,255,255,0) 55%, rgba(255,255,255,.12) 100%)';
+
+/* Board ends and tile joints bunch up towards the back of the room, the way
+   anything does when it is running away from you. Even spacing is exactly
+   what made the old floor read as a sheet of graph paper rather than as
+   something you could walk on. */
+const rows = (dark, soft = 0.26, lit = 0) => {
+  const at = [5.6, 13.0, 22.4, 34.4, 49.6, 68.6, 91.4];
+  const parts = [];
+  let prev = 0;
+  at.forEach((y, i) => {
+    const t = 0.55 + i * 0.16;                 // thicker towards the front
+    parts.push(`transparent ${prev}% ${y}%`, `rgba(${dark},${soft}) ${y}% ${y + t}%`);
+    prev = y + t;
+    /* The top edge of the next board catches the light, which is what gives
+       a board thickness instead of drawing a line on a sheet of paper. */
+    if (lit) {
+      parts.push(`rgba(255,255,255,${lit}) ${prev}% ${prev + t * 0.9}%`);
+      prev += t * 0.9;
+    }
+  });
+  parts.push(`transparent ${prev}%`);
+  return `linear-gradient(180deg, ${parts.join(', ')})`;
+};
+const WOOD_ROWS  = rows('108,74,40', 0.34, 0.16);
+const STONE_ROWS = rows('120,116,108', 0.22, 0.12);
+const GRASS_ROWS = rows('64,116,58', 0.18);
+
+/* Outdoors the far end of the garden is hazier and cooler than the grass at
+   your feet — that is distance, and without it the lawn is a green
+   rectangle standing on its end. */
+const GROUND_DEPTH =
+  'linear-gradient(180deg, rgba(46,72,40,.34) 0%, rgba(46,72,40,.10) 9%, ' +
+  'rgba(255,255,255,0) 52%, rgba(255,255,255,.10) 100%)';
+
+/* Every entry sets backgroundColor separately from backgroundImage. Using
+   the `background` shorthand alongside backgroundImage silently drops the
+   base colour, which leaves a patterned surface floating on nothing. */
 export const SURFACES = {
   /* ---- Wallpaper ---- */
   wall_plain: {
     backgroundColor: '#f6e7d2',
-    backgroundImage: 'linear-gradient(180deg, #fdf3e4, #f6e7d2)',
+    backgroundImage: `${WALL_DEPTH}, linear-gradient(180deg, #fdf3e4, #f3e2ca)`,
   },
   wall_stripes: {
     backgroundColor: '#d3ebdd',
-    backgroundImage: 'repeating-linear-gradient(90deg, #e6f4ec 0 16px, #d3ebdd 16px 32px)',
+    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(90deg, #e6f4ec 0 16px, #d3ebdd 16px 32px)`,
   },
   wall_dots: {
     backgroundColor: '#fbe4ec',
-    backgroundImage: 'radial-gradient(#f3adc6 22%, transparent 24%), radial-gradient(#f3adc6 22%, transparent 24%)',
-    backgroundSize: '28px 28px, 28px 28px',
-    backgroundPosition: '0 0, 14px 14px',
+    backgroundImage: `${WALL_DEPTH}, radial-gradient(#f3adc6 22%, transparent 24%), radial-gradient(#f3adc6 22%, transparent 24%)`,
+    backgroundSize: 'auto, auto, 28px 28px, 28px 28px',
+    backgroundPosition: '0 0, 0 0, 0 0, 14px 14px',
   },
+  /* A night sky on the wall wants the light layer turned down, or the
+     window's daylight washes the stars out. */
   wall_stars: {
     backgroundColor: '#3f4a78',
-    backgroundImage: 'radial-gradient(#fff3cc 14%, transparent 16%), radial-gradient(#ffe9a8 10%, transparent 12%)',
-    backgroundSize: '46px 46px, 62px 62px',
-    backgroundPosition: '0 0, 28px 24px',
+    backgroundImage: 'radial-gradient(ellipse 95% 120% at 16% 2%, rgba(214,226,255,.16), transparent 58%), ' +
+      'linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 40%, rgba(10,14,34,.28) 100%), ' +
+      'radial-gradient(#fff3cc 14%, transparent 16%), radial-gradient(#ffe9a8 10%, transparent 12%)',
+    backgroundSize: 'auto, auto, 46px 46px, 62px 62px',
+    backgroundPosition: '0 0, 0 0, 0 0, 28px 24px',
   },
   wall_flowers: {
     backgroundColor: '#eef7e8',
-    backgroundImage: 'radial-gradient(#f6a8c0 16%, transparent 18%), radial-gradient(#ffd980 12%, transparent 14%), radial-gradient(#9dd3ab 10%, transparent 12%)',
-    backgroundSize: '54px 54px, 54px 54px, 38px 38px',
-    backgroundPosition: '0 0, 27px 27px, 14px 34px',
+    backgroundImage: `${WALL_DEPTH}, radial-gradient(#f6a8c0 16%, transparent 18%), radial-gradient(#ffd980 12%, transparent 14%), radial-gradient(#9dd3ab 10%, transparent 12%)`,
+    backgroundSize: 'auto, auto, 54px 54px, 54px 54px, 38px 38px',
+    backgroundPosition: '0 0, 0 0, 0 0, 27px 27px, 14px 34px',
   },
 
   wall_clouds: {
     backgroundColor: '#cfe6f5',
-    backgroundImage: 'radial-gradient(circle at 30% 60%, #fff 18%, transparent 20%), radial-gradient(circle at 55% 45%, #fff 22%, transparent 24%), radial-gradient(circle at 75% 62%, #fff 16%, transparent 18%)',
-    backgroundSize: '120px 80px, 120px 80px, 120px 80px',
+    backgroundImage: `${WALL_DEPTH}, radial-gradient(circle at 30% 60%, #fff 18%, transparent 20%), radial-gradient(circle at 55% 45%, #fff 22%, transparent 24%), radial-gradient(circle at 75% 62%, #fff 16%, transparent 18%)`,
+    backgroundSize: 'auto, auto, 120px 80px, 120px 80px, 120px 80px',
   },
   wall_rainbow: {
     backgroundColor: '#fdf3e4',
-    backgroundImage: 'repeating-linear-gradient(90deg, #f6b0b0 0 18px, #f8cf9a 18px 36px, #f7e7a0 36px 54px, #b6e0b0 54px 72px, #a8cfef 72px 90px, #cbb4e4 90px 108px)',
+    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(90deg, #f6b0b0 0 18px, #f8cf9a 18px 36px, #f7e7a0 36px 54px, #b6e0b0 54px 72px, #a8cfef 72px 90px, #cbb4e4 90px 108px)`,
   },
+  /* The shelves get their own shadow under each one, so the books sit on
+     something instead of hanging in a grid. */
   wall_books: {
     backgroundColor: '#c9a87c',
-    backgroundImage: 'repeating-linear-gradient(90deg, #d4594f 0 11px, #4f7fa8 11px 20px, #d8a648 20px 31px, #5f8f66 31px 39px, #9a6bb0 39px 50px, transparent 50px 56px), repeating-linear-gradient(180deg, transparent 0 54px, #8a6340 54px 62px)',
+    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(180deg, transparent 0 46px, rgba(60,40,22,.28) 46px 54px, #8a6340 54px 62px), repeating-linear-gradient(90deg, #d4594f 0 11px, #4f7fa8 11px 20px, #d8a648 20px 31px, #5f8f66 31px 39px, #9a6bb0 39px 50px, transparent 50px 56px)`,
   },
   wall_ocean: {
     backgroundColor: '#2f6f96',
-    backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,.14) 0 3px, transparent 3px 26px), radial-gradient(circle at 22% 30%, rgba(255,255,255,.35) 5%, transparent 7%), radial-gradient(circle at 70% 60%, rgba(255,255,255,.28) 4%, transparent 6%)',
-    backgroundSize: 'auto, 90px 90px, 70px 70px',
+    backgroundImage: `${WALL_DEPTH}, repeating-linear-gradient(180deg, rgba(255,255,255,.14) 0 3px, transparent 3px 26px), radial-gradient(circle at 22% 30%, rgba(255,255,255,.35) 5%, transparent 7%), radial-gradient(circle at 70% 60%, rgba(255,255,255,.28) 4%, transparent 6%)`,
+    backgroundSize: 'auto, auto, auto, 90px 90px, 70px 70px',
   },
 
-  /* ---- Flooring ---- */
+  /* ---- Flooring ----
+     Seams between boards run away from the viewer; board ends close up
+     towards the back. */
+  /* Boards run across the room, so their edges bunch up towards the back:
+     that alone is the perspective. There are deliberately NO seams running
+     the other way — a continuous grid of both is what made this read as a
+     sheet of graph paper rather than as a floor. */
   floor_wood: {
     backgroundColor: '#d9b183',
-    backgroundImage: 'repeating-linear-gradient(90deg, rgba(150,105,60,.30) 0 2px, transparent 2px 58px), repeating-linear-gradient(180deg, rgba(150,105,60,.16) 0 2px, transparent 2px 30px)',
+    backgroundImage: `${FLOOR_DEPTH}, ${WOOD_ROWS}, ` +
+      'repeating-linear-gradient(181deg, rgba(150,110,62,.10) 0 1px, transparent 1px 7px)',
   },
   floor_tile: {
     backgroundColor: '#f2ece2',
-    backgroundImage: 'repeating-conic-gradient(#e0d2bd 0% 25%, #f7f2e8 0% 50%)',
-    backgroundSize: '44px 44px',
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, repeating-conic-gradient(#e0d2bd 0% 25%, #f7f2e8 0% 50%)`,
+    backgroundSize: 'auto, auto, 46px 46px',
   },
   floor_grass: {
     backgroundColor: '#9fd08a',
-    backgroundImage: 'repeating-linear-gradient(105deg, rgba(90,150,80,.30) 0 3px, transparent 3px 11px)',
+    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(105deg, rgba(90,150,80,.30) 0 3px, transparent 3px 11px)`,
   },
   floor_stone: {
     backgroundColor: '#cfc9c0',
-    backgroundImage: 'radial-gradient(#bdb5aa 30%, transparent 32%), radial-gradient(#c9c2b8 26%, transparent 28%)',
-    backgroundSize: '52px 38px, 44px 32px',
-    backgroundPosition: '0 0, 26px 19px',
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, radial-gradient(#bdb5aa 30%, transparent 32%), radial-gradient(#c9c2b8 26%, transparent 28%)`,
+    backgroundSize: 'auto, auto, 52px 38px, 44px 32px',
+    backgroundPosition: '0 0, 0 0, 0 0, 26px 19px',
   },
   floor_pond: {
     backgroundColor: '#8ecfe6',
-    backgroundImage: 'repeating-linear-gradient(100deg, rgba(255,255,255,.40) 0 4px, transparent 4px 16px), linear-gradient(180deg, rgba(255,255,255,.35), transparent)',
+    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(100deg, rgba(255,255,255,.40) 0 4px, transparent 4px 16px), linear-gradient(180deg, rgba(255,255,255,.35), transparent)`,
   },
   floor_moss: {
     backgroundColor: '#8fbf7a',
-    backgroundImage: 'radial-gradient(#79ad64 24%, transparent 26%), radial-gradient(#a4cf90 20%, transparent 22%)',
-    backgroundSize: '34px 34px, 26px 26px',
-    backgroundPosition: '0 0, 17px 13px',
+    backgroundImage: `${FLOOR_DEPTH}, radial-gradient(#79ad64 24%, transparent 26%), radial-gradient(#a4cf90 20%, transparent 22%)`,
+    backgroundSize: 'auto, 34px 34px, 26px 26px',
+    backgroundPosition: '0 0, 0 0, 17px 13px',
   },
   floor_sand: {
     backgroundColor: '#eed9ab',
-    backgroundImage: 'repeating-linear-gradient(92deg, rgba(200,170,120,.34) 0 2px, transparent 2px 13px), radial-gradient(rgba(190,158,108,.4) 18%, transparent 20%)',
-    backgroundSize: 'auto, 18px 18px',
+    backgroundImage: `${FLOOR_DEPTH}, repeating-linear-gradient(92deg, rgba(200,170,120,.34) 0 2px, transparent 2px 13px), radial-gradient(rgba(190,158,108,.4) 18%, transparent 20%)`,
+    backgroundSize: 'auto, auto, 18px 18px',
   },
   floor_marble: {
     backgroundColor: '#eceaf0',
-    backgroundImage: 'repeating-linear-gradient(56deg, rgba(150,148,165,.26) 0 2px, transparent 2px 9px, rgba(150,148,165,.14) 9px 10px, transparent 10px 44px)',
+    backgroundImage: `${FLOOR_DEPTH}, ${STONE_ROWS}, repeating-linear-gradient(56deg, rgba(150,148,165,.26) 0 2px, transparent 2px 9px, rgba(150,148,165,.14) 9px 10px, transparent 10px 44px)`,
   },
   /* ---- The garden: sky ----
      These fill the top band of the garden, so they are drawn as if seen
@@ -615,60 +688,243 @@ export const SURFACES = {
      placed high enough that a tree does not grow through it. */
   sky_day: {
     backgroundColor: '#8fc9ec',
-    backgroundImage: 'radial-gradient(circle at 76% 22%, #fff6cf 5%, rgba(255,246,207,.55) 8%, transparent 13%), linear-gradient(180deg, #7dbfe8 0%, #a9d8f0 55%, #d8eefa 100%)',
+    backgroundImage: 'radial-gradient(circle at 76% 22%, #fff6cf 5%, rgba(255,246,207,.55) 8%, transparent 13%), ' +
+      'radial-gradient(ellipse 34% 26% at 22% 34%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%), ' +
+      'radial-gradient(ellipse 26% 20% at 52% 20%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%), ' +
+      'linear-gradient(180deg, #6fb7e4 0%, #a9d8f0 55%, #dcf0fa 100%)',
   },
   sky_sunset: {
     backgroundColor: '#f3a97a',
-    backgroundImage: 'radial-gradient(circle at 70% 76%, #fff1c0 6%, rgba(255,222,150,.5) 11%, transparent 18%), linear-gradient(180deg, #8f7ab5 0%, #e8899a 42%, #f6b884 72%, #fbdcae 100%)',
+    backgroundImage: 'radial-gradient(circle at 70% 76%, #fff1c0 6%, rgba(255,222,150,.5) 11%, transparent 18%), ' +
+      'radial-gradient(ellipse 40% 22% at 30% 46%, rgba(255,198,168,.55), rgba(255,198,168,0) 72%), ' +
+      'linear-gradient(180deg, #8f7ab5 0%, #e8899a 42%, #f6b884 72%, #fbdcae 100%)',
   },
   sky_night: {
     backgroundColor: '#2c3563',
     /* A brighter moon with a real halo, and the faint scattering of far-off
        stars that the twinkling ones in ui/garden.js sit on top of. */
-    backgroundImage: 'radial-gradient(circle at 78% 24%, #fffdf0 3.4%, #fdf3cf 4.6%, rgba(253,243,207,.45) 7%, rgba(220,228,255,.16) 12%, transparent 17%), radial-gradient(#fff8d8 1.3px, transparent 1.8px), radial-gradient(#dfe7ff 1.1px, transparent 1.5px), linear-gradient(180deg, #232c58 0%, #3a4577 60%, #6a6f9c 100%)',
+    backgroundImage: 'radial-gradient(circle at 78% 24%, #fffdf0 3.4%, #fdf3cf 4.6%, rgba(253,243,207,.45) 7%, rgba(220,228,255,.16) 12%, transparent 17%), radial-gradient(#fff8d8 1.3px, transparent 1.8px), radial-gradient(#dfe7ff 1.1px, transparent 1.5px), linear-gradient(180deg, #1d2550 0%, #3a4577 60%, #737899 100%)',
     backgroundSize: 'auto, 70px 70px, 47px 47px, auto',
     backgroundPosition: '0 0, 0 0, 23px 31px, 0 0',
   },
   sky_rainbow: {
     backgroundColor: '#9fd2ee',
-    backgroundImage: 'radial-gradient(circle at 50% 132%, transparent 56%, rgba(203,180,228,.85) 56% 59%, rgba(168,207,239,.85) 59% 62%, rgba(182,224,176,.85) 62% 65%, rgba(247,231,160,.85) 65% 68%, rgba(248,207,154,.85) 68% 71%, rgba(246,176,176,.85) 71% 74%, transparent 74%), linear-gradient(180deg, #8ac6e8, #cfe9f7)',
+    backgroundImage: 'radial-gradient(circle at 50% 132%, transparent 56%, rgba(203,180,228,.85) 56% 59%, rgba(168,207,239,.85) 59% 62%, rgba(182,224,176,.85) 62% 65%, rgba(247,231,160,.85) 65% 68%, rgba(248,207,154,.85) 68% 71%, rgba(246,176,176,.85) 71% 74%, transparent 74%), ' +
+      'radial-gradient(ellipse 30% 22% at 20% 30%, rgba(255,255,255,.7), rgba(255,255,255,0) 70%), ' +
+      'linear-gradient(180deg, #7fbfe2, #d4ecf9)',
   },
 
-  /* ---- The garden: ground ---- */
+  /* ---- The garden: ground ----
+     Blades bunch up towards the fence, the same trick the floorboards use:
+     that is what turns a green rectangle into a lawn going away from you. */
   ground_grass: {
     backgroundColor: '#8cc472',
-    backgroundImage: 'repeating-linear-gradient(98deg, rgba(74,132,66,.34) 0 3px, transparent 3px 12px), linear-gradient(180deg, rgba(60,115,55,.22), transparent 38%)',
+    backgroundImage: `${GROUND_DEPTH}, ${GRASS_ROWS}, repeating-linear-gradient(98deg, rgba(74,132,66,.34) 0 3px, transparent 3px 12px)`,
   },
   ground_sand: {
     backgroundColor: '#e9d29c',
-    backgroundImage: 'repeating-linear-gradient(94deg, rgba(196,163,106,.32) 0 2px, transparent 2px 15px), radial-gradient(rgba(186,152,98,.38) 16%, transparent 18%), linear-gradient(180deg, rgba(170,135,80,.20), transparent 36%)',
-    backgroundSize: 'auto, 20px 20px, auto',
+    backgroundImage: 'linear-gradient(180deg, rgba(150,116,66,.32) 0%, rgba(150,116,66,.09) 9%, rgba(255,255,255,0) 52%, rgba(255,255,255,.12) 100%), ' +
+      'repeating-linear-gradient(94deg, rgba(196,163,106,.32) 0 2px, transparent 2px 15px), radial-gradient(rgba(186,152,98,.38) 16%, transparent 18%)',
+    backgroundSize: 'auto, auto, 20px 20px',
   },
   /* Flagstones laid over the grass rather than scattered pebbles: the two
      offset layers interlock, so the green only shows in the joints. */
   ground_path: {
     backgroundColor: '#6f9a5c',
-    backgroundImage: 'radial-gradient(ellipse 47% 45% at 50% 50%, #d5cdbc 97%, transparent 100%), radial-gradient(ellipse 47% 45% at 50% 50%, #c6bda9 97%, transparent 100%)',
-    backgroundSize: '58px 42px, 58px 42px',
-    backgroundPosition: '0 0, 29px 21px',
+    backgroundImage: `${GROUND_DEPTH}, radial-gradient(ellipse 47% 45% at 50% 50%, #d5cdbc 97%, transparent 100%), radial-gradient(ellipse 47% 45% at 50% 50%, #c6bda9 97%, transparent 100%)`,
+    backgroundSize: 'auto, 58px 42px, 58px 42px',
+    backgroundPosition: '0 0, 0 0, 29px 21px',
   },
   /* Flowers scattered through grass, not confetti: small heads, spread far
      enough apart that the green still reads as the surface. */
   ground_meadow: {
     backgroundColor: '#8fc873',
-    backgroundImage: 'radial-gradient(#f7c9db 5%, transparent 7%), radial-gradient(#fbe08a 4%, transparent 6%), radial-gradient(#cdb5e8 4%, transparent 6%), repeating-linear-gradient(98deg, rgba(74,132,66,.28) 0 3px, transparent 3px 12px)',
-    backgroundSize: '96px 82px, 74px 96px, 118px 88px, auto',
-    backgroundPosition: '0 0, 37px 41px, 68px 19px, 0 0',
+    backgroundImage: `${GROUND_DEPTH}, radial-gradient(#f7c9db 5%, transparent 7%), radial-gradient(#fbe08a 4%, transparent 6%), radial-gradient(#cdb5e8 4%, transparent 6%), repeating-linear-gradient(98deg, rgba(74,132,66,.28) 0 3px, transparent 3px 12px)`,
+    backgroundSize: 'auto, 96px 82px, 74px 96px, 118px 88px, auto',
+    backgroundPosition: '0 0, 0 0, 37px 41px, 68px 19px, 0 0',
   },
 
   floor_petals: {
     backgroundColor: '#f6d6de',
-    backgroundImage: 'radial-gradient(ellipse 60% 40% at 30% 40%, #f5aec0 40%, transparent 42%), radial-gradient(ellipse 50% 35% at 70% 70%, #fbc6d3 40%, transparent 42%)',
-    backgroundSize: '46px 40px, 38px 34px',
+    backgroundImage: `${FLOOR_DEPTH}, radial-gradient(ellipse 60% 40% at 30% 40%, #f5aec0 40%, transparent 42%), radial-gradient(ellipse 50% 35% at 70% 70%, #fbc6d3 40%, transparent 42%)`,
+    backgroundSize: 'auto, 46px 40px, 38px 34px',
   },
 };
 
 export const surfaceStyle = id => SURFACES[id] || SURFACES.wall_plain;
+
+/* ======================== LIGHT AND DEPTH ========================
+
+   One light, from the upper left, in every drawing in this file. It is the
+   same corner the room's window is in, so a thing standing in the room is
+   lit by the thing that lights the room.
+
+   That single decision is most of what makes a set of flat shapes read as
+   objects in a space rather than stickers on a page: every highlight lands
+   on the same side, every shadow falls the same way, and the eye stops
+   noticing the drawings and starts seeing the room.
+
+   The helpers here shade a shape BY ITS OWN GEOMETRY. A generic sheen laid
+   over the top of a finished drawing was tried first, and it looked like a
+   smear: a highlight has to be the shape of the thing it is on, or it reads
+   as dirt on the screen. So each one takes the same numbers the shape takes
+   and hands back the shape, already shaded. */
+
+/* Unique gradient ids. The same drawing goes up many times on one page —
+   the shop grid alone puts a hundred of them out — and in SVG a url(#id)
+   resolves to the FIRST match in the whole document, so two drawings
+   sharing an id means the second silently wears the first one's colours. */
+let uid = 0;
+const gid = () => `ia${(++uid).toString(36)}`;
+
+/* Shadows are marked, because a shadow is not part of the thing that
+   throws it. Anything measuring how big a piece is — the room's fit tests
+   do exactly this — has to be able to tell the two apart, or a door that
+   correctly casts a shadow onto the floor in front of it looks like a door
+   that has sunk into the floor. */
+export const SHADOW = 'ia-shadow';
+
+/* The light's direction, written once as gradient corners. */
+const L1 = { x1: '10%', y1: '0%', x2: '90%', y2: '100%' };
+
+/** Stroke attributes, or nothing at all — so every helper can take both. */
+const edge = o => (o.stroke ? ` stroke="${o.stroke}" stroke-width="${o.sw ?? 3}"` +
+  (o.join ? ` stroke-linejoin="${o.join}"` : '') : '');
+
+/** A flat face turned towards the light: bright corner to shaded corner. */
+function litRect(x, y, w, h, rx, light, dark, o = {}) {
+  const id = gid();
+  return `<defs><linearGradient id="${id}" x1="${L1.x1}" y1="${L1.y1}" x2="${L1.x2}" y2="${L1.y2}">
+      <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+    </linearGradient></defs>` +
+    `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(rx)}" fill="url(#${id})"${edge(o)}/>`;
+}
+
+/** A rounded thing, lit from above left so it reads as having a belly. */
+function litEllipse(cx, cy, rx, ry, light, dark, o = {}) {
+  const id = gid();
+  return `<defs><radialGradient id="${id}" cx="${o.cx ?? '34%'}" cy="${o.cy ?? '26%'}" r="${o.r ?? '82%'}">
+      <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+    </radialGradient></defs>` +
+    `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"${edge(o)}/>`;
+}
+
+/** Any outline at all, shaded along the light rather than filled flat. */
+function litPath(d, light, dark, o = {}) {
+  const id = gid();
+  const grad = o.round
+    ? `<radialGradient id="${id}" cx="34%" cy="26%" r="82%">`
+    : `<linearGradient id="${id}" x1="${L1.x1}" y1="${L1.y1}" x2="${L1.x2}" y2="${L1.y2}">`;
+  const close = o.round ? '</radialGradient>' : '</linearGradient>';
+  return `<defs>${grad}<stop offset="0%" stop-color="${light}"/>` +
+    `<stop offset="100%" stop-color="${dark}"/>${close}</defs>` +
+    `<path d="${d}" fill="url(#${id})"${edge(o)}/>`;
+}
+
+/**
+ * A frame drawn as a stroke rather than a filled shape.
+ *
+ * A window's frame has to be a ring: the room hangs a live piece of sky
+ * behind the glass, and a filled rectangle underneath the frame would cover
+ * it up. Strokes take a gradient just as fills do, so the frame can still
+ * have a lit side and a shaded one.
+ */
+function ringRect(x, y, w, h, rx, sw, light, dark) {
+  const id = gid();
+  return `<defs><linearGradient id="${id}" x1="${L1.x1}" y1="${L1.y1}" x2="${L1.x2}" y2="${L1.y2}">
+      <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+    </linearGradient></defs>` +
+    `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(rx)}"
+      fill="none" stroke="url(#${id})" stroke-width="${n(sw)}"/>`;
+}
+
+/** The same, for a frame that is not a rectangle: a round or arched one. */
+function ringPath(d, sw, light, dark, o = {}) {
+  const id = gid();
+  const g = o.round
+    ? `<radialGradient id="${id}" cx="34%" cy="26%" r="82%">`
+    : `<linearGradient id="${id}" x1="${L1.x1}" y1="${L1.y1}" x2="${L1.x2}" y2="${L1.y2}">`;
+  return `<defs>${g}<stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>` +
+    `${o.round ? '</radialGradient>' : '</linearGradient>'}</defs>` +
+    `<path d="${d}" fill="none" stroke="url(#${id})" stroke-width="${n(sw)}" stroke-linejoin="${o.join ?? 'round'}"/>`;
+}
+
+/**
+ * The shadow a thing standing on the floor casts at its own feet.
+ *
+ * This is the single biggest reason the room used to look like a collage:
+ * nothing touched the ground. A soft dark pool under the footprint is what
+ * says "this is standing here" rather than "this is pasted here", and it
+ * costs one ellipse.
+ */
+function contact(cx, cy, rx, ry = rx * 0.26, o = 0.26) {
+  const id = gid();
+  return `<defs><radialGradient id="${id}">
+      <stop offset="0%" stop-color="#4a3a2c" stop-opacity="${o}"/>
+      <stop offset="55%" stop-color="#4a3a2c" stop-opacity="${n(o * 0.55)}"/>
+      <stop offset="100%" stop-color="#4a3a2c" stop-opacity="0"/>
+    </radialGradient></defs>` +
+    `<ellipse class="${SHADOW}" cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"/>`;
+}
+
+/**
+ * An inset panel — a door panel, a drawer front, a sunken pane.
+ *
+ * Light catches the top and left of a recess and the bottom and right fall
+ * into shadow, which is the opposite of a raised boss. Two open strokes
+ * rather than a whole second rectangle, so the panel keeps its own colour.
+ */
+function inset(x, y, w, h, rx, o = {}) {
+  const sw = o.sw ?? 2.4;
+  const lo = o.light ?? 0.42, so = o.shade ?? 0.3;
+  const r = Math.min(rx, w / 2, h / 2);
+  return `<path d="M ${n(x + w - r)} ${n(y)} H ${n(x + r)} A ${n(r)} ${n(r)} 0 0 0 ${n(x)} ${n(y + r)} V ${n(y + h - r)}"
+      fill="none" stroke="#000" stroke-opacity="${so}" stroke-width="${sw}" stroke-linecap="round"/>
+    <path d="M ${n(x + r)} ${n(y + h)} H ${n(x + w - r)} A ${n(r)} ${n(r)} 0 0 0 ${n(x + w)} ${n(y + h - r)} V ${n(y + r)}"
+      fill="none" stroke="#fff" stroke-opacity="${lo}" stroke-width="${sw}" stroke-linecap="round"/>`;
+}
+
+/** The same edge the other way up: a raised face, catching light on top. */
+function raised(x, y, w, h, rx, o = {}) {
+  const sw = o.sw ?? 2.4;
+  const lo = o.light ?? 0.5, so = o.shade ?? 0.26;
+  const r = Math.min(rx, w / 2, h / 2);
+  return `<path d="M ${n(x + w - r)} ${n(y)} H ${n(x + r)} A ${n(r)} ${n(r)} 0 0 0 ${n(x)} ${n(y + r)} V ${n(y + h - r)}"
+      fill="none" stroke="#fff" stroke-opacity="${lo}" stroke-width="${sw}" stroke-linecap="round"/>
+    <path d="M ${n(x + r)} ${n(y + h)} H ${n(x + w - r)} A ${n(r)} ${n(r)} 0 0 0 ${n(x + w)} ${n(y + h - r)} V ${n(y + r)}"
+      fill="none" stroke="#000" stroke-opacity="${so}" stroke-width="${sw}" stroke-linecap="round"/>`;
+}
+
+/**
+ * The bright streak on a pane of glass or the surface of water.
+ * Angled with the light, and soft at both ends so it reads as a reflection
+ * and not as a white stripe someone painted on.
+ */
+function gloss(x, y, w, h, o = {}) {
+  const id = gid();
+  return `<defs><linearGradient id="${id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#fff" stop-opacity="${o.peak ?? 0.55}"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient></defs>` +
+    `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(o.rx ?? h / 2)}"
+      fill="url(#${id})" transform="rotate(${o.rot ?? -22} ${n(x + w / 2)} ${n(y + h / 2)})"/>`;
+}
+
+/** Grain, kept inside the shape it belongs to rather than ruled across it. */
+function grain(x, y, w, h, rx, lines = 5, o = {}) {
+  const id = gid();
+  let out = `<defs><clipPath id="${id}"><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(rx)}"/></clipPath></defs>`;
+  out += `<g clip-path="url(#${id})" opacity="${o.opacity ?? 0.5}">`;
+  for (let i = 1; i <= lines; i++) {
+    const t = i / (lines + 1);
+    const gx = x + w * t;
+    const wob = (i % 2 ? 1 : -1) * w * 0.035;
+    out += `<path d="M ${n(gx)} ${n(y)} q ${n(wob)} ${n(h * 0.5)} 0 ${n(h)}"
+       fill="none" stroke="${o.color ?? '#8a6340'}" stroke-opacity="${o.strength ?? 0.3}" stroke-width="${o.sw ?? 1.6}"/>`;
+  }
+  return out + '</g>';
+}
 
 /* =========================== DECORATIONS ===========================
    Each draws inside a 0 0 100 100 box, standing on y = 92. */
@@ -970,187 +1226,265 @@ const DECOR = {
           stroke="#8fc9e0" stroke-width="3" stroke-linecap="round"/>`,
 
   mushroom_stool: () => `
-    <ellipse cx="50" cy="88" rx="22" ry="6" fill="#d9cbb6" opacity=".7"/>
-    <path d="M 40 56 Q 38 78 36 88 L 64 88 Q 62 78 60 56 Z"
-          fill="#f6ece0" stroke="#b9a68f" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M 12 58 Q 14 22 50 22 Q 86 22 88 58 Q 68 66 50 66 Q 32 66 12 58 Z"
-          fill="#ef7f7f" stroke="#b34d4d" stroke-width="3.4" stroke-linejoin="round"/>
+    ${contact(50, 90, 24, 5, .26)}
+    ${litPath('M 40 56 Q 38 78 36 88 L 64 88 Q 62 78 60 56 Z', '#fff8ee', '#ddcbb2', { stroke: '#b9a68f', sw: 3, join: 'round' })}
+    ${litPath('M 12 58 Q 14 22 50 22 Q 86 22 88 58 Q 68 66 50 66 Q 32 66 12 58 Z', '#f79797', '#c45a5a', { stroke: '#b34d4d', sw: 3.4, join: 'round' })}
+    <path d="M 16 54 Q 18 28 44 24" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="5"/>
     <ellipse cx="32" cy="40" rx="8" ry="6.4" fill="#fff6e8"/>
     <ellipse cx="60" cy="34" rx="6.4" ry="5" fill="#fff6e8"/>
-    <ellipse cx="72" cy="48" rx="5.4" ry="4.4" fill="#fff6e8"/>
-    <ellipse cx="46" cy="52" rx="5" ry="4" fill="#fff6e8"/>`,
+    <ellipse cx="72" cy="48" rx="5.4" ry="4.4" fill="#fff6e8" opacity=".9"/>
+    <ellipse cx="46" cy="52" rx="5" ry="4" fill="#fff6e8" opacity=".9"/>`,
 
   pebbles: () => `
-    <ellipse cx="38" cy="78" rx="20" ry="13" fill="#b9aca0" stroke="#8a7f74" stroke-width="2.5"/>
-    <ellipse cx="62" cy="83" rx="16" ry="10" fill="#cdc2b6" stroke="#8a7f74" stroke-width="2.5"/>
-    <ellipse cx="50" cy="68" rx="12" ry="8"  fill="#dcd3c8" stroke="#8a7f74" stroke-width="2.5"/>`,
+    ${contact(50, 88, 34, 6, .22)}
+    ${litEllipse(38, 78, 20, 13, '#c9bcb0', '#9a8d81', { stroke: '#8a7f74', sw: 2.5 })}
+    ${litEllipse(62, 83, 16, 10, '#dbd1c5', '#ab9f93', { stroke: '#8a7f74', sw: 2.5 })}
+    ${litEllipse(50, 68, 12, 8, '#e8dfd4', '#bdb2a6', { stroke: '#8a7f74', sw: 2.5 })}`,
 
   toy_ball: () => `
-    <circle cx="50" cy="66" r="26" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="3"/>
+    ${contact(50, 90, 24, 5, .28)}
+    ${litEllipse(50, 66, 26, 26, '#8ac6e6', '#3f7d9e', { stroke: '#3f7d9e', sw: 3 })}
     <path d="M 24 66 Q 50 50 76 66" fill="none" stroke="#fff6e8" stroke-width="5"/>
     <path d="M 24 66 Q 50 82 76 66" fill="none" stroke="#fff6e8" stroke-width="5"/>
-    <circle cx="41" cy="56" r="5" fill="#fff" opacity=".6"/>`,
+    <ellipse cx="41" cy="55" rx="7" ry="5" fill="#fff" opacity=".55" transform="rotate(-28 41 55)"/>`,
 
   potted_plant: () => `
-    <path d="M 50 62 Q 30 46 26 24 Q 46 32 50 60 Z" fill="#7fc99a" stroke="#4f9b6d" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M 50 62 Q 70 44 76 22 Q 54 30 50 60 Z" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2.5" stroke-linejoin="round"/>
+    ${contact(50, 90, 24, 5, .28)}
+    ${litPath('M 50 62 Q 30 46 26 24 Q 46 32 50 60 Z', '#8fd3a8', '#5aa97d', { stroke: '#4f9b6d', sw: 2.5, join: 'round' })}
+    ${litPath('M 50 62 Q 70 44 76 22 Q 54 30 50 60 Z', '#a3dcb8', '#69b98c', { stroke: '#4f9b6d', sw: 2.5, join: 'round' })}
     <path d="M 50 64 Q 48 40 50 18" fill="none" stroke="#4f9b6d" stroke-width="3"/>
-    <path d="M 32 62 L 68 62 L 63 90 L 37 90 Z" fill="#d98b62" stroke="#a5613f" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="30" y="57" width="40" height="10" rx="4" fill="#e8a17c" stroke="#a5613f" stroke-width="3"/>`,
+    ${litPath('M 32 62 L 68 62 L 63 90 L 37 90 Z', '#e59a71', '#b06a45', { stroke: '#a5613f', sw: 3, join: 'round' })}
+    ${litRect(30, 57, 40, 10, 4, '#f0b28f', '#c17c56', { stroke: '#a5613f', sw: 3 })}
+    <path d="M 38 62 L 35 88" stroke="#fff" stroke-opacity=".22" stroke-width="3"/>`,
 
   lamp: () => `
-    <rect x="46" y="54" width="8" height="34" rx="4" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.5"/>
-    <path d="M 22 56 Q 50 16 78 56 Z" fill="#ef7f7f" stroke="#b34d4d" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="38" cy="44" r="5" fill="#fff6e8"/><circle cx="58" cy="38" r="6" fill="#fff6e8"/>
-    <circle cx="64" cy="50" r="4" fill="#fff6e8"/>
-    <ellipse cx="50" cy="89" rx="18" ry="6" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.5"/>`,
+    ${contact(50, 90, 20, 4.5, .26)}
+    ${litRect(46, 54, 8, 34, 4, '#f2e2cc', '#c9ac8a', { stroke: '#a5875f', sw: 2.5 })}
+    ${litPath('M 22 56 Q 50 16 78 56 Z', '#f79797', '#cc5d5d', { stroke: '#b34d4d', sw: 3, join: 'round' })}
+    <circle cx="38" cy="44" r="5" fill="#fff6e8" opacity=".9"/><circle cx="58" cy="38" r="6" fill="#fff6e8" opacity=".9"/>
+    <circle cx="64" cy="50" r="4" fill="#fff6e8" opacity=".9"/>
+    <path d="M 27 53 Q 40 32 50 27" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="4"/>
+    ${litEllipse(50, 89, 18, 6, '#f2e2cc', '#c9ac8a', { stroke: '#a5875f', sw: 2.5 })}`,
 
   teddy: () => `
-    <circle cx="30" cy="40" r="10" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
-    <circle cx="70" cy="40" r="10" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
-    <ellipse cx="50" cy="70" rx="24" ry="22" fill="#c9a887" stroke="#8a6f54" stroke-width="3"/>
-    <ellipse cx="50" cy="74" rx="14" ry="13" fill="#f0e2cf"/>
-    <circle cx="50" cy="42" r="21" fill="#d4b593" stroke="#8a6f54" stroke-width="3"/>
-    <ellipse cx="50" cy="48" rx="9" ry="7" fill="#f0e2cf"/>
+    ${contact(50, 92, 26, 5, .26)}
+    ${litEllipse(30, 40, 10, 10, '#d4b593', '#a98a68', { stroke: '#8a6f54', sw: 2.5 })}
+    ${litEllipse(70, 40, 10, 10, '#d4b593', '#a98a68', { stroke: '#8a6f54', sw: 2.5 })}
+    ${litEllipse(50, 70, 24, 22, '#d4b593', '#a1815f', { stroke: '#8a6f54', sw: 3 })}
+    ${litEllipse(50, 74, 14, 13, '#f7ebdb', '#ddc9ae')}
+    ${litEllipse(50, 42, 21, 21, '#ddc0a0', '#ab8c68', { stroke: '#8a6f54', sw: 3 })}
+    ${litEllipse(50, 48, 9, 7, '#f7ebdb', '#e0cdb4')}
     <circle cx="43" cy="38" r="3" fill="#3a2e28"/><circle cx="57" cy="38" r="3" fill="#3a2e28"/>
+    <circle cx="42" cy="37" r="1" fill="#fff" opacity=".8"/><circle cx="56" cy="37" r="1" fill="#fff" opacity=".8"/>
     <ellipse cx="50" cy="46" rx="3.4" ry="2.6" fill="#5a4033"/>`,
-
   rug: () => `
-    <ellipse cx="50" cy="72" rx="42" ry="19" fill="#e8a17c" stroke="#a5613f" stroke-width="3"/>
-    <ellipse cx="50" cy="72" rx="30" ry="13" fill="#f4c9a8" stroke="#a5613f" stroke-width="2.5"/>
-    <ellipse cx="50" cy="72" rx="16" ry="7"  fill="#e8a17c" stroke="#a5613f" stroke-width="2.5"/>`,
+    ${contact(50, 74, 45, 21, .18)}
+    ${litEllipse(50, 72, 42, 19, '#f2b492', '#d99372', { stroke: '#a5613f', sw: 3, cy: '30%' })}
+    ${litEllipse(50, 72, 30, 13, '#fbdfc6', '#eab894', { stroke: '#a5613f', sw: 2.5, cy: '30%' })}
+    ${litEllipse(50, 72, 16, 7, '#f2b492', '#d99372', { stroke: '#a5613f', sw: 2.5, cy: '30%' })}
+    <path d="M 12 74 a 42 19 0 0 0 76 0" fill="none" stroke="#7d4429" stroke-opacity=".18" stroke-width="3"/>`,
 
+  /* The books get a lit strip down their spines — that is what stops a row
+     of coloured rectangles from reading as a bar chart. */
   bookshelf: () => `
-    <rect x="18" y="26" width="64" height="64" rx="5" fill="#c99a6e" stroke="#8a6340" stroke-width="3"/>
-    <rect x="24" y="54" width="52" height="5" fill="#8a6340"/>
-    <rect x="28" y="32" width="8"  height="20" rx="2" fill="#ef7f7f"/>
-    <rect x="38" y="35" width="7"  height="17" rx="2" fill="#6fb3d9"/>
-    <rect x="47" y="31" width="9"  height="21" rx="2" fill="#8fd3a8"/>
-    <rect x="58" y="36" width="7"  height="16" rx="2" fill="#f6c453"/>
-    <rect x="28" y="62" width="7"  height="20" rx="2" fill="#a78bc9"/>
-    <rect x="37" y="66" width="9"  height="16" rx="2" fill="#f2849f"/>
-    <rect x="48" y="61" width="8"  height="21" rx="2" fill="#6fb3d9"/>`,
+    ${contact(50, 92, 32, 4.5, .26)}
+    ${litRect(18, 26, 64, 64, 5, '#d0a274', '#9a7146', { stroke: '#8a6340', sw: 3 })}
+    ${inset(23, 31, 32, 26, 2, { sw: 2.2 })}
+    ${inset(23, 60, 32, 26, 2, { sw: 2.2 })}
+    <rect x="22" y="54" width="56" height="5" fill="#8a6340"/>
+    <rect x="22" y="59" width="56" height="2.4" fill="#fff" opacity=".28"/>
+    ${[[28, 32, 8, 20, '#ef7f7f'], [38, 35, 7, 17, '#6fb3d9'], [47, 31, 9, 21, '#8fd3a8'], [58, 36, 7, 16, '#f6c453'],
+       [28, 62, 7, 20, '#a78bc9'], [37, 66, 9, 16, '#f2849f'], [48, 61, 8, 21, '#6fb3d9']]
+      .map(([x, y, w, h, c]) =>
+        `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${c}"/>` +
+        `<rect x="${x}" y="${y}" width="${n(w * 0.32)}" height="${h}" rx="1.5" fill="#fff" opacity=".26"/>` +
+        `<rect x="${n(x + w * 0.74)}" y="${y}" width="${n(w * 0.26)}" height="${h}" rx="1.5" fill="#000" opacity=".16"/>`).join('')}
+    <rect x="76" y="84" width="4" height="8" rx="2" fill="#8a6340"/>
+    <rect x="20" y="84" width="4" height="8" rx="2" fill="#8a6340"/>`,
 
   lantern: () => `
+    ${contact(50, 88, 22, 4.5, .24)}
     <path d="M 50 8 L 50 20" stroke="#a5875f" stroke-width="3" stroke-linecap="round"/>
-    <ellipse cx="50" cy="50" rx="26" ry="30" fill="#f4a8b8" stroke="#b3596e" stroke-width="3"/>
+    ${litEllipse(50, 50, 26, 30, '#fbc0cd', '#dd8ca0', { stroke: '#b3596e', sw: 3 })}
     <path d="M 50 20 L 50 80" stroke="#b3596e" stroke-width="2" opacity=".5"/>
     <path d="M 26 40 Q 50 34 74 40" fill="none" stroke="#b3596e" stroke-width="2" opacity=".5"/>
     <path d="M 26 60 Q 50 66 74 60" fill="none" stroke="#b3596e" stroke-width="2" opacity=".5"/>
-    <rect x="40" y="16" width="20" height="7" rx="3" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.5"/>
-    <rect x="40" y="77" width="20" height="7" rx="3" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.5"/>`,
+    <path d="M 32 36 Q 36 24 46 22" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="4"/>
+    ${litRect(40, 16, 20, 7, 3, '#f2e2cc', '#c9ac8a', { stroke: '#a5875f', sw: 2.5 })}
+    ${litRect(40, 77, 20, 7, 3, '#f2e2cc', '#c9ac8a', { stroke: '#a5875f', sw: 2.5 })}`,
 
   little_tree: () => `
-    <rect x="44" y="58" width="12" height="32" rx="4" fill="#a5794f" stroke="#7a5836" stroke-width="2.5"/>
-    <circle cx="50" cy="36" r="24" fill="#7fc99a" stroke="#4f9b6d" stroke-width="3"/>
-    <circle cx="32" cy="48" r="15" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="3"/>
-    <circle cx="68" cy="48" r="15" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="3"/>
+    ${contact(50, 92, 26, 5, .26)}
+    ${litRect(44, 58, 12, 32, 4, '#b08557', '#845f3c', { stroke: '#7a5836', sw: 2.5 })}
+    ${litEllipse(50, 36, 24, 24, '#93d8ae', '#57a17a', { stroke: '#4f9b6d', sw: 3 })}
+    ${litEllipse(32, 48, 15, 15, '#a3dcb8', '#63ab83', { stroke: '#4f9b6d', sw: 3 })}
+    ${litEllipse(68, 48, 15, 15, '#8fcfa6', '#539a72', { stroke: '#4f9b6d', sw: 3 })}
     <circle cx="40" cy="30" r="4" fill="#f2849f"/><circle cx="60" cy="42" r="4" fill="#f2849f"/>
     <circle cx="56" cy="26" r="3.4" fill="#ffd980"/>`,
 
   fish_tank: () => `
-    <rect x="12" y="26" width="76" height="56" rx="7" fill="#bfe6f5" stroke="#4d7f92" stroke-width="3.5"/>
-    <rect x="12" y="66" width="76" height="16" rx="3" fill="#e8d3ba"/>
+    ${contact(50, 86, 38, 5, .26)}
+    ${litRect(12, 26, 76, 56, 7, '#cdeaf7', '#8cc6dd', { stroke: '#4d7f92', sw: 3.5 })}
+    ${litRect(12, 66, 76, 16, 3, '#eddcc2', '#c9b191')}
     <path d="M 12 66 h 76" stroke="#4d7f92" stroke-width="2.5"/>
     <path d="M 26 66 q 4 -18 10 -22 q 5 12 2 22 z" fill="#7fc99a"/>
     <path d="M 70 66 q -4 -14 -9 -18 q -4 10 -1 18 z" fill="#8fd3a8"/>
-    <g><ellipse cx="42" cy="42" rx="9" ry="6" fill="#f7a94e"/>
+    <g>${litEllipse(42, 42, 9, 6, '#ffbe72', '#e08a2c')}
        <path d="M 33 42 l -7 -5 v 10 z" fill="#f7a94e"/><circle cx="46" cy="40" r="1.6" fill="#3a2e28"/></g>
-    <g><ellipse cx="66" cy="54" rx="7" ry="4.6" fill="#ef7f9f"/>
+    <g>${litEllipse(66, 54, 7, 4.6, '#ff9fba', '#d9647f')}
        <path d="M 73 54 l 6 -4 v 8 z" fill="#ef7f9f"/><circle cx="62" cy="53" r="1.4" fill="#3a2e28"/></g>
+    ${gloss(18, 30, 14, 48, { rot: -14, peak: .4 })}
     <circle cx="56" cy="34" r="2.6" fill="#fff" opacity=".7"/>
-    <circle cx="60" cy="28" r="1.8" fill="#fff" opacity=".7"/>`,
+    <circle cx="60" cy="28" r="1.8" fill="#fff" opacity=".7"/>
+    ${inset(12, 26, 76, 56, 7, { sw: 2.6, shade: .22, light: .3 })}`,
 
   castle: () => `
-    <rect x="16" y="46" width="18" height="44" fill="#d9ccbb" stroke="#9a8b78" stroke-width="3"/>
-    <rect x="66" y="46" width="18" height="44" fill="#d9ccbb" stroke="#9a8b78" stroke-width="3"/>
-    <rect x="34" y="58" width="32" height="32" fill="#e8dccb" stroke="#9a8b78" stroke-width="3"/>
-    <path d="M 16 46 v -8 h 5 v 5 h 4 v -5 h 4 v 5 h 5 v 8 z" fill="#d9ccbb" stroke="#9a8b78" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M 66 46 v -8 h 5 v 5 h 4 v -5 h 4 v 5 h 5 v 8 z" fill="#d9ccbb" stroke="#9a8b78" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M 34 58 v -6 h 5 v 4 h 6 v -4 h 6 v 4 h 6 v -4 h 5 v 6 z" fill="#e8dccb" stroke="#9a8b78" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M 42 90 v -18 a 8 8 0 0 1 16 0 v 18 z" fill="#a5794f" stroke="#7a5836" stroke-width="2.5"/>
+    ${contact(50, 92, 38, 5, .26)}
+    ${litRect(16, 46, 18, 44, 0, '#e2d5c4', '#a8998a', { stroke: '#9a8b78', sw: 3 })}
+    ${litRect(66, 46, 18, 44, 0, '#d9ccbb', '#9c8d7e', { stroke: '#9a8b78', sw: 3 })}
+    ${litRect(34, 58, 32, 32, 0, '#eee2d1', '#b8a998', { stroke: '#9a8b78', sw: 3 })}
+    ${litPath('M 16 46 v -8 h 5 v 5 h 4 v -5 h 4 v 5 h 5 v 8 z', '#e2d5c4', '#a8998a', { stroke: '#9a8b78', sw: 2.5, join: 'round' })}
+    ${litPath('M 66 46 v -8 h 5 v 5 h 4 v -5 h 4 v 5 h 5 v 8 z', '#d9ccbb', '#9c8d7e', { stroke: '#9a8b78', sw: 2.5, join: 'round' })}
+    ${litPath('M 34 58 v -6 h 5 v 4 h 6 v -4 h 6 v 4 h 6 v -4 h 5 v 6 z', '#eee2d1', '#b8a998', { stroke: '#9a8b78', sw: 2.5, join: 'round' })}
+    ${litPath('M 42 90 v -18 a 8 8 0 0 1 16 0 v 18 z', '#b08557', '#7a5836', { stroke: '#7a5836', sw: 2.5, join: 'round' })}
     <path d="M 25 38 v -14 l 12 5 -12 5" fill="#ef6f8e" stroke="#b34a66" stroke-width="2" stroke-linejoin="round"/>
     <path d="M 75 38 v -14 l 12 5 -12 5" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="2" stroke-linejoin="round"/>`,
-
-  /* ---- Windows. Drawn against the wall, so they show sky. ---- */
-
-  /* The one she starts with. Deliberately the plainest of them: every
-     window in the shop should look like an improvement on this. */
   window_plain: () => `
-    <rect x="18" y="14" width="64" height="62" rx="3" fill="var(--season-glass, #bfe6f5)" stroke="#b9a184" stroke-width="6"/>
-    <path d="M 50 11 v 68" stroke="#cdbba3" stroke-width="4"/>
-    <rect x="13" y="73" width="74" height="8" rx="3" fill="#ded0bb" stroke="#b9a184" stroke-width="3"/>
-    <circle cx="33" cy="30" r="5" fill="#fff" opacity=".5"/>`,
+    <rect x="18" y="14" width="64" height="62" rx="3" fill="var(--season-glass, #bfe6f5)"/>
+    ${ringRect(18, 14, 64, 62, 3, 8, '#e6dac6', '#ab9376')}
+    ${inset(18, 14, 64, 62, 3, { sw: 3.2, shade: .26, light: .24 })}
+    ${gloss(23, 18, 15, 52, { rot: -16, peak: .4 })}
+    <path d="M 50 14 v 62" stroke="#cdbba3" stroke-width="4"/>
+    <path d="M 51.8 14 v 62" stroke="#3a2c1e" stroke-opacity=".18" stroke-width="1.8"/>
+    <rect x="18" y="14" width="64" height="62" rx="3" fill="none" stroke="#b9a184" stroke-width="3.4"/>
+    ${litRect(13, 74, 74, 9, 3.5, '#efe3d0', '#c3ad90', { stroke: '#b9a184', sw: 2.6 })}
+    <rect class="${SHADOW}" x="16" y="83" width="68" height="3.2" rx="1.6" fill="#4a3a2c" opacity=".15"/>`,
 
   window_round: () => `
-    <circle cx="50" cy="48" r="34" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7"/>
-    <circle cx="50" cy="48" r="34" fill="none" stroke="#d9c4a5" stroke-width="3"/>
+    <circle cx="50" cy="48" r="34" fill="var(--season-glass, #bfe6f5)"/>
+    ${ringPath('M 50 14 a 34 34 0 1 1 -.1 0 z', 9, '#d9c4a5', '#8f7149', { round: true })}
+    <circle cx="50" cy="48" r="34" fill="none" stroke="#3a2c1e" stroke-opacity=".2" stroke-width="3"/>
+    ${gloss(26, 24, 16, 42, { rot: -20, peak: .45 })}
     <path d="M 50 14 v 68 M 16 48 h 68" stroke="#d9c4a5" stroke-width="5"/>
-    <circle cx="38" cy="34" r="7" fill="#fff" opacity=".55"/>`,
+    <path d="M 51.8 14 v 68 M 16 49.8 h 68" stroke="#3a2c1e" stroke-opacity=".16" stroke-width="2"/>
+    <circle cx="50" cy="48" r="34" fill="none" stroke="#a5875f" stroke-width="3.4"/>`,
 
   window_cottage: () => `
-    <rect x="16" y="16" width="68" height="62" rx="4" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7"/>
+    <rect x="16" y="16" width="68" height="62" rx="4" fill="var(--season-glass, #bfe6f5)"/>
+    ${ringRect(16, 16, 68, 62, 4, 9, '#d9c4a5', '#8f7149')}
+    ${inset(16, 16, 68, 62, 4, { sw: 3.4, shade: .28, light: .26 })}
+    ${gloss(22, 20, 16, 52, { rot: -16, peak: .42 })}
     <path d="M 50 16 v 62 M 16 47 h 68" stroke="#d9c4a5" stroke-width="5"/>
-    <rect x="10" y="76" width="80" height="8" rx="3" fill="#e8d3ba" stroke="#a5875f" stroke-width="3"/>
-    <circle cx="33" cy="32" r="6" fill="#fff" opacity=".5"/>`,
+    <path d="M 51.8 16 v 62 M 16 48.8 h 68" stroke="#3a2c1e" stroke-opacity=".18" stroke-width="2"/>
+    <rect x="16" y="16" width="68" height="62" rx="4" fill="none" stroke="#a5875f" stroke-width="3.4"/>
+    ${litRect(10, 76, 80, 9, 3.5, '#f0e0c8', '#c9ac8a', { stroke: '#a5875f', sw: 2.8 })}
+    <rect class="${SHADOW}" x="13" y="85" width="74" height="3.4" rx="1.7" fill="#4a3a2c" opacity=".16"/>`,
 
   window_arch: () => `
-    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="var(--season-glass, #bfe6f5)"/>
+    ${ringPath('M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z', 9, '#d9c4a5', '#8f7149')}
+    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="none" stroke="#3a2c1e" stroke-opacity=".2" stroke-width="3" stroke-linejoin="round"/>
+    ${gloss(24, 26, 15, 48, { rot: -18, peak: .42 })}
     <path d="M 50 18 v 64 M 20 56 h 60" stroke="#d9c4a5" stroke-width="5"/>
-    <circle cx="36" cy="38" r="6" fill="#fff" opacity=".5"/>`,
+    <path d="M 51.8 18 v 64 M 20 57.8 h 60" stroke="#3a2c1e" stroke-opacity=".16" stroke-width="2"/>
+    <path d="M 18 82 V 48 a 32 32 0 0 1 64 0 v 34 z" fill="none" stroke="#a5875f" stroke-width="3.4" stroke-linejoin="round"/>`,
 
   /* ---- Doors. These stand on the floor line. ---- */
+  /* A door stands on the floor, so it gets the shadow at its foot that
+     says so, and its panels are sunk into it rather than drawn on. */
   door_wood: () => `
-    <rect x="22" y="10" width="56" height="86" rx="4" fill="#c08f5c" stroke="#8a6340" stroke-width="5"/>
-    <rect x="30" y="18" width="40" height="32" rx="3" fill="#cfa06e" stroke="#8a6340" stroke-width="3"/>
-    <rect x="30" y="56" width="40" height="32" rx="3" fill="#cfa06e" stroke="#8a6340" stroke-width="3"/>
-    <circle cx="68" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+    ${contact(50, 98, 31, 3, .34)}
+    ${litRect(22, 10, 56, 86, 4, '#cfa06e', '#9c7047', { stroke: '#8a6340', sw: 5 })}
+    ${grain(25, 13, 50, 80, 3, 4, { color: '#7d5a3a', strength: .2, sw: 1.5 })}
+    ${litRect(30, 18, 40, 32, 3, '#d9aa79', '#ae8055', { stroke: '#8a6340', sw: 3 })}
+    ${inset(31.6, 19.6, 36.8, 28.8, 2.4, { sw: 2.2 })}
+    ${litRect(30, 56, 40, 32, 3, '#d9aa79', '#ae8055', { stroke: '#8a6340', sw: 3 })}
+    ${inset(31.6, 57.6, 36.8, 28.8, 2.4, { sw: 2.2 })}
+    <circle cx="68" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>
+    <circle cx="66.6" cy="52.6" r="1.7" fill="#fff" opacity=".75"/>`,
 
   door_round: () => `
-    <path d="M 20 96 V 46 a 30 30 0 0 1 60 0 v 50 z" fill="#8fbf7f" stroke="#5d8a52" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M 50 20 v 76" stroke="#5d8a52" stroke-width="3" opacity=".6"/>
-    <circle cx="50" cy="58" r="6" fill="#f6c453" stroke="#c9922c" stroke-width="2.5"/>`,
+    ${contact(50, 97, 30, 2.6, .3)}
+    ${litPath('M 20 96 V 46 a 30 30 0 0 1 60 0 v 50 z', '#9ecc8c', '#69a05c', { stroke: '#5d8a52', sw: 5, join: 'round' })}
+    <path d="M 50 20 v 76" stroke="#4c7343" stroke-opacity=".45" stroke-width="3"/>
+    <path d="M 52 20 v 76" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>
+    ${grain(24, 44, 22, 50, 3, 3, { color: '#4c7343', strength: .22, sw: 1.5 })}
+    ${grain(54, 44, 22, 50, 3, 3, { color: '#4c7343', strength: .22, sw: 1.5 })}
+    <circle cx="50" cy="58" r="6" fill="#f6c453" stroke="#c9922c" stroke-width="2.5"/>
+    <circle cx="48.2" cy="56.2" r="2.1" fill="#fff" opacity=".75"/>`,
 
   door_fancy: () => `
-    <rect x="20" y="8" width="60" height="88" rx="5" fill="#a78bc9" stroke="#6f5a94" stroke-width="5"/>
-    <path d="M 50 14 l 18 18 -18 18 -18 -18 z" fill="#cdb8e4" stroke="#6f5a94" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="30" y="56" width="40" height="34" rx="3" fill="#cdb8e4" stroke="#6f5a94" stroke-width="3"/>
-    <circle cx="69" cy="54" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+    ${contact(50, 97, 31, 2.6, .3)}
+    ${litRect(20, 8, 60, 88, 5, '#b79bd6', '#8a71ae', { stroke: '#6f5a94', sw: 5 })}
+    ${litPath('M 50 14 l 18 18 -18 18 -18 -18 z', '#ddcbef', '#a992c9', { stroke: '#6f5a94', sw: 3, join: 'round' })}
+    ${litRect(30, 56, 40, 34, 3, '#ddcbef', '#a992c9', { stroke: '#6f5a94', sw: 3 })}
+    ${inset(31.6, 57.6, 36.8, 30.8, 2.4, { sw: 2.2 })}
+    <circle cx="69" cy="54" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>
+    <circle cx="67.4" cy="52.4" r="1.8" fill="#fff" opacity=".75"/>`,
 
   /* ---- Beds ---- */
+  /* ---- Beds ----
+     A bed is a box with soft things on it, so the frame is shaded like a
+     box and the bedding like something you could push your hand into. */
   bed_cushion: () => `
-    <ellipse cx="50" cy="70" rx="40" ry="22" fill="#f2849f" stroke="#b3596e" stroke-width="3.5"/>
-    <ellipse cx="50" cy="66" rx="29" ry="15" fill="#ffd6e2" stroke="#b3596e" stroke-width="2.5"/>
-    <path d="M 24 62 q 26 -12 52 0" fill="none" stroke="#fff" stroke-width="3" opacity=".55"/>`,
+    ${contact(50, 85, 40, 6, .26)}
+    ${litEllipse(50, 70, 40, 22, '#f79cb2', '#d2687f', { stroke: '#b3596e', sw: 3.5 })}
+    ${litEllipse(50, 65, 29, 15, '#fff0f4', '#f2b9c9', { stroke: '#b3596e', sw: 2.5 })}
+    <path d="M 24 62 q 26 -12 52 0" fill="none" stroke="#fff" stroke-width="3" opacity=".6"/>
+    <path d="M 26 74 q 24 10 48 0" fill="none" stroke="#b3596e" stroke-opacity=".3" stroke-width="2.5"/>`,
 
+  /* The duvet hangs OVER the front of the frame rather than sitting on top
+     of it as a second slab. That overlap is the whole difference between a
+     made bed and a blue box resting on a brown box. */
   bed_cozy: () => `
-    <rect x="8" y="46" width="84" height="34" rx="7" fill="#c99a6e" stroke="#8a6340" stroke-width="3.5"/>
-    <rect x="8" y="34" width="20" height="46" rx="6" fill="#d9ab7c" stroke="#8a6340" stroke-width="3.5"/>
-    <rect x="16" y="50" width="70" height="20" rx="6" fill="#bfe6f5" stroke="#6f9fb3" stroke-width="3"/>
-    <ellipse cx="32" cy="52" rx="15" ry="9" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.5"/>
-    <path d="M 52 54 q 16 4 32 0" fill="none" stroke="#8fc6db" stroke-width="3"/>`,
+    ${contact(50, 86, 42, 6.5, .28)}
+    ${litRect(10, 58, 82, 24, 6, '#c99a6e', '#9a7146', { stroke: '#8a6340', sw: 3.5 })}
+    ${grain(13, 61, 76, 18, 5, 6, { color: '#7d5a3a', strength: .18, sw: 1.4 })}
+    ${litRect(8, 24, 19, 58, 7, '#dcae7c', '#a87f55', { stroke: '#8a6340', sw: 3.5 })}
+    ${inset(11.5, 29, 12, 46, 5, { sw: 2 })}
+    ${litRect(20, 47, 70, 16, 7, '#fffaf0', '#e2d2bc', { stroke: '#c9b8a4', sw: 2.5 })}
+    ${litEllipse(34, 45, 14.5, 8.5, '#fffdf7', '#ddcbb4', { stroke: '#c9b8a4', sw: 2.5 })}
+    <path d="M 27 47 q 7 4 14 0" fill="none" stroke="#c9b8a4" stroke-opacity=".55" stroke-width="1.8"/>
+    ${litPath('M 46 48 H 86 a 7 7 0 0 1 7 7 V 70 a 5 5 0 0 1 -5 5 H 46 z', '#d3effa', '#7fb6cd',
+      { stroke: '#6f9fb3', sw: 3, join: 'round' })}
+    ${litRect(46, 43, 44, 10, 5, '#eef9fd', '#b6dced', { stroke: '#6f9fb3', sw: 2.4 })}
+    <path d="M 62 56 q 4 7 0 14 M 78 56 q 4 7 0 14" fill="none" stroke="#6f9fb3" stroke-opacity=".32" stroke-width="2.4"/>
+    <path d="M 48 71 q 20 5 40 0" fill="none" stroke="#5d8a9c" stroke-opacity=".3" stroke-width="2.4"/>`,
 
   bed_shell: () => `
-    <path d="M 10 80 q 0 -46 40 -46 q 40 0 40 46 z" fill="#f7c8d8" stroke="#c07e96" stroke-width="3.5" stroke-linejoin="round"/>
+    ${contact(50, 86, 42, 6, .26)}
+    ${litPath('M 10 80 q 0 -46 40 -46 q 40 0 40 46 z', '#fdd9e5', '#dfa0b6', { stroke: '#c07e96', sw: 3.5, join: 'round' })}
     <path d="M 50 34 v 46 M 28 42 q 6 22 4 38 M 72 42 q -6 22 -4 38"
           fill="none" stroke="#e0a3b8" stroke-width="3"/>
-    <ellipse cx="50" cy="80" rx="42" ry="9" fill="#ffe3ec" stroke="#c07e96" stroke-width="3"/>`,
+    <path d="M 51.8 34 v 46 M 74 42 q -6 22 -4 38"
+          fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>
+    ${litEllipse(50, 80, 42, 9, '#fff2f7', '#efc4d3', { stroke: '#c07e96', sw: 3 })}`,
 
   /* ---- Rugs ---- */
   rug_round: () => `
-    <ellipse cx="50" cy="60" rx="44" ry="30" fill="#a8d5c4" stroke="#5f9683" stroke-width="3.5"/>
-    <ellipse cx="50" cy="60" rx="31" ry="21" fill="#d6ece4" stroke="#5f9683" stroke-width="2.5"/>
-    <ellipse cx="50" cy="60" rx="16" ry="11" fill="#a8d5c4" stroke="#5f9683" stroke-width="2.5"/>`,
+    ${contact(50, 62, 47, 32, .18)}
+    ${litEllipse(50, 60, 44, 30, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 3.5, cy: '30%' })}
+    ${litEllipse(50, 60, 31, 21, '#eef8f4', '#cbe4dc', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
+    ${litEllipse(50, 60, 16, 11, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
+    <path d="M 6 62 a 44 30 0 0 0 88 0" fill="none" stroke="#3f6d5c" stroke-opacity=".16" stroke-width="3.5"/>`,
 
   /* ---- Wall decorations ---- */
+  /* On the wall, so it casts its shadow onto the wall behind rather than
+     onto a floor: a copy of its own outline, nudged the way the light
+     points. */
   frame: () => `
-    <rect x="14" y="20" width="72" height="58" rx="4" fill="#c99a6e" stroke="#8a6340" stroke-width="5"/>
+    <rect class="${SHADOW}" x="16.5" y="22.5" width="72" height="58" rx="4" fill="#3a2c1e" opacity=".17"/>
+    ${litRect(14, 20, 72, 58, 4, '#d5a577', '#9a7146', { stroke: '#8a6340', sw: 5 })}
     <rect x="22" y="28" width="56" height="42" rx="2" fill="#bfe6f5"/>
+    ${litRect(22, 28, 56, 42, 2, '#cdeaf7', '#9ccfe4')}
     <path d="M 22 60 q 14 -18 26 -6 q 10 10 30 -4 v 20 h -56 z" fill="#8fd3a8"/>
-    <circle cx="66" cy="38" r="6" fill="#ffd980"/>`,
+    <path d="M 22 66 q 14 -12 26 -4 q 10 7 30 -2 v 10 h -56 z" fill="#6fbd8c" opacity=".7"/>
+    <circle cx="66" cy="38" r="6" fill="#ffd980"/>
+    ${inset(22, 28, 56, 42, 2, { sw: 2.6, shade: .3, light: .3 })}`,
 
   clock: () => `
-    <circle cx="50" cy="50" r="34" fill="#fff6e8" stroke="#8a6340" stroke-width="5"/>
+    <circle class="${SHADOW}" cx="52.4" cy="52.6" r="34" fill="#3a2c1e" opacity=".17"/>
+    ${litEllipse(50, 50, 34, 34, '#fffaf0', '#dcc9ad', { stroke: '#8a6340', sw: 5 })}
     <circle cx="50" cy="50" r="27" fill="none" stroke="#d9c4a5" stroke-width="2"/>
     <path d="M 50 50 V 30 M 50 50 l 15 9" stroke="#5a4033" stroke-width="4" stroke-linecap="round"/>
     <circle cx="50" cy="50" r="4" fill="#e2566f"/>
@@ -1172,15 +1506,16 @@ const DECOR = {
      because real pots are, but no two of these read the same at a glance. */
 
   plant_cactus: () => `
+    ${contact(50, 90, 24, 5, .26)}
     <path d="M 38 62 V 48 a 7 7 0 0 1 14 0 v 14" fill="none" stroke="#6ba85e" stroke-width="11" stroke-linecap="round"/>
     <path d="M 62 62 V 54 a 7 7 0 0 0 -14 0" fill="none" stroke="#6ba85e" stroke-width="11" stroke-linecap="round"/>
-    <rect x="41" y="20" width="18" height="46" rx="9" fill="#7cbd6b" stroke="#4f8a45" stroke-width="3"/>
+    ${litRect(41, 20, 18, 46, 9, '#93cf82', '#5a9a4f', { stroke: '#4f8a45', sw: 3 })}
     <g stroke="#3f7038" stroke-width="1.6" opacity=".7">
       <path d="M 45 30 h -4 M 55 38 h 4 M 45 46 h -4 M 55 54 h 4"/>
     </g>
-    <circle cx="50" cy="19" r="5" fill="#f4a0c0"/>
-    <path d="M 34 64 h 32 l -4 24 h -24 z" fill="#d98b62" stroke="#a5613f" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="32" y="59" width="36" height="9" rx="4" fill="#e8a17c" stroke="#a5613f" stroke-width="3"/>`,
+    ${litEllipse(50, 19, 5, 5, '#ffc0d6', '#e07fa6')}
+    ${litPath('M 34 64 h 32 l -4 24 h -24 z', '#e59a71', '#b06a45', { stroke: '#a5613f', sw: 3, join: 'round' })}
+    ${litRect(32, 59, 36, 9, 4, '#f0b28f', '#c17c56', { stroke: '#a5613f', sw: 3 })}`,
 
   plant_succulent: () => {
     let r = '';
@@ -1188,108 +1523,120 @@ const DECOR = {
       const n = ring * 4, len = 7 + ring * 7;
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2 + ring * 0.4;
-        r += `<ellipse cx="${n2(50 + Math.cos(a) * len * 0.52)}" cy="${n2(46 + Math.sin(a) * len * 0.34)}"
+        const cx = 50 + Math.cos(a) * len * 0.52, cy = 46 + Math.sin(a) * len * 0.34;
+        r += `<ellipse cx="${n2(cx)}" cy="${n2(cy)}"
                 rx="${n2(len * 0.42)}" ry="${n2(len * 0.26)}"
-                transform="rotate(${n2(a * 57.3)} ${n2(50 + Math.cos(a) * len * 0.52)} ${n2(46 + Math.sin(a) * len * 0.34)})"
-                fill="${['#8fd3a8', '#a8dcbb', '#c3e8cf'][ring - 1]}" stroke="#5f9b73" stroke-width="2"/>`;
+                transform="rotate(${n2(a * 57.3)} ${n2(cx)} ${n2(cy)})"
+                fill="${['#8fd3a8', '#a8dcbb', '#c3e8cf'][ring - 1]}" stroke="#5f9b73" stroke-width="2"
+                opacity="${n2(0.98 - Math.sin(a) * 0.16)}"/>`;
       }
     }
-    return `<path d="M 34 60 h 32 l -4 28 h -24 z" fill="#c9a3e0" stroke="#8a6fa8" stroke-width="3" stroke-linejoin="round"/>
-            <rect x="32" y="55" width="36" height="9" rx="4" fill="#d8b8ea" stroke="#8a6fa8" stroke-width="3"/>
-            ${r}`;
+    return contact(50, 90, 24, 5, .26) +
+      litPath('M 34 60 h 32 l -4 28 h -24 z', '#d6b3e8', '#a184c2', { stroke: '#8a6fa8', sw: 3, join: 'round' }) +
+      litRect(32, 55, 36, 9, 4, '#e2c6f0', '#b096cc', { stroke: '#8a6fa8', sw: 3 }) + r;
   },
 
   plant_flowers: () => `
+    ${contact(50, 89, 24, 5, .26)}
     <path d="M 50 62 V 30 M 38 62 V 40 M 62 62 V 44" fill="none" stroke="#5f9b5a" stroke-width="3.5" stroke-linecap="round"/>
     <path d="M 44 46 q -8 -4 -6 -10 q 8 1 6 10z M 56 50 q 8 -4 6 -10 q -8 1 -6 10z" fill="#7fc276"/>
-    ${[[50, 26, '#f2849f'], [38, 36, '#ffd980'], [62, 40, '#a8c8f0']].map(([x, y, c]) =>
+    ${[[50, 26, '#f2849f', '#d05f7e'], [38, 36, '#ffd980', '#dfae42'], [62, 40, '#a8c8f0', '#7ba1d2']].map(([x, y, c, d]) =>
       [...Array(5)].map((_, i) => {
         const a = (i / 5) * Math.PI * 2;
-        return `<ellipse cx="${n2(x + Math.cos(a) * 6)}" cy="${n2(y + Math.sin(a) * 6)}" rx="4.6" ry="4.6" fill="${c}"/>`;
+        return litEllipse(n2(x + Math.cos(a) * 6), n2(y + Math.sin(a) * 6), 4.6, 4.6, c, d);
       }).join('') + `<circle cx="${x}" cy="${y}" r="3.4" fill="#fff6e8"/>`).join('')}
-    <path d="M 34 62 h 32 l -4 26 h -24 z" fill="#8fc6db" stroke="#4d7f92" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="32" y="57" width="36" height="9" rx="4" fill="#a9d8e8" stroke="#4d7f92" stroke-width="3"/>`,
-
-  mushrooms: () => `
-    <path d="M 36 88 V 68 a 5 5 0 0 1 10 0 v 20 z" fill="#fff3e4" stroke="#c9a97c" stroke-width="2.5"/>
-    <path d="M 24 68 a 17 14 0 0 1 34 0 z" fill="#e2564f" stroke="#a83a35" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="33" cy="61" r="3.4" fill="#fff"/><circle cx="46" cy="64" r="2.6" fill="#fff"/>
-    <path d="M 62 88 V 76 a 4 4 0 0 1 8 0 v 12 z" fill="#fff3e4" stroke="#c9a97c" stroke-width="2.5"/>
-    <path d="M 54 76 a 12 10 0 0 1 24 0 z" fill="#ef7f7f" stroke="#a83a35" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="62" cy="71" r="2.4" fill="#fff"/><circle cx="71" cy="73" r="2" fill="#fff"/>`,
+    ${litPath('M 34 62 h 32 l -4 26 h -24 z', '#a3d3e4', '#6b9cb0', { stroke: '#4d7f92', sw: 3, join: 'round' })}
+    ${litRect(32, 57, 36, 9, 4, '#bee2ee', '#8ab5c6', { stroke: '#4d7f92', sw: 3 })}`,
 
   plant_tall: () => `
-    <rect x="36" y="64" width="28" height="26" rx="4" fill="#d9ab7c" stroke="#8a6340" stroke-width="3"/>
-    <rect x="33" y="60" width="34" height="9" rx="4" fill="#e8c29a" stroke="#8a6340" stroke-width="3"/>
+    ${contact(50, 91, 22, 4.5, .26)}
+    ${litRect(36, 64, 28, 26, 4, '#e0b183', '#a87f55', { stroke: '#8a6340', sw: 3 })}
+    ${litRect(33, 60, 34, 9, 4, '#f0cda4', '#c19a6c', { stroke: '#8a6340', sw: 3 })}
     <path d="M 50 64 V 20" stroke="#6ba85e" stroke-width="4" stroke-linecap="round"/>
     ${[[-1, 22, 26], [1, 30, 24], [-1, 40, 22], [1, 48, 19]].map(([side, y, len]) =>
-      `<path d="M 50 ${y} q ${side * len * 0.7} ${-len * 0.5} ${side * len} ${-len * 0.1}
-                q ${-side * len * 0.4} ${len * 0.55} ${-side * len} ${len * 0.1} z"
-            fill="#7fc99a" stroke="#4f8a5c" stroke-width="2.5" stroke-linejoin="round"/>`).join('')}`,
+      litPath(`M 50 ${y} q ${side * len * 0.7} ${-len * 0.5} ${side * len} ${-len * 0.1}
+                q ${-side * len * 0.4} ${len * 0.55} ${-side * len} ${len * 0.1} z`,
+        side < 0 ? '#93d8ae' : '#7cc79a', side < 0 ? '#5aa97d' : '#4f9b6d',
+        { stroke: '#4f8a5c', sw: 2.5, join: 'round' })).join('')}`,
 
   plant_big_leaf: () => `
-    <path d="M 36 66 h 28 l -3 24 h -22 z" fill="#f2849f" stroke="#b3596e" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="33" y="61" width="34" height="9" rx="4" fill="#f7a8c0" stroke="#b3596e" stroke-width="3"/>
-    ${[[-26, 44, -22, '#6bbf8c'], [26, 46, 22, '#8fd3a8'], [-14, 24, -8, '#7fc99a'], [16, 22, 10, '#a3dcb8']]
-      .map(([dx, y, rot, fill]) => `
+    ${contact(50, 91, 24, 5, .26)}
+    ${litPath('M 36 66 h 28 l -3 24 h -22 z', '#f79cb2', '#cf7290', { stroke: '#b3596e', sw: 3, join: 'round' })}
+    ${litRect(33, 61, 34, 9, 4, '#fbb6c8', '#d88ba3', { stroke: '#b3596e', sw: 3 })}
+    ${[[-26, 44, -22, '#7fcd9c', '#4f9b6d'], [26, 46, 22, '#a3dcb8', '#63ab83'],
+       [-14, 24, -8, '#93d8ae', '#5aa97d'], [16, 22, 10, '#b3e5c6', '#79bf94']]
+      .map(([dx, y, rot, light, dark]) => `
         <g transform="translate(${50 + dx} ${y}) rotate(${rot})">
-          <path d="M 0 22 C -15 12 -15 -12 0 -20 C 15 -12 15 12 0 22 Z"
-                fill="${fill}" stroke="#3d7f5a" stroke-width="2.6" stroke-linejoin="round"/>
+          ${litPath('M 0 22 C -15 12 -15 -12 0 -20 C 15 -12 15 12 0 22 Z', light, dark,
+            { stroke: '#3d7f5a', sw: 2.6, join: 'round' })}
           <path d="M 0 20 V -18" stroke="#3d7f5a" stroke-width="2"/>
         </g>`).join('')}
     <path d="M 50 64 V 40 M 50 54 l -10 -8 M 50 50 l 10 -10" stroke="#4f8a5c" stroke-width="2.6" stroke-linecap="round"/>`,
 
   plant_bonsai: () => `
-    <path d="M 30 68 h 40 l -4 22 h -32 z" fill="#8a6f9c" stroke="#5f4a70" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="27" y="63" width="46" height="9" rx="4" fill="#a48ab5" stroke="#5f4a70" stroke-width="3"/>
+    ${contact(50, 91, 28, 5, .26)}
+    ${litPath('M 30 68 h 40 l -4 22 h -32 z', '#9c81ae', '#6f5885', { stroke: '#5f4a70', sw: 3, join: 'round' })}
+    ${litRect(27, 63, 46, 9, 4, '#b79dc7', '#8a71a0', { stroke: '#5f4a70', sw: 3 })}
     <path d="M 50 66 C 50 52 40 50 38 40" fill="none" stroke="#8a6340" stroke-width="7" stroke-linecap="round"/>
     <path d="M 50 58 C 54 50 62 50 64 44" fill="none" stroke="#8a6340" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="34" cy="34" rx="17" ry="11" fill="#6bbf8c" stroke="#3f8a5f" stroke-width="3"/>
-    <ellipse cx="66" cy="38" rx="14" ry="9"  fill="#7fc99a" stroke="#3f8a5f" stroke-width="3"/>
-    <ellipse cx="52" cy="24" rx="15" ry="10" fill="#8fd3a8" stroke="#3f8a5f" stroke-width="3"/>`,
+    ${litEllipse(34, 34, 17, 11, '#7fcd9c', '#4b9068', { stroke: '#3f8a5f', sw: 3 })}
+    ${litEllipse(66, 38, 14, 9, '#93d8ae', '#57a17a', { stroke: '#3f8a5f', sw: 3 })}
+    ${litEllipse(52, 24, 15, 10, '#a3dcb8', '#63ab83', { stroke: '#3f8a5f', sw: 3 })}`,
 
   /* ================= More for the floor ================= */
 
   watering_can: () => `
-    <rect x="30" y="50" width="34" height="34" rx="6" fill="#8fc6db" stroke="#4d7f92" stroke-width="3"/>
-    <path d="M 64 58 l 18 -12 6 5 -16 14 z" fill="#a9d8e8" stroke="#4d7f92" stroke-width="3" stroke-linejoin="round"/>
+    ${contact(48, 88, 24, 5, .26)}
+    ${litRect(30, 50, 34, 34, 6, '#a3d5e6', '#6ba3bc', { stroke: '#4d7f92', sw: 3 })}
+    ${litPath('M 64 58 l 18 -12 6 5 -16 14 z', '#bfe3ef', '#87b8cc', { stroke: '#4d7f92', sw: 3, join: 'round' })}
     <path d="M 30 58 q -12 6 0 18" fill="none" stroke="#4d7f92" stroke-width="4" stroke-linecap="round"/>
-    <rect x="34" y="44" width="26" height="8" rx="4" fill="#a9d8e8" stroke="#4d7f92" stroke-width="3"/>
+    ${litRect(34, 44, 26, 8, 4, '#bfe3ef', '#87b8cc', { stroke: '#4d7f92', sw: 3 })}
+    <path d="M 35 55 v 24" stroke="#fff" stroke-opacity=".38" stroke-width="3.5"/>
     <circle cx="86" cy="36" r="3" fill="#bfe6f5"/><circle cx="92" cy="44" r="2.4" fill="#bfe6f5"/>`,
 
   toy_blocks: () => `
-    <rect x="20" y="56" width="26" height="26" rx="4" fill="#ef7f7f" stroke="#b34d4d" stroke-width="3"/>
-    <rect x="50" y="56" width="26" height="26" rx="4" fill="#6fb3d9" stroke="#3f7d9e" stroke-width="3"/>
-    <rect x="35" y="28" width="26" height="26" rx="4" fill="#f6c453" stroke="#c9922c" stroke-width="3"/>
+    ${contact(48, 86, 32, 5, .26)}
+    ${litRect(20, 56, 26, 26, 4, '#f79797', '#cc5d5d', { stroke: '#b34d4d', sw: 3 })}
+    ${litRect(50, 56, 26, 26, 4, '#88c2e2', '#4f8fb3', { stroke: '#3f7d9e', sw: 3 })}
+    ${litRect(35, 28, 26, 26, 4, '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3 })}
+    ${raised(20, 56, 26, 26, 4, { sw: 2.2 })}${raised(50, 56, 26, 26, 4, { sw: 2.2 })}
+    ${raised(35, 28, 26, 26, 4, { sw: 2.2 })}
     <text x="33" y="76" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">A</text>
     <text x="63" y="76" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">C</text>
     <text x="48" y="48" font-family="system-ui" font-size="18" font-weight="900" fill="#fff">B</text>`,
 
   stool: () => `
-    <ellipse cx="50" cy="50" rx="30" ry="12" fill="#d9ab7c" stroke="#8a6340" stroke-width="3"/>
+    ${contact(50, 90, 26, 5, .26)}
     <path d="M 26 54 L 20 86 M 74 54 L 80 86 M 50 58 V 88"
           stroke="#a5794f" stroke-width="7" stroke-linecap="round"/>
-    <ellipse cx="50" cy="48" rx="30" ry="12" fill="#e8c29a" stroke="#8a6340" stroke-width="3"/>`,
+    ${litEllipse(50, 50, 30, 12, '#e0b183', '#ab7f52', { stroke: '#8a6340', sw: 3 })}
+    ${litEllipse(50, 47, 30, 12, '#f0cda4', '#c19a6c', { stroke: '#8a6340', sw: 3 })}
+    <path d="M 26 44 q 24 -8 48 0" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3"/>`,
 
   floor_lamp: () => `
-    <ellipse cx="50" cy="88" rx="20" ry="7" fill="#c9a87c" stroke="#8a6340" stroke-width="3"/>
+    ${contact(50, 90, 22, 5, .26)}
+    ${litEllipse(50, 88, 20, 7, '#d5b48a', '#a5875f', { stroke: '#8a6340', sw: 3 })}
     <path d="M 50 86 V 40 q 0 -10 -12 -12" fill="none" stroke="#8a6340" stroke-width="5" stroke-linecap="round"/>
-    <path d="M 18 24 h 34 l -6 20 h -22 z" fill="#f6c453" stroke="#c9922c" stroke-width="3" stroke-linejoin="round"/>
-    <ellipse cx="35" cy="46" rx="12" ry="4" fill="#fff6e8" opacity=".85"/>`,
+    ${litPath('M 18 24 h 34 l -6 20 h -22 z', '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3, join: 'round' })}
+    <ellipse cx="35" cy="46" rx="12" ry="4" fill="#fff6e8" opacity=".85"/>
+    <path d="M 21 26 h 12 l -3 16 h -7 z" fill="#fff" opacity=".24"/>`,
 
   easel: () => `
+    ${contact(50, 92, 30, 5, .24)}
     <path d="M 26 88 L 42 34 M 74 88 L 58 34 M 50 40 V 92" stroke="#a5794f" stroke-width="6" stroke-linecap="round"/>
-    <rect x="24" y="30" width="52" height="40" rx="3" fill="#fff6e8" stroke="#8a6340" stroke-width="3.5"/>
+    ${litRect(24, 30, 52, 40, 3, '#fffaf0', '#ddcbb2', { stroke: '#8a6340', sw: 3.5 })}
     <path d="M 28 62 q 12 -20 22 -8 q 8 10 22 -6 v 14 h -44 z" fill="#8fd3a8"/>
+    <path d="M 28 66 q 12 -12 22 -4 q 8 7 22 -2 v 8 h -44 z" fill="#6fbd8c" opacity=".7"/>
     <circle cx="63" cy="41" r="6" fill="#ffd980"/>
-    <rect x="22" y="66" width="56" height="7" rx="3" fill="#c9a87c" stroke="#8a6340" stroke-width="3"/>`,
+    ${litRect(22, 66, 56, 7, 3, '#d5a577', '#9a7146', { stroke: '#8a6340', sw: 3 })}`,
 
   rocking_horse: () => `
+    ${contact(50, 90, 34, 5, .24)}
     <path d="M 16 82 q 34 14 68 0" fill="none" stroke="#a5794f" stroke-width="7" stroke-linecap="round"/>
     <path d="M 32 78 V 58 M 64 78 V 56" stroke="#c9a87c" stroke-width="7" stroke-linecap="round"/>
-    <ellipse cx="48" cy="52" rx="26" ry="15" fill="#f4c9a8" stroke="#a5613f" stroke-width="3"/>
-    <circle cx="72" cy="38" r="14" fill="#f4c9a8" stroke="#a5613f" stroke-width="3"/>
-    <path d="M 78 26 l 8 -8 -2 10 z" fill="#f4c9a8" stroke="#a5613f" stroke-width="2.5" stroke-linejoin="round"/>
+    ${litEllipse(48, 52, 26, 15, '#f9d8bc', '#d9a37d', { stroke: '#a5613f', sw: 3 })}
+    ${litEllipse(72, 38, 14, 14, '#f9d8bc', '#d9a37d', { stroke: '#a5613f', sw: 3 })}
+    ${litPath('M 78 26 l 8 -8 -2 10 z', '#f9d8bc', '#d9a37d', { stroke: '#a5613f', sw: 2.5, join: 'round' })}
     <circle cx="78" cy="36" r="3" fill="#3a2e28"/>
     <path d="M 62 30 q -10 4 -12 16" fill="none" stroke="#e2566f" stroke-width="5" stroke-linecap="round"/>
     <path d="M 24 46 q -8 8 -6 20" fill="none" stroke="#e2566f" stroke-width="5" stroke-linecap="round"/>`,
@@ -1297,45 +1644,53 @@ const DECOR = {
   /* ================= More beds ================= */
 
   bed_hammock: () => `
-    <path d="M 10 26 V 84 M 90 26 V 84" stroke="#a5794f" stroke-width="6" stroke-linecap="round"/>
-    <path d="M 12 34 Q 50 82 88 34" fill="#f7b955" stroke="#c9922c" stroke-width="3.5" stroke-linejoin="round"/>
+    ${contact(50, 92, 36, 4.5, .22)}
+    ${litRect(7, 26, 6, 60, 3, '#c09667', '#8c6640')}
+    ${litRect(87, 26, 6, 60, 3, '#c09667', '#8c6640')}
+    ${litPath('M 12 34 Q 50 82 88 34 Q 50 68 12 34 z', '#fbca74', '#d79c3a', { stroke: '#c9922c', sw: 3.5, join: 'round' })}
     <path d="M 12 34 Q 50 70 88 34" fill="none" stroke="#fff6e8" stroke-width="2.5" opacity=".7"/>
     ${[22, 34, 50, 66, 78].map(x => `<path d="M ${x} ${28 + Math.abs(50 - x) * 0.12} L ${x} ${52 - Math.abs(50 - x) * 0.34}"
         stroke="#c9922c" stroke-width="2" opacity=".6"/>`).join('')}`,
 
   bed_lilypad: () => `
-    <ellipse cx="50" cy="66" rx="44" ry="26" fill="#7fc99a" stroke="#4f8a5c" stroke-width="3.5"/>
+    ${contact(50, 88, 42, 5.5, .2)}
+    ${litEllipse(50, 66, 44, 26, '#96d8ab', '#5f9f70', { stroke: '#4f8a5c', sw: 3.5 })}
     <path d="M 50 66 L 86 58 M 50 66 L 80 82 M 50 66 L 30 86 M 50 66 L 12 60 M 50 66 L 26 46"
           stroke="#4f8a5c" stroke-width="2" opacity=".55"/>
     <path d="M 50 66 L 62 42 a 14 14 0 0 0 -24 0 z" fill="#9fd8b4"/>
-    <ellipse cx="50" cy="58" rx="22" ry="12" fill="#c3e8cf" stroke="#4f8a5c" stroke-width="2.5"/>
-    <circle cx="74" cy="42" r="8" fill="#f7a8c6" stroke="#c07e96" stroke-width="2.5"/>
+    ${litEllipse(50, 58, 22, 12, '#d9f2e2', '#a3d3b5', { stroke: '#4f8a5c', sw: 2.5 })}
+    ${litEllipse(74, 42, 8, 8, '#ffc6dc', '#e18aae', { stroke: '#c07e96', sw: 2.5 })}
     <circle cx="74" cy="42" r="3.4" fill="#ffd980"/>`,
 
   bed_mushroom: () => `
-    <path d="M 34 88 V 62 a 6 6 0 0 1 12 0 v 26 z" fill="#fff3e4" stroke="#c9a97c" stroke-width="3"/>
-    <path d="M 8 62 a 42 30 0 0 1 84 0 z" fill="#e2564f" stroke="#a83a35" stroke-width="3.5" stroke-linejoin="round"/>
-    <circle cx="28" cy="48" r="7" fill="#fff"/><circle cx="52" cy="40" r="9" fill="#fff"/>
-    <circle cx="72" cy="50" r="6" fill="#fff"/><circle cx="40" cy="57" r="4.6" fill="#fff"/>
-    <ellipse cx="62" cy="80" rx="26" ry="11" fill="#ffe3ec" stroke="#c07e96" stroke-width="3"/>`,
+    ${contact(50, 91, 32, 4.5, .24)}
+    ${litRect(34, 58, 12, 32, 6, '#fff8ec', '#ddc9a8', { stroke: '#c9a97c', sw: 3 })}
+    ${litPath('M 8 62 a 42 30 0 0 1 84 0 z', '#ef6f66', '#b8433c', { stroke: '#a83a35', sw: 3.5, join: 'round' })}
+    <circle cx="28" cy="48" r="7" fill="#fff" opacity=".92"/><circle cx="52" cy="40" r="9" fill="#fff" opacity=".95"/>
+    <circle cx="72" cy="50" r="6" fill="#fff" opacity=".85"/><circle cx="40" cy="57" r="4.6" fill="#fff" opacity=".85"/>
+    <path d="M 12 60 a 40 28 0 0 1 22 -24" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="4"/>
+    ${litEllipse(62, 80, 26, 11, '#fff2f7', '#eabfcf', { stroke: '#c07e96', sw: 3 })}`,
 
   bed_cloud: () => `
-    <circle cx="28" cy="58" r="20" fill="#fff" stroke="#c6d4e4" stroke-width="3.5"/>
-    <circle cx="52" cy="48" r="26" fill="#fff" stroke="#c6d4e4" stroke-width="3.5"/>
-    <circle cx="76" cy="58" r="18" fill="#fff" stroke="#c6d4e4" stroke-width="3.5"/>
-    <rect x="12" y="58" width="76" height="24" rx="12" fill="#fff" stroke="#c6d4e4" stroke-width="3.5"/>
-    <ellipse cx="34" cy="60" rx="14" ry="7" fill="#eaf2fb"/>
+    ${contact(50, 88, 40, 5, .16)}
+    ${litEllipse(28, 58, 20, 20, '#ffffff', '#dde7f2', { stroke: '#c6d4e4', sw: 3.5 })}
+    ${litEllipse(52, 48, 26, 26, '#ffffff', '#dde7f2', { stroke: '#c6d4e4', sw: 3.5 })}
+    ${litEllipse(76, 58, 18, 18, '#ffffff', '#dde7f2', { stroke: '#c6d4e4', sw: 3.5 })}
+    ${litRect(12, 58, 76, 24, 12, '#fdfeff', '#d5e1ef', { stroke: '#c6d4e4', sw: 3.5 })}
+    <ellipse cx="34" cy="61" rx="14" ry="7" fill="#e6eef8" opacity=".9"/>
     <path d="M 20 54 q 8 -4 16 0 M 62 50 q 8 -4 16 2" fill="none" stroke="#dce6f2" stroke-width="3" stroke-linecap="round"/>`,
 
   /* ================= More rugs ================= */
 
   rug_moss: () => `
-    <ellipse cx="50" cy="62" rx="42" ry="24" fill="#8fbf7a" stroke="#5f8a4f" stroke-width="3.5"/>
+    ${contact(50, 64, 44, 26, .18)}
+    ${litEllipse(50, 62, 42, 24, '#a8d494', '#83b271', { stroke: '#5f8a4f', sw: 3.5, cy: '30%' })}
     ${[...Array(14)].map((_, i) => {
       const a = (i / 14) * Math.PI * 2;
-      return `<ellipse cx="${n2(50 + Math.cos(a) * 26)}" cy="${n2(62 + Math.sin(a) * 14)}" rx="7" ry="4.6" fill="#a4cf90"/>`;
+      return `<ellipse cx="${n2(50 + Math.cos(a) * 26)}" cy="${n2(62 + Math.sin(a) * 14)}" rx="7" ry="4.6"
+                fill="#a4cf90" opacity="${n2(0.95 - Math.sin(a) * 0.22)}"/>`;
     }).join('')}
-    <ellipse cx="50" cy="62" rx="16" ry="9" fill="#c3e8b0"/>`,
+    ${litEllipse(50, 62, 16, 9, '#d0efbd', '#a8d194')}`,
 
   rug_star: () => {
     let d = '';
@@ -1344,24 +1699,27 @@ const DECOR = {
       const r = i % 2 ? 18 : 44;
       d += `${i ? 'L' : 'M'} ${n2(50 + Math.cos(a) * r)} ${n2(62 + Math.sin(a) * r * 0.58)} `;
     }
-    return `<path d="${d}Z" fill="#f6c453" stroke="#c9922c" stroke-width="3.5" stroke-linejoin="round"/>
-            <circle cx="50" cy="62" r="11" fill="#ffe9a8" stroke="#c9922c" stroke-width="2.5"/>`;
+    return contact(50, 64, 44, 26, .16) +
+      litPath(`${d}Z`, '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3.5, join: 'round' }) +
+      litEllipse(50, 62, 11, 11, '#fff2c9', '#e8c976', { stroke: '#c9922c', sw: 2.5 });
   },
 
   rug_flower: () => `
+    ${contact(50, 64, 45, 28, .16)}
     ${[...Array(8)].map((_, i) => {
       const a = (i / 8) * Math.PI * 2;
-      return `<ellipse cx="${n2(50 + Math.cos(a) * 26)}" cy="${n2(62 + Math.sin(a) * 15)}" rx="17" ry="11"
-                fill="#f4a0c0" stroke="#c07e96" stroke-width="3"/>`;
+      return litEllipse(n2(50 + Math.cos(a) * 26), n2(62 + Math.sin(a) * 15), 17, 11,
+        '#ffb9d2', '#dd87a8', { stroke: '#c07e96', sw: 3 });
     }).join('')}
-    <ellipse cx="50" cy="62" rx="20" ry="12" fill="#ffd980" stroke="#c9922c" stroke-width="3"/>`,
+    ${litEllipse(50, 62, 20, 12, '#ffe9a8', '#e0b455', { stroke: '#c9922c', sw: 3 })}`,
 
   rug_cloud: () => `
-    <ellipse cx="30" cy="60" rx="18" ry="12" fill="#e8f1fb" stroke="#bcd0e4" stroke-width="3"/>
-    <ellipse cx="70" cy="60" rx="18" ry="12" fill="#e8f1fb" stroke="#bcd0e4" stroke-width="3"/>
-    <ellipse cx="50" cy="54" rx="24" ry="15" fill="#f4f8fe" stroke="#bcd0e4" stroke-width="3"/>
-    <ellipse cx="50" cy="66" rx="40" ry="16" fill="#f4f8fe" stroke="#bcd0e4" stroke-width="3"/>
-    <ellipse cx="50" cy="64" rx="22" ry="8" fill="#dbe8f7"/>`,
+    ${contact(50, 68, 42, 20, .14)}
+    ${litEllipse(30, 60, 18, 12, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(70, 60, 18, 12, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(50, 54, 24, 15, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(50, 66, 40, 16, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
+    <ellipse cx="50" cy="64" rx="22" ry="8" fill="#dbe8f7" opacity=".8"/>`,
 
   /* ================= More for the walls ================= */
 
@@ -1374,32 +1732,35 @@ const DECOR = {
        </g>`).join('')}`,
 
   small_shelf: () => `
-    <rect x="16" y="54" width="68" height="8" rx="3" fill="#c99a6e" stroke="#8a6340" stroke-width="3"/>
+    <rect class="${SHADOW}" x="18" y="56.5" width="68" height="8" rx="3" fill="#3a2c1e" opacity=".17"/>
+    ${litRect(16, 54, 68, 8, 3, '#d5a577', '#9a7146', { stroke: '#8a6340', sw: 3 })}
     <path d="M 24 62 v 8 M 76 62 v 8" stroke="#8a6340" stroke-width="3.5" stroke-linecap="round"/>
-    <rect x="26" y="34" width="9" height="20" rx="2" fill="#ef7f7f"/>
-    <rect x="37" y="38" width="8" height="16" rx="2" fill="#6fb3d9"/>
-    <circle cx="60" cy="46" r="8" fill="#8fd3a8" stroke="#4f8a5c" stroke-width="2.5"/>
-    <rect x="70" y="42" width="10" height="12" rx="2" fill="#f6c453"/>`,
+    ${litRect(26, 34, 9, 20, 2, '#f79797', '#cc5d5d')}
+    ${litRect(37, 38, 8, 16, 2, '#88c2e2', '#4f8fb3')}
+    ${litEllipse(60, 46, 8, 8, '#a3dcb8', '#69b98c', { stroke: '#4f8a5c', sw: 2.5 })}
+    ${litRect(70, 42, 10, 12, 2, '#ffd980', '#dfa93c')}`,
 
   mirror: () => `
-    <circle cx="50" cy="48" r="32" fill="#d9e8f2" stroke="#a5875f" stroke-width="6"/>
-    <circle cx="50" cy="48" r="26" fill="#eef6fb"/>
+    <circle class="${SHADOW}" cx="52.4" cy="50.6" r="32" fill="#3a2c1e" opacity=".17"/>
+    ${litEllipse(50, 48, 32, 32, '#e6f0f7', '#bccddb', { stroke: '#a5875f', sw: 6 })}
+    ${litEllipse(50, 48, 26, 26, '#fbfdff', '#d3e3ee')}
     <path d="M 32 58 q 14 -26 34 -14" fill="none" stroke="#fff" stroke-width="7" opacity=".85" stroke-linecap="round"/>
     <circle cx="50" cy="12" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
 
   wall_planter: () => `
     <path d="M 50 8 V 24" stroke="#a5875f" stroke-width="3"/>
-    <path d="M 30 24 h 40 l -5 22 h -30 z" fill="#d98b62" stroke="#a5613f" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="27" y="20" width="46" height="8" rx="4" fill="#e8a17c" stroke="#a5613f" stroke-width="3"/>
+    <path class="${SHADOW}" d="M 32 26 h 40 l -5 22 h -30 z" fill="#3a2c1e" opacity=".16"/>
+    ${litPath('M 30 24 h 40 l -5 22 h -30 z', '#e59a71', '#b06a45', { stroke: '#a5613f', sw: 3, join: 'round' })}
+    ${litRect(27, 20, 46, 8, 4, '#f0b28f', '#c17c56', { stroke: '#a5613f', sw: 3 })}
     ${[[-1, 34], [1, 30], [-1, 20]].map(([side, len]) =>
       `<path d="M ${50 + side * 12} 44 q ${side * 8} ${len * 0.6} ${side * 4} ${len}"
             fill="none" stroke="#5fae7f" stroke-width="3.5" stroke-linecap="round"/>`).join('')}
-    <circle cx="36" cy="72" r="5" fill="#7fc99a"/><circle cx="62" cy="66" r="4.4" fill="#8fd3a8"/>
-    <circle cx="44" cy="84" r="4" fill="#7fc99a"/>`,
+    ${litEllipse(36, 72, 5, 5, '#a3dcb8', '#69b98c')}${litEllipse(62, 66, 4.4, 4.4, '#a3dcb8', '#69b98c')}
+    ${litEllipse(44, 84, 4, 4, '#a3dcb8', '#69b98c')}`,
 
   map: () => `
-    <path d="M 14 22 q 18 -6 36 0 q 18 6 36 0 v 56 q -18 6 -36 0 q -18 -6 -36 0 z"
-          fill="#f2e2c0" stroke="#a5875f" stroke-width="3.5" stroke-linejoin="round"/>
+    <path class="${SHADOW}" d="M 16 24.5 q 18 -6 36 0 q 18 6 36 0 v 56 q -18 6 -36 0 q -18 -6 -36 0 z" fill="#3a2c1e" opacity=".16"/>
+    ${litPath('M 14 22 q 18 -6 36 0 q 18 6 36 0 v 56 q -18 6 -36 0 q -18 -6 -36 0 z', '#f8ecd2', '#dcc79f', { stroke: '#a5875f', sw: 3.5, join: 'round' })}
     <path d="M 24 60 q 12 -22 26 -10 q 14 12 26 -8" fill="none" stroke="#8a6340" stroke-width="2.5" stroke-dasharray="5 5"/>
     <path d="M 66 38 l 8 8 M 74 38 l -8 8" stroke="#d4594f" stroke-width="4" stroke-linecap="round"/>
     <path d="M 26 40 l 6 -8 6 8 z" fill="#8fb87c"/>`,
@@ -1425,12 +1786,19 @@ const DECOR = {
   /* ================= More windows and doors ================= */
 
   window_flower: () => `
-    <rect x="18" y="12" width="64" height="54" rx="4" fill="var(--season-glass, #bfe6f5)" stroke="#a5875f" stroke-width="6"/>
+    <rect x="18" y="12" width="64" height="54" rx="4" fill="var(--season-glass, #bfe6f5)"/>
+    ${ringRect(18, 12, 64, 54, 4, 8, '#d9c4a5', '#8f7149')}
+    ${inset(18, 12, 64, 54, 4, { sw: 3, shade: .26, light: .24 })}
+    ${gloss(23, 15, 14, 46, { rot: -16, peak: .4 })}
     <path d="M 50 12 v 54 M 18 39 h 64" stroke="#d9c4a5" stroke-width="5"/>
-    <path d="M 12 66 h 76 l -5 20 h -66 z" fill="#d98b62" stroke="#a5613f" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M 51.8 12 v 54 M 18 40.8 h 64" stroke="#3a2c1e" stroke-opacity=".18" stroke-width="2"/>
+    <rect x="18" y="12" width="64" height="54" rx="4" fill="none" stroke="#a5875f" stroke-width="3.4"/>
+    ${litPath('M 12 66 h 76 l -5 20 h -66 z', '#e29b72', '#b06a45', { stroke: '#a5613f', sw: 3.5, join: 'round' })}
+    <path d="M 14 69 h 72" stroke="#fff" stroke-opacity=".3" stroke-width="2.4"/>
     ${[24, 40, 56, 72].map((x, i) =>
       `<circle cx="${x}" cy="${62 - (i % 2) * 5}" r="6" fill="${['#f2849f', '#ffd980', '#c9a3e0', '#f7a8c6'][i]}"/>
-       <circle cx="${x}" cy="${62 - (i % 2) * 5}" r="2.4" fill="#fff6e8"/>`).join('')}`,
+       <circle cx="${x - 1.6}" cy="${60.4 - (i % 2) * 5}" r="2.4" fill="#fff6e8" opacity=".9"/>`).join('')}
+    <rect class="${SHADOW}" x="15" y="86" width="70" height="3.2" rx="1.6" fill="#4a3a2c" opacity=".16"/>`,
 
   window_star: () => {
     let d = '';
@@ -1439,21 +1807,25 @@ const DECOR = {
       const r = i % 2 ? 18 : 42;
       d += `${i ? 'L' : 'M'} ${n2(50 + Math.cos(a) * r)} ${n2(48 + Math.sin(a) * r)} `;
     }
-    return `<path d="${d}Z" fill="var(--season-glass, #cfe6f5)" stroke="#a5875f" stroke-width="6" stroke-linejoin="round"/>
-            <path d="${d}Z" fill="none" stroke="#fff" stroke-width="2" opacity=".6"/>
-            <circle cx="42" cy="38" r="5" fill="#fff" opacity=".7"/>`;
+    return `<path d="${d}Z" fill="var(--season-glass, #cfe6f5)"/>` +
+      ringPath(`${d}Z`, 8, '#d9c4a5', '#8f7149') +
+      `<path d="${d}Z" fill="none" stroke="#3a2c1e" stroke-opacity=".18" stroke-width="2.6" stroke-linejoin="round"/>` +
+      gloss(34, 30, 12, 30, { rot: -22, peak: .5 }) +
+      `<path d="${d}Z" fill="none" stroke="#a5875f" stroke-width="3" stroke-linejoin="round"/>`;
   },
 
   door_barn: () => `
-    <rect x="18" y="10" width="64" height="86" rx="3" fill="#d4594f" stroke="#8a3a35" stroke-width="5"/>
+    ${contact(50, 97, 32, 2.6, .3)}
+    ${litRect(18, 10, 64, 86, 3, '#e06a5f', '#a8433c', { stroke: '#8a3a35', sw: 5 })}
     <path d="M 50 10 V 96" stroke="#8a3a35" stroke-width="4"/>
-    <path d="M 20 30 h 60 M 20 74 h 60" stroke="#e8a09a" stroke-width="5"/>
-    <path d="M 22 32 L 48 72 M 78 32 L 52 72" stroke="#e8a09a" stroke-width="5"/>
+    <path d="M 20 30 h 60 M 20 74 h 60" stroke="#efb0aa" stroke-width="5"/>
+    <path d="M 20 32.6 h 60 M 20 76.6 h 60" stroke="#7d332e" stroke-opacity=".4" stroke-width="2"/>
+    <path d="M 22 32 L 48 72 M 78 32 L 52 72" stroke="#efb0aa" stroke-width="5"/>
     <circle cx="44" cy="54" r="3.6" fill="#f6c453"/><circle cx="56" cy="54" r="3.6" fill="#f6c453"/>`,
 
   door_star: () => `
-    <rect x="20" y="8" width="60" height="88" rx="6" fill="#4e5b94" stroke="#333d66" stroke-width="5"/>
-    <rect x="20" y="8" width="60" height="88" rx="6" fill="none" stroke="#333d66" stroke-width="5"/>
+    ${contact(50, 97, 31, 2.6, .32)}
+    ${litRect(20, 8, 60, 88, 6, '#5b6aa8', '#39457a', { stroke: '#333d66', sw: 5 })}
     ${[[50, 34, 15], [34, 58, 8], [66, 62, 9], [50, 76, 6]].map(([x, y, r]) => {
       let d = '';
       for (let i = 0; i < 10; i++) {
@@ -1461,9 +1833,11 @@ const DECOR = {
         const rr = i % 2 ? r * 0.44 : r;
         d += `${i ? 'L' : 'M'} ${n2(x + Math.cos(a) * rr)} ${n2(y + Math.sin(a) * rr)} `;
       }
-      return `<path d="${d}Z" fill="#ffe9a8" stroke="#e0c274" stroke-width="1.6" stroke-linejoin="round"/>`;
+      return `<path d="${d}Z" fill="#000" opacity=".2" transform="translate(1.4 1.6)"/>` +
+             litPath(`${d}Z`, '#fff6d4', '#e8c976', { stroke: '#e0c274', sw: 1.6, join: 'round' });
     }).join('')}
-    <circle cx="70" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+    <circle cx="70" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>
+    <circle cx="68.4" cy="52.4" r="1.7" fill="#fff" opacity=".75"/>`,
 
   /* ---- Special decorations ---- */
   blossom_lamp: () => DECOR.lamp().replace(/#ef7f7f/g, '#f4a8c6').replace(/#b34d4d/g, '#b3596e'),
@@ -1518,33 +1892,38 @@ const DECOR = {
 
   /* ---- Trees ---- */
   tree_apple: () => `
+    ${contact(50, 95, 26, 5, .3)}
     <path d="M 46 96 V 58 q -1 -8 -8 -12 M 54 96 V 62 q 1 -7 8 -11" fill="none" stroke="#8a6340" stroke-width="7" stroke-linecap="round"/>
-    <rect x="43" y="58" width="14" height="38" rx="4" fill="#a2764e" stroke="#7d5a3a" stroke-width="3.5"/>
-    <circle cx="50" cy="34" r="25" fill="#69ab5c" stroke="#4b8244" stroke-width="4"/>
-    <circle cx="30" cy="46" r="17" fill="#74b566" stroke="#4b8244" stroke-width="4"/>
-    <circle cx="70" cy="46" r="17" fill="#5f9e53" stroke="#4b8244" stroke-width="4"/>
+    ${litRect(43, 58, 14, 38, 4, '#b08557', '#7d5a3a', { stroke: '#7d5a3a', sw: 3.5 })}
+    ${grain(44.5, 60, 11, 34, 3, 2, { color: '#5f4328', strength: .3, sw: 1.6 })}
+    ${litEllipse(30, 46, 17, 17, '#84c273', '#4b8244', { stroke: '#4b8244', sw: 4 })}
+    ${litEllipse(70, 46, 17, 17, '#6fae5f', '#417539', { stroke: '#4b8244', sw: 4 })}
+    ${litEllipse(50, 34, 25, 25, '#7bbb6a', '#48803f', { stroke: '#4b8244', sw: 4 })}
     ${[[36, 40], [58, 30], [66, 50], [46, 52], [26, 50], [60, 62]].map(([x, y]) =>
-      `<circle cx="${x}" cy="${y}" r="4.6" fill="#e05a4e" stroke="#a83c33" stroke-width="1.8"/>`).join('')}`,
+      litEllipse(x, y, 4.6, 4.6, '#ef7268', '#b8433a', { stroke: '#a83c33', sw: 1.8 })).join('')}`,
 
   tree_blossom: () => `
-    <rect x="44" y="56" width="12" height="40" rx="4" fill="#9c7350" stroke="#7a583c" stroke-width="3.5"/>
+    ${contact(50, 95, 25, 5, .3)}
+    ${litRect(44, 56, 12, 40, 4, '#ad825c', '#7a583c', { stroke: '#7a583c', sw: 3.5 })}
     <path d="M 50 70 L 34 56 M 50 66 L 66 52" fill="none" stroke="#9c7350" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="50" cy="32" r="24" fill="#f7bdd2" stroke="#dd91ad" stroke-width="4"/>
-    <circle cx="30" cy="44" r="16" fill="#fbd0e0" stroke="#dd91ad" stroke-width="4"/>
-    <circle cx="70" cy="44" r="16" fill="#f3aec8" stroke="#dd91ad" stroke-width="4"/>
+    ${litEllipse(30, 44, 16, 16, '#fdd8e6', '#e8a0bc', { stroke: '#dd91ad', sw: 4 })}
+    ${litEllipse(70, 44, 16, 16, '#f6b7ce', '#d98aa8', { stroke: '#dd91ad', sw: 4 })}
+    ${litEllipse(50, 32, 24, 24, '#fbc8da', '#e096b2', { stroke: '#dd91ad', sw: 4 })}
     ${[[40, 28], [58, 24], [64, 42], [34, 48], [52, 46]].map(([x, y]) =>
       `<circle cx="${x}" cy="${y}" r="3" fill="#fff4f8"/>`).join('')}`,
 
   tree_pine: () => `
-    <rect x="45" y="76" width="10" height="20" rx="3" fill="#8a6340" stroke="#6d4d31" stroke-width="3"/>
-    <path d="M 50 8 L 72 40 H 28 Z"  fill="#4e8f56" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M 50 26 L 78 60 H 22 Z" fill="#59a061" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M 50 46 L 84 80 H 16 Z" fill="#4e8f56" stroke="#3a6e42" stroke-width="4" stroke-linejoin="round"/>`,
-
+    ${contact(50, 95, 30, 5, .3)}
+    ${litRect(45, 76, 10, 20, 3, '#9a7048', '#6d4d31', { stroke: '#6d4d31', sw: 3 })}
+    ${litPath('M 50 46 L 84 80 H 16 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}
+    ${litPath('M 50 26 L 78 60 H 22 Z', '#6bb372', '#417a49', { stroke: '#3a6e42', sw: 4, join: 'round' })}
+    ${litPath('M 50 8 L 72 40 H 28 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}`,
   /* Strands first, canopy last: the canopy has to cap where they start,
      or a willow looks like a jellyfish. */
   tree_willow: () => `
+    ${contact(50, 95, 30, 5, .3)}
     <path d="M 50 96 V 50" stroke="#9a7a52" stroke-width="11" stroke-linecap="round"/>
+    <path d="M 47 92 V 54" stroke="#b8946a" stroke-opacity=".5" stroke-width="3"/>
     <path d="M 50 62 q -9 -7 -15 -15 M 50 57 q 9 -6 16 -13" fill="none" stroke="#9a7a52" stroke-width="5" stroke-linecap="round"/>
     ${[20, 26, 32, 38, 44, 56, 62, 68, 74, 80].map((x, i) => {
       const end = 66 + (i % 4) * 7;
@@ -1552,31 +1931,40 @@ const DECOR = {
       return `<path d="M ${x} 34 q ${bow} ${(end - 34) / 2} ${bow / 2} ${end - 34}" fill="none"
                     stroke="${i % 2 ? '#6fae5f' : '#88c477'}" stroke-width="3.6" stroke-linecap="round"/>`;
     }).join('')}
-    <ellipse cx="50" cy="36" rx="33" ry="18" fill="#7cb86a" stroke="#548c4c" stroke-width="4"/>
-    <ellipse cx="38" cy="30" rx="12" ry="6" fill="#8ec87c" opacity=".7"/>`,
+    ${litEllipse(50, 36, 33, 18, '#8cc87a', '#548c4c', { stroke: '#548c4c', sw: 4 })}
+    <ellipse cx="38" cy="30" rx="15" ry="7" fill="#a8d898" opacity=".26"/>`,
 
   /* ---- Water. Flat on the ground, seen at an angle. ---- */
+  /* ---- Water. Flat on the ground, seen at an angle ----
+     A pond is a hole, so it is dark at the far edge and light towards the
+     near one, with the bank throwing a shadow onto the water underneath it.
+     Flat blue with white dashes on it reads as a puddle sticker. */
   pond_small: () => `
-    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#8a9c72" stroke="#6d7f5a" stroke-width="4"/>
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#7fc3dd"/>
-    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#9ad6e9"/>
-    <path d="M 24 56 h 18 M 56 68 h 16 M 40 72 h 12" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".65"/>`,
+    ${litEllipse(50, 62, 44, 26, '#98aa80', '#6d7f5a', { stroke: '#6d7f5a', sw: 4, cy: '20%' })}
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#4f93ad"/>
+    ${litEllipse(50, 61, 36, 20, '#a7dcec', '#4a8ba6', { cy: '78%', r: '92%' })}
+    <ellipse cx="50" cy="57" rx="31" ry="15" fill="#bfe8f3" opacity=".35"/>
+    ${gloss(26, 52, 26, 3.6, { rot: -5, peak: .42 })}
+    ${gloss(54, 67, 18, 3, { rot: -4, peak: .3 })}`,
 
   pond_lily: () => `
-    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#8a9c72" stroke="#6d7f5a" stroke-width="4"/>
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#6fb9a8"/>
-    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#8acdba"/>
-    <path d="M 26 54 h 14 M 60 70 h 14" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    ${litEllipse(50, 62, 44, 26, '#98aa80', '#6d7f5a', { stroke: '#6d7f5a', sw: 4, cy: '20%' })}
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#3f8f80"/>
+    ${litEllipse(50, 61, 36, 20, '#97dccb', '#3f8578', { cy: '78%', r: '92%' })}
+    ${gloss(28, 52, 22, 3.4, { rot: -5, peak: .36 })}
     ${[[34, 58, 11], [64, 66, 9], [52, 50, 8]].map(([x, y, r]) =>
-      `<path d="M ${x} ${y} m ${-r} 0 a ${r} ${r * 0.62} 0 1 1 ${r * 2} 0 a ${r} ${r * 0.62} 0 1 1 ${-r * 2} 0 z"
-             fill="#5aa05f" stroke="#3f7a46" stroke-width="2.4"/>`).join('')}
-    <circle cx="64" cy="64" r="4.6" fill="#f7bdd2" stroke="#dd91ad" stroke-width="1.8"/>
+      `<ellipse cx="${n2(x + 1)}" cy="${n2(y + 1.6)}" rx="${r}" ry="${n2(r * 0.62)}" fill="#1e4a44" opacity=".22"/>` +
+      `<path d="M ${x} ${y} m ${-r} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${r * 2} 0 a ${r} ${n2(r * 0.62)} 0 1 1 ${-r * 2} 0 z"
+             fill="#5aa05f" stroke="#3f7a46" stroke-width="2.4"/>` +
+      `<path d="M ${n2(x - r * 0.7)} ${n2(y - r * 0.2)} a ${n2(r * 0.8)} ${n2(r * 0.4)} 0 0 1 ${n2(r * 0.9)} ${n2(-r * 0.22)}"
+             fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>`).join('')}
+    ${litEllipse(64, 64, 4.6, 4.6, '#ffd3e2', '#e79ab8', { stroke: '#dd91ad', sw: 1.8 })}
     <circle cx="64" cy="64" r="1.8" fill="#fff3c9"/>`,
 
   pond_stars: () => `
-    <ellipse cx="50" cy="62" rx="44" ry="26" fill="#6b7358" stroke="#545c44" stroke-width="4"/>
-    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#3f4a7e"/>
-    <ellipse cx="50" cy="59" rx="31" ry="16" fill="#4d5a96"/>
+    ${litEllipse(50, 62, 44, 26, '#78805f', '#545c44', { stroke: '#545c44', sw: 4, cy: '20%' })}
+    <ellipse cx="50" cy="60" rx="37" ry="21" fill="#2b3566"/>
+    ${litEllipse(50, 61, 36, 20, '#5d6ba8', '#28315e', { cy: '80%', r: '90%' })}
     ${[[34, 54, 3.4], [58, 52, 2.4], [46, 66, 2.8], [68, 64, 2.2], [26, 62, 2]].map(([x, y, r]) => {
       let d = '';
       for (let i = 0; i < 10; i++) {
@@ -1586,93 +1974,119 @@ const DECOR = {
       }
       return `<path d="${d}Z" fill="#fdf3cf"/>`;
     }).join('')}
+    ${gloss(30, 67, 17, 3, { rot: -4, peak: .28 })}
     <path d="M 28 68 h 16" stroke="#aeb8e8" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>`,
 
   /* ---- Fences. Edge to edge: the garden tiles four across the back. ---- */
+  /* ---- Fences. Edge to edge: the garden tiles four across the back ----
+     They stand in the sun, so each one drops a band of shadow onto the
+     grass at its foot. The band runs the full width for the same reason
+     the rails do: anything that stops short shows a seam at every join. */
   fence_picket: () => `
+    <rect class="${SHADOW}" x="0" y="94" width="100" height="6" fill="#4a3a2c" opacity=".2"/>
     <path d="M 0 60 h 100 M 0 78 h 100" stroke="#d8cbb4" stroke-width="7" stroke-linecap="butt"/>
     ${[4, 28, 52, 76].map(x =>
-      `<path d="M ${x} 96 V 48 l 10 -12 l 10 12 V 96 z" fill="#f4ede0" stroke="#bfae92" stroke-width="4" stroke-linejoin="round"/>`).join('')}
-    <path d="M 0 61 h 100 M 0 79 h 100" stroke="#bfae92" stroke-width="2.5"/>`,
+      litPath(`M ${x} 96 V 48 l 10 -12 l 10 12 V 96 z`, '#fbf6ec', '#d9cbb2',
+        { stroke: '#bfae92', sw: 4, join: 'round' })).join('')}
+    <path d="M 0 61 h 100 M 0 79 h 100" stroke="#bfae92" stroke-width="2.5"/>
+    <path d="M 0 57.5 h 100 M 0 75.5 h 100" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>`,
 
   fence_hedge: () => `
-    <rect x="0" y="52" width="100" height="44" fill="#5d9a53" stroke="#43753d" stroke-width="4"/>
+    <rect class="${SHADOW}" x="0" y="94" width="100" height="6" fill="#2e4a28" opacity=".22"/>
+    ${litRect(0, 52, 100, 44, 0, '#6aa85e', '#43753d', { stroke: '#43753d', sw: 4 })}
     ${[6, 24, 42, 60, 78, 96].map(x =>
-      `<circle cx="${x}" cy="52" r="11" fill="#69ab5c" stroke="#43753d" stroke-width="3.5"/>`).join('')}
-    <path d="M 0 70 q 14 -6 26 0 t 26 0 t 26 0 t 26 0" fill="none" stroke="#74b566" stroke-width="4" opacity=".65"/>`,
+      litEllipse(x, 52, 11, 11, '#7ebb6d', '#4b8244', { stroke: '#43753d', sw: 3.5 })).join('')}
+    <path d="M 0 70 q 14 -6 26 0 t 26 0 t 26 0 t 26 0" fill="none" stroke="#8ac879" stroke-width="4" opacity=".6"/>
+    <path d="M 0 84 q 14 -6 26 0 t 26 0 t 26 0 t 26 0" fill="none" stroke="#2e5a2a" stroke-width="4" opacity=".22"/>`,
 
   fence_stone: () => `
-    <rect x="0" y="54" width="100" height="42" fill="#c9c2b4" stroke="#9a9182" stroke-width="4"/>
+    <rect class="${SHADOW}" x="0" y="94" width="100" height="6" fill="#4a3a2c" opacity=".2"/>
+    ${litRect(0, 54, 100, 42, 0, '#d4cdc0', '#9a9182', { stroke: '#9a9182', sw: 4 })}
     ${[[0, 58, 26], [26, 58, 24], [50, 58, 26], [76, 58, 24],
        [-8, 76, 26], [18, 76, 26], [44, 76, 24], [68, 76, 26], [94, 76, 20]].map(([x, y, w]) =>
-      `<rect x="${x}" y="${y}" width="${w}" height="18" rx="5" fill="#d6d0c2" stroke="#9a9182" stroke-width="3"/>`).join('')}
+      litRect(x, y, w, 18, 5, '#e2ddd2', '#b0a89a', { stroke: '#9a9182', sw: 3 })).join('')}
     ${[[12, 52], [58, 52], [86, 52]].map(([x, y]) =>
-      `<circle cx="${x}" cy="${y}" r="6" fill="#7fb06a" opacity=".75"/>`).join('')}`,
+      litEllipse(x, y, 6, 6, '#93c47e', '#5f8a4f')).join('')}`,
 
   /* ---- Everything else in the garden ---- */
   mushrooms: () => `
-    <rect x="44" y="66" width="12" height="28" rx="5" fill="#fbf1e2" stroke="#c9b79c" stroke-width="3"/>
-    <path d="M 22 68 a 28 22 0 0 1 56 0 z" fill="#e05a4e" stroke="#a83c33" stroke-width="4" stroke-linejoin="round"/>
+    ${contact(48, 94, 30, 4.5, .24)}
+    ${litRect(44, 66, 12, 28, 5, '#fdf5e8', '#d9c9ac', { stroke: '#c9b79c', sw: 3 })}
+    ${litPath('M 22 68 a 28 22 0 0 1 56 0 z', '#ef7268', '#b8433a', { stroke: '#a83c33', sw: 4, join: 'round' })}
+    <path d="M 26 66 a 26 20 0 0 1 18 -18" fill="none" stroke="#fff" stroke-opacity=".26" stroke-width="4"/>
     ${[[36, 58], [50, 52], [64, 59], [44, 64], [58, 65]].map(([x, y]) =>
       `<ellipse cx="${x}" cy="${y}" rx="5" ry="3.6" fill="#fff4ea"/>`).join('')}
-    <rect x="18" y="80" width="8" height="16" rx="3.5" fill="#fbf1e2" stroke="#c9b79c" stroke-width="2.6"/>
-    <path d="M 6 82 a 16 12 0 0 1 32 0 z" fill="#e8756a" stroke="#a83c33" stroke-width="3" stroke-linejoin="round"/>
+    ${litRect(18, 80, 8, 16, 3.5, '#fdf5e8', '#d9c9ac', { stroke: '#c9b79c', sw: 2.6 })}
+    ${litPath('M 6 82 a 16 12 0 0 1 32 0 z', '#f2867a', '#bd514a', { stroke: '#a83c33', sw: 3, join: 'round' })}
     <ellipse cx="16" cy="76" rx="3.4" ry="2.4" fill="#fff4ea"/><ellipse cx="28" cy="78" rx="3" ry="2.2" fill="#fff4ea"/>`,
 
   stepping_stones: () => `
     ${[[22, 82, 20, 9], [50, 70, 19, 8.6], [76, 58, 17, 8]].map(([x, y, rx, ry]) =>
-      `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#cfc7b8" stroke="#9a9182" stroke-width="4"/>
-       <ellipse cx="${x - 3}" cy="${y - 2}" rx="${rx * 0.5}" ry="${ry * 0.42}" fill="#ded7ca"/>`).join('')}`,
+      contact(x, n2(y + ry * 0.7), n2(rx * 1.1), n2(ry * 0.8), .24) +
+      litEllipse(x, y, rx, ry, '#e2dbcd', '#aaa192', { stroke: '#9a9182', sw: 4 })).join('')}`,
 
   birdhouse: () => `
-    <rect x="46" y="52" width="9" height="44" rx="3" fill="#a2764e" stroke="#7d5a3a" stroke-width="3"/>
-    <rect x="28" y="24" width="45" height="34" rx="4" fill="#f0dfc4" stroke="#b08f68" stroke-width="4"/>
-    <path d="M 22 26 L 50 6 L 78 26 z" fill="#d4594f" stroke="#a83c33" stroke-width="4" stroke-linejoin="round"/>
-    <circle cx="50" cy="38" r="8" fill="#5f4a36"/>
+    ${contact(50, 95, 10, 3, .26)}
+    ${litRect(46, 52, 9, 44, 3, '#b08557', '#7d5a3a', { stroke: '#7d5a3a', sw: 3 })}
+    ${litRect(28, 24, 45, 34, 4, '#f6e8d2', '#cfae83', { stroke: '#b08f68', sw: 4 })}
+    ${grain(30, 26, 41, 30, 3, 4, { color: '#b08f68', strength: .3, sw: 1.4 })}
+    ${litPath('M 22 26 L 50 6 L 78 26 z', '#e2665c', '#a83c33', { stroke: '#a83c33', sw: 4, join: 'round' })}
+    <path d="M 26 24 L 50 8" stroke="#fff" stroke-opacity=".3" stroke-width="3"/>
+    <circle cx="50" cy="38" r="8" fill="#4a3628"/>
+    <path d="M 44 34 a 8 8 0 0 1 12 -1" fill="none" stroke="#2a1c12" stroke-opacity=".5" stroke-width="3"/>
     <rect x="47" y="46" width="6" height="12" rx="3" fill="#a2764e"/>
     <circle cx="50" cy="38" r="8" fill="none" stroke="#b08f68" stroke-width="2.5"/>`,
 
   flower_bed: () => `
-    <path d="M 8 92 q 42 -12 84 0 v 4 H 8 z" fill="#8a6340" stroke="#6d4d31" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M 10 88 q 40 -10 80 0" fill="none" stroke="#a2764e" stroke-width="4"/>
-    ${[[20, 62, '#f2849f'], [38, 52, '#ffd980'], [56, 56, '#c9a3e0'], [74, 64, '#f7a8c6'],
-       [29, 72, '#fbe08a'], [65, 74, '#a8d6f0']].map(([x, y, c]) =>
-      `<path d="M ${x} 88 V ${y + 8}" stroke="#5f9e53" stroke-width="4" stroke-linecap="round"/>
-       <circle cx="${x}" cy="${y}" r="8" fill="${c}" stroke="rgba(120,80,100,.30)" stroke-width="2"/>
-       <circle cx="${x}" cy="${y}" r="3" fill="#fff6e8"/>`).join('')}`,
+    ${contact(50, 94, 44, 5, .26)}
+    ${litPath('M 8 92 q 42 -12 84 0 v 4 H 8 z', '#a2764e', '#6d4d31', { stroke: '#6d4d31', sw: 4, join: 'round' })}
+    <path d="M 10 88 q 40 -10 80 0" fill="none" stroke="#c09667" stroke-width="4"/>
+    ${[[20, 62, '#f2849f', '#cc5f7d'], [38, 52, '#ffd980', '#dfae42'], [56, 56, '#c9a3e0', '#a178c2'],
+       [74, 64, '#f7a8c6', '#d37fa3'], [29, 72, '#fbe08a', '#dcb84e'], [65, 74, '#a8d6f0', '#7aadd0']]
+      .map(([x, y, c, d]) =>
+      `<path d="M ${x} 88 V ${y + 8}" stroke="#5f9e53" stroke-width="4" stroke-linecap="round"/>` +
+      litEllipse(x, y, 8, 8, c, d, { stroke: 'rgba(120,80,100,.30)', sw: 2 }) +
+      `<circle cx="${x}" cy="${y}" r="3" fill="#fff6e8"/>`).join('')}`,
 
   wheelbarrow: () => `
-    <path d="M 16 46 h 62 l -10 30 H 30 z" fill="#5d8fb5" stroke="#3f6b8c" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M 18 52 h 58" stroke="#7fabca" stroke-width="4"/>
-    ${[[30, 42, '#e08a3c'], [44, 38, '#e3ae4c'], [58, 42, '#c96a2c'], [50, 46, '#e08a3c']].map(([x, y, c]) =>
-      `<path d="M ${x} ${y} q 8 -7 14 0 q -8 8 -14 0 z" fill="${c}" stroke="#8a4a20" stroke-width="2"/>`).join('')}
+    ${contact(46, 94, 32, 5, .26)}
+    ${litPath('M 16 46 h 62 l -10 30 H 30 z', '#6ba0c6', '#3f6b8c', { stroke: '#3f6b8c', sw: 4, join: 'round' })}
+    <path d="M 18 52 h 58" stroke="#9cc4dd" stroke-width="4"/>
+    ${[[30, 42, '#e08a3c', '#a85c1e'], [44, 38, '#e3ae4c', '#b07f24'], [58, 42, '#c96a2c', '#94481a'],
+       [50, 46, '#e08a3c', '#a85c1e']].map(([x, y, c, d]) =>
+      litPath(`M ${x} ${y} q 8 -7 14 0 q -8 8 -14 0 z`, c, d, { stroke: '#8a4a20', sw: 2 })).join('')}
     <path d="M 78 48 l 14 10 M 30 76 l -4 14" stroke="#7d5a3a" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="40" cy="84" r="11" fill="#5f4a36" stroke="#3f3226" stroke-width="4"/>
+    ${litEllipse(40, 84, 11, 11, '#6f5943', '#3f3226', { stroke: '#3f3226', sw: 4 })}
     <circle cx="40" cy="84" r="3.5" fill="#c9c2b4"/>`,
 
   garden_bench: () => `
-    <path d="M 14 58 h 72 M 14 68 h 72" stroke="#b98e5e" stroke-width="9" stroke-linecap="round"/>
-    <rect x="10" y="74" width="80" height="10" rx="4" fill="#cfa06e" stroke="#8a6340" stroke-width="3.5"/>
+    ${contact(50, 96, 38, 4, .26)}
+    <path d="M 14 58 h 72 M 14 68 h 72" stroke="#c09667" stroke-width="9" stroke-linecap="round"/>
+    <path d="M 14 55 h 72 M 14 65 h 72" stroke="#e0b98f" stroke-opacity=".7" stroke-width="2.6" stroke-linecap="round"/>
+    ${litRect(10, 74, 80, 10, 4, '#d9ab7c', '#a87f55', { stroke: '#8a6340', sw: 3.5 })}
     <path d="M 18 84 v 12 M 82 84 v 12" stroke="#7d8a92" stroke-width="7" stroke-linecap="round"/>
     <path d="M 18 58 v 26 M 82 58 v 26" stroke="#7d8a92" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 16.6 58 v 26 M 80.6 58 v 26" stroke="#a8b4bc" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
     <path d="M 14 59 h 72 M 14 69 h 72" stroke="#8a6340" stroke-width="2.5"/>`,
 
   lamp_post: () => `
-    <ellipse cx="50" cy="94" rx="16" ry="5" fill="#9a9182" opacity=".5"/>
-    <rect x="45" y="34" width="10" height="60" rx="4" fill="#4d5560" stroke="#343b44" stroke-width="3.5"/>
+    ${contact(50, 94, 17, 4.5, .28)}
+    ${litRect(45, 34, 10, 60, 4, '#5c6673', '#343b44', { stroke: '#343b44', sw: 3.5 })}
     <path d="M 36 34 h 28" stroke="#343b44" stroke-width="4" stroke-linecap="round"/>
-    <path d="M 34 34 L 50 6 L 66 34 z" fill="#ffe9a8" stroke="#343b44" stroke-width="4" stroke-linejoin="round"/>
+    ${litPath('M 34 34 L 50 6 L 66 34 z', '#fff4cf', '#e8cf80', { stroke: '#343b44', sw: 4, join: 'round' })}
     <circle cx="50" cy="26" r="7" fill="#fff6d0"/>
     <path d="M 40 90 h 20" stroke="#343b44" stroke-width="5" stroke-linecap="round"/>`,
-
   /* A free-standing frame, not a rope over a branch. She can put this
      anywhere in the garden, and a swing hanging from thin air three feet
      from the nearest tree reads as a bug. */
   rope_swing: () => `
+    ${contact(50, 95, 38, 4.5, .24)}
     <path d="M 14 96 L 30 30 M 86 96 L 70 30" stroke="#a2764e" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 16 96 L 31 32" stroke="#c49a6d" stroke-opacity=".5" stroke-width="2.5"/>
     <path d="M 22 28 h 56" stroke="#8a6340" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 22 26 h 56" stroke="#b08557" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round"/>
     <path d="M 34 32 V 70 M 66 32 V 70" stroke="#b89a6f" stroke-width="5" stroke-linecap="round"/>
-    <rect x="28" y="68" width="44" height="10" rx="4" fill="#cfa06e" stroke="#8a6340" stroke-width="3.5"/>
+    ${litRect(28, 68, 44, 10, 4, '#d9ab7c', '#a87f55', { stroke: '#8a6340', sw: 3.5 })}
     <path d="M 30 73 h 40" stroke="#8a6340" stroke-width="2" opacity=".5"/>
     <circle cx="34" cy="70" r="3.2" fill="#b08f68"/><circle cx="66" cy="70" r="3.2" fill="#b08f68"/>`,
 };
