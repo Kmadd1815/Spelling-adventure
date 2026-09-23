@@ -181,6 +181,108 @@ const MUTE = () => {
   await page.context().close();
 }
 
+/* ---------- the tablet loses its signal ----------
+
+   Worth stating plainly, because it is the thing a parent worries about
+   and it is not what it looks like: this app never needed the internet to
+   keep her progress. It saves to the tablet itself, so there is nothing to
+   wait for and nothing to lose. Everything it needs to run is cached, so
+   it opens and plays on a train.
+
+   The one thing a lost signal CAN take is the voice, because a lot of
+   Android's best voices are streamed rather than stored. That used to fail
+   in silence: the error handler said nothing, the speaker button did
+   nothing, and a spelling app that will not say the word is asking her to
+   spell a word nobody has told her. */
+{
+  const page = await open({ go: '#/daily', init: () => {
+    /* A voice that is listed and cannot speak — which is exactly what a
+       streamed voice looks like with no signal. */
+    const voice = { name: 'Streamed Voice', lang: 'en-US', voiceURI: 'net',
+                    default: true, localService: false };
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices = () => [voice];
+      window.speechSynthesis.speak = u => setTimeout(() => {
+        const e = new Event('error');
+        e.error = 'network';
+        u.onerror?.(e);
+      }, 10);
+    }
+  }, seed: good => {
+    localStorage.clear(); localStorage.setItem('spelling-adventure:v1', good);
+  } });
+
+  /* It starts out believing it can talk, because the voice is listed. */
+  ok('a streamed voice looks fine until it is asked to speak',
+     /Listen, then spell it/.test(await page.evaluate(() => document.body.innerText)),
+     'speech offered');
+
+  await page.evaluate(async () => {
+    const speech = await import('/js/core/speech.js');
+    await speech.speak('train');
+  });
+  await page.waitForTimeout(500);
+
+  ok('a voice that fails is noticed rather than ignored',
+     await page.evaluate(async () =>
+       !(await import('/js/core/speech.js')).canSpeak()),
+     'the app knows it cannot talk now');
+  ok('...and she is told, in words that do not blame the tablet',
+     /lost its voice/.test(await said(page)), await said(page));
+  ok('...and told that her work is still being kept',
+     /still being saved/.test(await said(page)), 'the important half');
+
+  /* The next word falls back to look, cover, spell rather than to a button
+     that does nothing. Out to the room and back in, because asking for the
+     screen you are already on does not redraw it. */
+  await page.goto(BASE + '#/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(400);
+  await page.goto(BASE + '#/daily', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
+  ok('...and practice carries on without the voice',
+     /Look at it, then spell it/.test(await page.evaluate(() => document.body.innerText)),
+     'look, cover, spell');
+
+  /* Saving is local, so none of this touched it. */
+  const saved = await page.evaluate(async () => {
+    const st = await import('/js/core/state.js');
+    st.update(s => { s.progress.stars = 4242; });
+    await new Promise(r => setTimeout(r, 400));
+    return JSON.parse(localStorage.getItem('spelling-adventure:v1')).progress.stars;
+  });
+  ok('losing the voice does not stop her progress being saved', saved === 4242,
+     `stars saved as ${saved}`);
+
+  /* And it tries again when the signal comes back. */
+  const back = await page.evaluate(async () => {
+    const speech = await import('/js/core/speech.js');
+    speech.retryEngine();
+    return speech.canSpeak();
+  });
+  ok('it gives the voice another go when the tablet is back online', back,
+     'not silent until the app is restarted');
+  await page.context().close();
+}
+
+/* ---------- and an offline voice is preferred to a streamed one ---------- */
+{
+  const page = await open({ init: () => {
+    if (window.speechSynthesis) window.speechSynthesis.getVoices = () => [
+      { name: 'Google US English', lang: 'en-US', voiceURI: 'net', localService: false },
+      { name: 'English (United States)', lang: 'en-US', voiceURI: 'local', localService: true },
+    ];
+  } });
+  const pick = await page.evaluate(async () => {
+    const speech = await import('/js/core/speech.js');
+    await speech.ready();
+    return speech.voices()[0]?.voiceURI;
+  });
+  ok('the voice stored on the tablet is chosen over the one that streams',
+     pick === 'local',
+     `${pick} — one that works in the car beats one that sometimes sounds nicer`);
+  await page.context().close();
+}
+
 await browser.close();
 const t = tally();
 console.log(`\nresilience: ${t.passed} pass, ${t.failed} fail`);

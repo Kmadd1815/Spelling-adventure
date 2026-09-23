@@ -93,6 +93,26 @@ on('storage:failed', () => toast(
   { ms: 9000 }));
 on('storage:ok', () => toast('Saving again \u2014 all good.', { ms: 3200 }));
 
+/* The voice stopped working, usually because the tablet lost its signal and
+   the chosen voice is one that streams. Everything else carries on exactly
+   as before — the app is cached and it saves to the tablet, so nothing is
+   lost and nothing needs waiting for — but she has to be told, because from
+   where she is sitting the axolotl has simply gone quiet. The activities
+   have already switched to look, cover, spell by the time this shows. */
+on('speech:failed', () => toast(
+  'Axo has lost its voice for now \u2014 you can still look at each word and cover it up. '
+  + 'Everything you do is still being saved.',
+  { ms: 9000 }));
+
+/* And it tries again the moment the tablet is back online, rather than
+   staying silent until the app is restarted. */
+addEventListener('online', () => {
+  if (!speech.canSpeak()) {
+    speech.retryEngine();
+    if (speech.canSpeak()) toast('Axo can talk again!', { ms: 3200 });
+  }
+});
+
 /* The arrow goes up a level, not back through history — see goBack() in
    ui/router.js. Before the child has finished setup there is no level to
    go up to, so it belongs on the welcome screen. */

@@ -28,7 +28,45 @@ export const isSupported = !!synth;
    Call this AFTER ready(), or it will say no while the voice list is still
    filling in. */
 export function canSpeak() {
-  return !!synth && voiceCache.length > 0;
+  return !!synth && voiceCache.length > 0 && !engineFailed;
+}
+
+/* ---------- When the engine stops working mid-use ----------
+
+   A tablet can have voices listed and still not be able to say anything.
+   The usual reason is the internet: a lot of Android's best-sounding
+   voices are streamed, and with no signal they fail rather than falling
+   back to something local. Everything else in this app works offline — it
+   is all cached and it saves to the tablet itself — so this is the one
+   thing a lost connection can actually take away.
+
+   And it used to take it away SILENTLY. The error handler resolved the
+   promise and said nothing, so the speaker button did nothing, over and
+   over, and a spelling app that will not say the word is a spelling app
+   asking her to spell a word nobody has told her.
+
+   So a real failure now switches the whole app into the mode it already
+   has for a tablet with no voices at all: look at the word, cover it,
+   spell it. That is a worse way to practise and an entirely workable one,
+   which beats a button that does nothing. */
+let engineFailed = false;
+
+/* 'interrupted' and 'canceled' are what every call reports when the next
+   one cuts it off, which happens constantly and by design. */
+const REAL_FAILURE = new Set(['network', 'synthesis-failed', 'synthesis-unavailable',
+                              'audio-busy', 'audio-hardware', 'language-unavailable',
+                              'voice-unavailable']);
+
+function noteEngineFailure(reason) {
+  if (engineFailed) return;
+  engineFailed = true;
+  console.warn('[speech] the voice engine stopped working:', reason);
+  emit('speech:failed', reason);
+}
+
+/** Give it another go — the connection may be back. */
+export function retryEngine() {
+  engineFailed = false;
 }
 
 let voiceCache = [];
@@ -84,7 +122,13 @@ export function voices() {
       // Google's US voices are the clearest ones on most Android builds.
       if (name.includes('google')) score += 25;
       if (/\bus\b|united states/.test(name)) score += 15;
-      if (v.localService) score += 5;   // works offline
+      /* Weighted heavily, and on purpose. A streamed voice sounds a little
+         better and stops working the moment the tablet loses signal; a
+         voice stored on the device works in the car, at her grandmother's,
+         and on a train. For an app whose whole job is saying words out
+         loud, one that always works beats one that sometimes sounds
+         nicer. */
+      if (v.localService) score += 45;
       if (v.default) score += 3;
       return { v, score };
     })
@@ -197,7 +241,11 @@ export function speak(text, opts = {}) {
     };
 
     utter.onend = finish;
-    utter.onerror = finish;
+    utter.onerror = e => {
+      const reason = e?.error || 'unknown';
+      if (REAL_FAILURE.has(reason)) noteEngineFailure(reason);
+      finish();
+    };
 
     current = utter;
     emit('speech:start', text);
