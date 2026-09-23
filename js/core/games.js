@@ -124,6 +124,20 @@ export const GAMES = [
     load: () => import('../games/sprint.js'),
   },
   {
+    id: 'trace', name: 'Write It', emoji: '\u270D\uFE0F', tint: 't-orange',
+    blurb: 'Trace each letter with your finger, the way you write it on paper.',
+    buddyRole: 'Watches you write',
+    /* The only thing here that is not a keyboard. It pays like a game and
+       records nothing: tracing a letter that is already on the screen is
+       not evidence she can spell the word, and the game deliberately does
+       not call ctx.record() at all. See games/trace.js. */
+    minWords: 1, canMaster: false,
+    pay: { base: 4, perWord: 2, perfect: 3 },
+    /* An exercise book, which is exactly where this happens for real. */
+    scene: 'paper',
+    load: () => import('../games/trace.js'),
+  },
+  {
     id: 'snake', name: 'Word Snake', emoji: '\u{1F40D}', tint: 't-purple',
     blurb: 'Hear the word, then swim around collecting its letters in order.',
     buddyRole: 'You play as the axolotl',

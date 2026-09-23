@@ -79,6 +79,7 @@ const SHELL = [
   './js/games/sprint.js',
   './js/games/snake.js',
   './js/games/tower.js',
+  './js/games/trace.js',
   './js/games/swim.js',
 ];
 

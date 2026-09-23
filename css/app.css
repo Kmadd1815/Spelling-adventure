@@ -2697,3 +2697,52 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   border-radius: 50%;
   background: var(--accent, #e8913a);
 }
+
+/* ---------- Write It: tracing letters with a finger ----------
+
+   The pad is the game. Everything else on the screen is small so the
+   letter can be as big as the tablet allows. */
+.trace-wrap { display: flex; flex-direction: row; gap: 14px; align-items: stretch; }
+.trace-col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.trace-side { flex: 0 0 auto; display: flex; align-items: flex-end; }
+
+.trace-word {
+  display: flex; justify-content: center; gap: 6px;
+  font-weight: 900; font-size: 1.5rem; letter-spacing: .04em;
+}
+.trace-ch { color: var(--ink-faint); transition: color .2s, transform .2s; }
+.trace-ch.done { color: var(--green-dark); }
+.trace-ch.now {
+  color: var(--ink);
+  transform: scale(1.18);
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-underline-offset: 5px;
+}
+
+.trace-say { text-align: center; font-size: .82rem; color: var(--ink-soft); }
+
+/* The paper. A real sheet: white, squared off, with a shadow under it. */
+.trace-pad {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 220px;
+  background: #fffdf8;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-soft), inset 0 0 0 2px rgba(122, 96, 77, .10);
+  overflow: hidden;
+  /* Without this the tablet scrolls the page instead of drawing. */
+  touch-action: none;
+}
+.trace-pad canvas { position: absolute; inset: 0; display: block; }
+.trace-ink { cursor: crosshair; }
+
+.trace-verdict { text-align: center; min-height: 1.4em; font-weight: 700; font-size: .95rem; }
+.trace-verdict.good { color: var(--green-dark); }
+.trace-buttons { gap: 10px; }
+
+/* On a narrow screen the letter matters more than the axolotl watching
+   her write it. */
+@media (max-width: 620px) {
+  .trace-side { display: none; }
+}
