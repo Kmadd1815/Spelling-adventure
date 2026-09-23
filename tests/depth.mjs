@@ -98,6 +98,62 @@ ok('the wall is brighter at the top than at the bottom',
 ok('there is a pool of window light on the wall',
    art.surfaces.wall_plain.backgroundImage.includes('at 16% 2%'), 'light pool present');
 
+/* ---------- the axolotl ----------
+   It is the one thing she looks at every single day, and it is drawn twice:
+   once for real and once small for the coat picker. The portrait went stale
+   once already — it was still showing stalks with knobs on the end long
+   after the animal had grown proper feathery gills — so this check is here
+   to make sure the two never drift apart again. */
+const pet = await page.evaluate(async () => {
+  const m = await import('./js/ui/art.js');
+  const { COATS, STAGES } = await import('./js/core/pet.js');
+  return {
+    animal: m.petSVG({ coat: COATS[0], stage: STAGES[2] }),
+    stages: STAGES.map(st => m.petSVG({ coat: COATS[0], stage: st })),
+    picker: COATS.map(c => m.petThumbSVG(c.key)),
+  };
+});
+
+const strokes = t => (t.match(/stroke-linecap="round"/g) || []).length;
+ok('the coat picker draws the animal\'s own gills, not its own pair',
+   strokes(pet.picker[0]) > strokes(pet.animal) * 0.8,
+   `portrait ${strokes(pet.picker[0])} strokes, animal ${strokes(pet.animal)}`);
+
+ok('the axolotl sits on the ground rather than over it',
+   pet.animal.includes(art.shadow), 'ground shadow present');
+
+ok('the head throws a shadow onto the body',
+   (pet.animal.match(new RegExp(art.shadow, 'g')) || []).length >= 2,
+   'two shadows: the floor, and the body under the head');
+
+const pickerIds = pet.picker.flatMap(t => [...t.matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
+ok('four portraits side by side do not share a gradient',
+   new Set(pickerIds).size === pickerIds.length,
+   `${pickerIds.length} ids across ${pet.picker.length} portraits`);
+
+/* Nothing a growth stage draws may go above the top of the picture, or it
+   is silently cut off — which is what hats and gills both push against. */
+const tops = await page.evaluate(async () => {
+  const m = await import('./js/ui/art.js');
+  const { COATS, STAGES } = await import('./js/core/pet.js');
+  const out = [];
+  for (const st of STAGES) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:absolute;left:-9999px;width:400px';
+    d.innerHTML = m.petSVG({ coat: COATS[0], stage: st, alive: false });
+    document.body.append(d);
+    const svg = d.querySelector('svg');
+    out.push({ key: st.key, top: svg.querySelector('.pet-gills').getBBox().y, vb: svg.viewBox.baseVal.y });
+    d.remove();
+  }
+  return out;
+});
+const clipped = tops.filter(t => t.top < t.vb + 1);
+ok('no growth stage has its gills cut off the top of the picture',
+   clipped.length === 0,
+   clipped.length ? clipped.map(t => t.key).join(', ')
+                  : `closest: ${Math.min(...tops.map(t => t.top - t.vb)).toFixed(1)} units clear`);
+
 /* ---------- and a picture of the shelf, to look at ---------- */
 await page.goto(BASE + '#/shop', { waitUntil: 'networkidle' });
 await page.waitForTimeout(700);

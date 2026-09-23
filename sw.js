@@ -41,6 +41,7 @@ const SHELL = [
   './js/ui/router.js',
   './js/ui/art.js',
   './js/ui/item-art.js',
+  './js/ui/shade.js',
   './js/ui/toast.js',
   './js/ui/fx.js',
   './js/ui/room.js',

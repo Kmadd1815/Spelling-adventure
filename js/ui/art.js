@@ -5,10 +5,18 @@
    growth stage is a few numbers rather than a new drawing.
 
    There is one animal, an axolotl, drawn from a handful of proportions so
-   that every growth stage and every coat comes out of the same code. */
+   that every growth stage and every coat comes out of the same code.
+
+   It is lit by the same light as everything else — ui/shade.js — from the
+   upper left. A soft creature does not take the light the way a wooden door
+   does, so almost none of that shading is flat: the head and body are
+   spheres, and what sells them is not the highlight on top but the BOUNCE
+   along the bottom edge, the light coming back up off the floor. Without it
+   a round shape reads as a flat disc no matter how bright the top is. */
 
 import { COATS, coatByKey, STAGES } from '../core/pet.js';
 import { wearableSVG, BEHIND_BODY } from './item-art.js';
+import { litEllipse, litPath, contact, SHADOW } from './shade.js';
 
 const n = v => Math.round(v * 100) / 100;
 
@@ -24,6 +32,96 @@ const n = v => Math.round(v * 100) / 100;
      - a flat paddle tail
    The gills grow fuller with each stage, so growth is visible at a glance.
 */
+
+/* ---------- Shading a soft animal ----------
+
+   A door takes the light on one flat face. An axolotl does not: it is round
+   and slightly translucent, so it needs four separate things, and leaving
+   any one of them out is what made the first attempt look like a sticker
+   with a gradient on it.
+
+     sphere     the body colour, bright where the light lands, deepening
+                away from it
+     sheen      a soft bloom on the forehead, the shape of the forehead
+     bounce     light coming back UP off the floor along the bottom edge.
+                This is the one that matters. Without it a round shape reads
+                as a flat disc however bright the top is
+     softPatch  the pale belly, fading out instead of ending at a line
+
+   Each takes a unique gradient id: many of these go on one page at once —
+   the coat picker alone puts four up — and in SVG a url(#id) resolves to
+   the first match in the whole document, so a shared id means the second
+   axolotl quietly wears the first one's colours.
+*/
+
+let petUid = 0;
+const pid = () => `pa${(++petUid).toString(36)}`;
+
+/** A round body, lit from the upper left. */
+function sphere(cx, cy, rx, ry, lit, mid, deep, o = {}) {
+  const id = pid();
+  return `<defs><radialGradient id="${id}" cx="36%" cy="24%" r="82%">
+      <stop offset="0%" stop-color="${lit}"/>
+      <stop offset="${n((o.top ?? 0.22) * 100)}%" stop-color="${mid}"/>
+      <stop offset="100%" stop-color="${deep}"/>
+    </radialGradient></defs>` +
+    `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"` +
+    (o.stroke ? ` stroke="${o.stroke}" stroke-width="${o.sw ?? 2.5}"` : '') + '/>';
+}
+
+/** The bloom where the light actually hits, soft at every edge. */
+function sheen(cx, cy, rx, ry, strength = 0.42) {
+  const id = pid();
+  return `<defs><radialGradient id="${id}">
+      <stop offset="0%" stop-color="#fff" stop-opacity="${strength}"/>
+      <stop offset="60%" stop-color="#fff" stop-opacity="${n(strength * 0.5)}"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient></defs>` +
+    `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"
+       transform="rotate(-12 ${n(cx)} ${n(cy)})"/>`;
+}
+
+/**
+ * Light coming back up off the floor, caught along the bottom edge.
+ *
+ * Drawn as a clipped arc rather than a whole second ellipse, so it hugs the
+ * silhouette exactly and cannot spill past it.
+ */
+function bounce(cx, cy, rx, ry, colour, strength = 0.5) {
+  const clip = pid(), grad = pid();
+  return `<defs>
+      <clipPath id="${clip}"><ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}"/></clipPath>
+      <linearGradient id="${grad}" x1="0%" y1="100%" x2="20%" y2="0%">
+        <stop offset="0%" stop-color="${colour}" stop-opacity="${strength}"/>
+        <stop offset="100%" stop-color="${colour}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}"
+       fill="none" stroke="url(#${grad})" stroke-width="${n(ry * 0.34)}" clip-path="url(#${clip})"/>`;
+}
+
+/** The pale belly, fading out rather than ending at a line. */
+function softPatch(cx, cy, rx, ry, colour, strength = 0.9) {
+  const id = pid();
+  return `<defs><radialGradient id="${id}">
+      <stop offset="0%" stop-color="${colour}" stop-opacity="${strength}"/>
+      <stop offset="62%" stop-color="${colour}" stop-opacity="${n(strength * 0.82)}"/>
+      <stop offset="100%" stop-color="${colour}" stop-opacity="0"/>
+    </radialGradient></defs>` +
+    `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"/>`;
+}
+
+/** A cheek. The old one was a flat oval with a hard edge, which on a face
+    reads as a sticker rather than as a blush. */
+function blush(cx, cy, rx, ry, colour) {
+  const id = pid();
+  return `<defs><radialGradient id="${id}">
+      <stop offset="0%" stop-color="${colour}" stop-opacity=".62"/>
+      <stop offset="55%" stop-color="${colour}" stop-opacity=".40"/>
+      <stop offset="100%" stop-color="${colour}" stop-opacity="0"/>
+    </radialGradient></defs>` +
+    `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#${id})"/>`;
+}
 
 /** Point on a quadratic bezier — used to hang barbs along a gill stalk. */
 function qPoint(p0, c, p1, t) {
@@ -149,14 +247,23 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
     }
   }
 
-  // Paddle tail, sweeping out behind the body.
+  /* Paddle tail, sweeping out behind the body. It is the thinnest part of
+     the animal, so it is also the part light gets through: pale at the
+     trailing edge, the body's colour where it joins. */
+  const tailId = pid();
   const tail = `
+    <defs><linearGradient id="${tailId}" x1="0%" y1="30%" x2="100%" y2="70%">
+      <stop offset="0%" stop-color="${c.body}"/>
+      <stop offset="82%" stop-color="${c.body}"/>
+      <stop offset="100%" stop-color="${c.belly}"/>
+    </linearGradient></defs>`;
+  const tailArt = `
     <path d="M ${n(bodyCx + bodyRx * 0.30)} ${n(bodyCy + bodyRy * 0.52)}
              Q ${n(bodyCx + bodyRx * 1.46)} ${n(bodyCy + bodyRy * 0.58)}
                ${n(bodyCx + bodyRx * 1.42)} ${n(bodyCy - bodyRy * 0.46)}
              Q ${n(bodyCx + bodyRx * 0.98)} ${n(bodyCy + bodyRy * 0.04)}
                ${n(bodyCx + bodyRx * 0.30)} ${n(bodyCy + bodyRy * 0.02)} Z"
-          fill="${c.body}" stroke="${c.dark}" stroke-width="2.2" stroke-linejoin="round"/>
+          fill="url(#${tailId})" stroke="${c.dark}" stroke-width="2.2" stroke-linejoin="round"/>
     <path d="M ${n(bodyCx + bodyRx * 1.02)} ${n(bodyCy + bodyRy * 0.40)}
              Q ${n(bodyCx + bodyRx * 1.26)} ${n(bodyCy + bodyRy * 0.14)}
                ${n(bodyCx + bodyRx * 1.22)} ${n(bodyCy - bodyRy * 0.28)}"
@@ -179,11 +286,15 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
       ${bumps(c.dark, 1.6)}
       <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}" stroke="${c.body}"
             stroke-width="${n(w)}" stroke-linecap="round"/>
-      ${bumps(c.body, 0)}`;
+      ${bumps(c.body, 0)}
+      <path d="M ${n(ax)} ${n(ay - w * 0.22)} L ${n(tx - side * w * 0.1)} ${n(ty - w * 0.26)}"
+            stroke="${c.belly}" stroke-opacity=".55"
+            stroke-width="${n(w * 0.38)}" stroke-linecap="round"/>`;
   };
 
-  const foot = side => `<ellipse cx="${n(bodyCx + side * bodyRx * 0.40)}" cy="${n(bodyCy + bodyRy * 0.86)}"
-      rx="${n(bodyRx * 0.22)}" ry="${n(bodyRy * 0.14)}" fill="${c.belly}" stroke="${c.dark}" stroke-width="2"/>`;
+  const foot = side => litEllipse(
+    bodyCx + side * bodyRx * 0.40, bodyCy + bodyRy * 0.86, bodyRx * 0.22, bodyRy * 0.14,
+    c.belly, c.body, { stroke: c.dark, sw: 2, cx: '38%', cy: '22%', r: '96%' });
 
   // The grin. It spans most of the face and turns up at both ends — the
   // single most recognisable thing about an axolotl's expression.
@@ -246,17 +357,17 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
 <svg class="pet-stage${alive ? ' pet-alive' : ''}" data-mood="${mood}"
      viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
      aria-label="An axolotl">
-  <ellipse cx="100" cy="${n(groundY)}" rx="${n(bodyRx * 0.82)}" ry="7" fill="#000" opacity=".10"/>
+  ${contact(100, groundY, bodyRx * 0.92, 8.5, .26)}
   ${sparkles}
   <g class="pet-breathe" style="transform-origin:${n(bodyCx)}px ${n(groundY)}px">
   ${accBehind ? accArt : ''}
-  ${tail}
+  ${tail}${tailArt}
 
-  <!-- body -->
-  <ellipse cx="${n(bodyCx)}" cy="${n(bodyCy)}" rx="${n(bodyRx)}" ry="${n(bodyRy)}"
-           fill="${c.body}" stroke="${c.dark}" stroke-width="2.5"/>
-  <ellipse cx="${n(bodyCx)}" cy="${n(bodyCy + bodyRy * 0.24)}" rx="${n(bodyRx * 0.58)}" ry="${n(bodyRy * 0.60)}"
-           fill="${c.belly}" opacity=".85"/>
+  <!-- body: a sphere, not a disc. The bounce light along the bottom is
+       what makes the difference; the belly fades out rather than ending. -->
+  ${sphere(bodyCx, bodyCy, bodyRx, bodyRy, c.belly, c.body, c.gill, { stroke: c.dark, sw: 2.5 })}
+  ${softPatch(bodyCx, bodyCy + bodyRy * 0.28, bodyRx * 0.54, bodyRy * 0.50, c.belly, 0.82)}
+  ${bounce(bodyCx, bodyCy, bodyRx, bodyRy, c.belly)}
   ${arm(-1)}${arm(1)}
   ${foot(-1)}${foot(1)}
 
@@ -266,14 +377,17 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
     ${gillsOver}
   </g>
 
-  <!-- head -->
-  <ellipse cx="${n(headCx)}" cy="${n(headCy)}" rx="${n(headRx)}" ry="${n(headRy)}"
-           fill="${c.body}" stroke="${c.dark}" stroke-width="2.5"/>
+  <!-- head. It overhangs the body, so it throws a shadow down onto it:
+       that one shadow is most of what puts the two shapes in the same
+       space rather than side by side on a sheet of paper. -->
+  <ellipse class="${SHADOW}" cx="${n(headCx)}" cy="${n(headCy + headRy * 0.92)}"
+           rx="${n(headRx * 0.82)}" ry="${n(headRy * 0.30)}" fill="${c.dark}" opacity=".20"/>
+  ${sphere(headCx, headCy, headRx, headRy, '#ffffff', c.body, c.gill, { stroke: c.dark, sw: 2.5, top: 0.30 })}
+  ${sheen(headCx - headRx * 0.28, headCy - headRy * 0.44, headRx * 0.36, headRy * 0.21)}
+  ${bounce(headCx, headCy, headRx, headRy, c.belly)}
 
-  <ellipse cx="${n(headCx - headRx * 0.58)}" cy="${n(headCy + headRy * 0.26)}"
-           rx="${n(headRx * 0.11)}" ry="${n(headRy * 0.085)}" fill="${c.gill}" opacity=".45"/>
-  <ellipse cx="${n(headCx + headRx * 0.58)}" cy="${n(headCy + headRy * 0.26)}"
-           rx="${n(headRx * 0.11)}" ry="${n(headRy * 0.085)}" fill="${c.gill}" opacity=".45"/>
+  ${blush(headCx - headRx * 0.58, headCy + headRy * 0.26, headRx * 0.14, headRy * 0.11, c.gill)}
+  ${blush(headCx + headRx * 0.58, headCy + headRy * 0.26, headRx * 0.14, headRy * 0.11, c.gill)}
 
   ${eyes}
   ${nostril(-1)}${nostril(1)}
@@ -285,29 +399,37 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
 </svg>`;
 }
 
-/** A small round portrait, for the coat picker. */
+/**
+ * A small round portrait, for the coat picker.
+ *
+ * It draws the same gills the animal itself has rather than its own
+ * simplified pair — the picker used to show stalks with knobs on the end
+ * long after the axolotl had grown proper fronds, which is exactly the kind
+ * of drift a second drawing of the same thing always produces.
+ */
 export function petThumbSVG(coatKey) {
   const c = coatByKey(coatKey);
-  const stalk = (side, i) => {
-    const roots = [[-10, -9], [-2, -2], [8, 4]][i];
-    const rx = 50 + side * 22, ry = 48 + roots[0];
-    const tx = 50 + side * 40, ty = 48 + roots[1] - 6;
-    return `<path d="M ${rx} ${ry} Q ${50 + side * 32} ${ry - 6} ${tx} ${ty}"
-              fill="none" stroke="${c.dark}" stroke-width="7" stroke-linecap="round"/>
-            <circle cx="${tx}" cy="${ty}" r="8" fill="${c.dark}"/>
-            <path d="M ${rx} ${ry} Q ${50 + side * 32} ${ry - 6} ${tx} ${ty}"
-              fill="none" stroke="${c.gill}" stroke-width="4" stroke-linecap="round"/>
-            <circle cx="${tx}" cy="${ty}" r="6" fill="${c.gill}"/>`;
-  };
+  const hx = 50, hy = 50, hrx = 30, hry = 24;
   let gills = '';
-  for (const side of [-1, 1]) for (let i = 0; i < 3; i++) gills += stalk(side, i);
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) gills += gill(hx, hy, hrx, hry, c, side, i, 0.9, 'under');
+  }
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) gills += gill(hx, hy, hrx, hry, c, side, i, 0.9, 'over');
+  }
   return `
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="68" height="68" aria-hidden="true">
   <circle cx="50" cy="50" r="48" fill="${c.belly}"/>
   ${gills}
-  <ellipse cx="50" cy="50" rx="30" ry="24" fill="${c.body}" stroke="${c.dark}" stroke-width="2.5"/>
+  ${sphere(hx, hy, hrx, hry, '#ffffff', c.body, c.gill, { stroke: c.dark, sw: 2.5, top: 0.30 })}
+  ${sheen(hx - hrx * 0.28, hy - hry * 0.44, hrx * 0.36, hry * 0.21)}
+  ${bounce(hx, hy, hrx, hry, c.belly)}
+  ${blush(hx - hrx * 0.58, hy + hry * 0.26, hrx * 0.16, hry * 0.13, c.gill)}
+  ${blush(hx + hrx * 0.58, hy + hry * 0.26, hrx * 0.16, hry * 0.13, c.gill)}
   <circle cx="37" cy="45" r="2.6" fill="#3a2e28"/>
   <circle cx="63" cy="45" r="2.6" fill="#3a2e28"/>
+  <circle cx="37.9" cy="44.1" r="0.9" fill="#fff" opacity=".9"/>
+  <circle cx="63.9" cy="44.1" r="0.9" fill="#fff" opacity=".9"/>
   <path d="M 38 53 Q 50 64 62 53" fill="none" stroke="${c.dark}" stroke-width="2.6" stroke-linecap="round"/>
 </svg>`;
 }
