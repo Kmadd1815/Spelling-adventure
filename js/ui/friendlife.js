@@ -47,6 +47,9 @@ export function setEggArt(node, cracks) {
  * The duckling, if it has hatched. Placed next to the axolotl; follow()
  * takes over from there.
  */
+/* A quarter of the axolotl's width. It is the axolotl's pet, not its
+   equal: at anything like the same size the two compete for the floor and
+   the room reads as having two main characters in it. */
 export function attachFriend(scene, { onTap, mood = 'calm', width = 10 } = {}) {
   if (!scene || !friend.hasHatched()) return null;
 

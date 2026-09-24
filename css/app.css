@@ -2815,6 +2815,11 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
    floor: when the two do overlap, the one being followed is the one in
    front. */
 .room-friend { position: absolute; z-index: 5; cursor: pointer; }
+/* The duckling fills its own box and nothing else decides its size.
+   It used to carry .pet-stage as well, which is a fixed 230px in the hero
+   — so it rendered at the axolotl's size whatever percentage its box was
+   given, and every attempt to make it smaller did nothing at all. */
+.friend-stage { width: 100%; height: auto; display: block; }
 .friend-body { transform-origin: 50% 100%; }
 .friend-waddling .friend-body { animation: friendWaddle .5s ease-in-out infinite; }
 @keyframes friendWaddle {

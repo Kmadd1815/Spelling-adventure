@@ -149,7 +149,7 @@ export default function petScreen(container) {
     const friendCard = friend.hasHatched()
       ? el('div', { class: 'card' },
           el('div', { class: 'row', style: { alignItems: 'center', gap: '12px' } },
-            el('div', { style: { width: '72px', flex: '0 0 auto' }, html: friendSVG({ mood: 'calm' }) }),
+            el('div', { style: { width: '56px', flex: '0 0 auto' }, html: friendSVG({ mood: 'calm' }) }),
             el('div', { class: 'grow' },
               el('h3', { text: friend.name(), style: { margin: '0' } }),
               el('p', { class: 'muted tiny', style: { margin: '2px 0 0' },

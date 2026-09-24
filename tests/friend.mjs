@@ -204,7 +204,23 @@ const tapEgg = async page => { await page.click('.room-egg'); await page.waitFor
     });
     ok(`and behind the axolotl in ${where}`, z.friend < z.pet, JSON.stringify(z));
     ok(`set back up the floor in ${where}`, z.fBottom > z.pBottom, JSON.stringify(z));
-    ok(`and smaller than it in ${where}`, z.fWidth < z.pWidth, JSON.stringify(z));
+    ok(`and its box is smaller than the axolotl's in ${where}`,
+       z.fWidth < z.pWidth, JSON.stringify(z));
+
+    /* The box is not the drawing. The duckling's SVG used to carry the
+       axolotl's own .pet-stage class, which is a fixed width in the hero,
+       so it rendered at the axolotl's size whatever percentage its box
+       was given — and every check that compared the BOXES passed while
+       the two animals were the same size on screen. This measures what
+       is actually drawn. */
+    const drawn = await page.evaluate(() => {
+      const p = document.querySelector('.room-pet .pet-body svg').getBoundingClientRect();
+      const f = document.querySelector('.room-friend .friend-body svg').getBoundingClientRect();
+      return { pet: Math.round(p.width), friend: Math.round(f.width),
+               ratio: +(f.width / p.width).toFixed(2) };
+    });
+    ok(`and it is drawn as the axolotl's pet, not its equal, in ${where}`,
+       drawn.ratio > 0.15 && drawn.ratio < 0.55, JSON.stringify(drawn));
     await ctx.close();
   }
 }

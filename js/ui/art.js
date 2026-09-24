@@ -544,7 +544,7 @@ export function friendSVG({ mood = 'calm', alive = true } = {}) {
           stroke-width="2" stroke-linejoin="round"/>`;
 
   return `
-<svg class="pet-stage friend-stage${alive ? ' pet-alive' : ''}" data-mood="${mood}"
+<svg class="friend-stage${alive ? ' pet-alive' : ''}" data-mood="${mood}"
      viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
      aria-label="A duckling">
   ${contact(bodyCx, groundY, bodyRx * 0.8, 7, .24)}

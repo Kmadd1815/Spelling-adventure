@@ -236,6 +236,9 @@ export function setFriendArt(node, html) {
  * @param {HTMLElement} scene  the room, garden or tree scene
  * @returns {Function} call it to stop.
  */
+/* The gap does not shrink with the duckling: the axolotl's gills reach a
+   long way either side of where it is standing, so a smaller friend
+   standing closer just disappears behind them. */
 export function follow(scene, { gap = 26, band = [6, 92] } = {}) {
   const pet = scene?.querySelector?.('.room-pet');
   const friend = scene?.querySelector?.('.room-friend');
