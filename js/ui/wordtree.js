@@ -254,35 +254,68 @@ export function buildTree({ leaves = [], petHTML = '', petProps = {},
    reason to keep going. A blank hedge would just be a hedge.
 */
 export function gateSVG(open = false) {
-  const wood = gid(), leaf = gid();
+  const wood = gid(), leaf = gid(), post = gid();
+
+  /* Both states are built from the same parts — two posts, a panel with
+     two rails and a diagonal brace — so the open gate reads as the same
+     gate that was shut a week ago rather than as a different drawing.
+     The first attempt drew the open one as a narrow slat with two short
+     lines across it and a loose stroke for the path, and at the size this
+     is actually seen that came out as a broken plank next to a stray
+     mark. */
+  const panel = (d, rails, brace) => `
+    <path d="${d}" fill="url(#${wood})" stroke="#8a6340" stroke-width="2.6"
+          stroke-linejoin="round"/>
+    ${rails.map(r => `<path d="${r}" stroke="#8a6340" stroke-width="2.2"
+                            stroke-linecap="round"/>`).join('')}
+    <path d="${brace}" stroke="#8a6340" stroke-width="2.4" stroke-linecap="round"/>`;
+
   return `
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="${wood}" x1="10%" y1="0%" x2="90%" y2="100%">
           <stop offset="0%" stop-color="#e0b183"/><stop offset="100%" stop-color="#a87f55"/>
         </linearGradient>
+        <linearGradient id="${post}" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stop-color="#cfa274"/><stop offset="100%" stop-color="#93704a"/>
+        </linearGradient>
         <linearGradient id="${leaf}" x1="10%" y1="0%" x2="90%" y2="100%">
           <stop offset="0%" stop-color="#8fd3a8"/><stop offset="100%" stop-color="#4f9b6d"/>
         </linearGradient>
       </defs>
       <ellipse class="${SHADOW}" cx="50" cy="93" rx="30" ry="5" fill="#3a2c1e" opacity=".15"/>
+
       <!-- the hedge the gate is set into -->
       <path d="M 6 92 V 46 A 44 44 0 0 1 94 46 V 92 Z" fill="url(#${leaf})"
             stroke="#3d7f5a" stroke-width="3" stroke-linejoin="round"/>
+      <!-- what is beyond it: sky once the gate is open, hedge while it is not -->
       <path d="M 18 90 V 48 A 32 32 0 0 1 82 48 V 90 Z" fill="${open ? '#cfe9f5' : '#f3e6cd'}"
             stroke="#3d7f5a" stroke-width="2.4"/>
+
       ${open
-        ? /* Swung open on its hinge, with the path running through. */
-          `<path d="M 30 88 L 30 52 L 44 56 L 44 84 Z" fill="url(#${wood})"
-                 stroke="#8a6340" stroke-width="2.6" stroke-linejoin="round"/>
-           <path d="M 32 62 H 42 M 32 74 H 42" stroke="#8a6340" stroke-width="2"/>
-           <path d="M 52 90 q 6 -18 14 -26" fill="none" stroke="#e8d3ab"
-                 stroke-width="7" stroke-linecap="round"/>`
+        ? /* A path worn through the gap, drawn as ground rather than as a
+             line: it is something you could walk on, and it reaches the
+             bottom of the picture so it goes somewhere. */
+          `<path d="M 38 90 L 52 71 L 63 71 L 78 90 Z" fill="#e6d5b4"
+                 stroke="#d3bf9c" stroke-width="1" stroke-linejoin="round"/>
+           <!-- the two posts it hangs between -->
+           <path d="M 20 90 V 52 h 6 v 38 z" fill="url(#${post})" stroke="#8a6340" stroke-width="2.2"
+                 stroke-linejoin="round"/>
+           <path d="M 76 90 V 52 h 6 v 38 z" fill="url(#${post})" stroke="#8a6340" stroke-width="2.2"
+                 stroke-linejoin="round"/>
+           <!-- swung in on its hinge: the free edge is nearer, so it is the
+                taller one -->
+           ${panel('M 25 55 L 45 50 L 45 93 L 25 87 Z',
+                   ['M 27 64 L 44 60', 'M 27 79 L 44 76'],
+                   'M 27 85 L 44 57')}`
         : /* Shut across the opening, with a latch. */
-          `<path d="M 20 86 H 80 V 54 H 20 Z" fill="url(#${wood})"
-                 stroke="#8a6340" stroke-width="2.8" stroke-linejoin="round"/>
-           <path d="M 20 64 H 80 M 20 76 H 80" stroke="#8a6340" stroke-width="2.2"/>
-           <path d="M 22 84 L 78 56" stroke="#8a6340" stroke-width="2.6"/>
+          `<path d="M 20 90 V 52 h 6 v 38 z" fill="url(#${post})" stroke="#8a6340" stroke-width="2.2"
+                 stroke-linejoin="round"/>
+           <path d="M 76 90 V 52 h 6 v 38 z" fill="url(#${post})" stroke="#8a6340" stroke-width="2.2"
+                 stroke-linejoin="round"/>
+           ${panel('M 22 86 H 80 V 54 H 22 Z',
+                   ['M 24 64 H 78', 'M 24 76 H 78'],
+                   'M 24 84 L 78 56')}
            <circle cx="72" cy="70" r="3.4" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`}
     </svg>`;
 }
