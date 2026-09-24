@@ -2746,3 +2746,62 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 @media (max-width: 620px) {
   .trace-side { display: none; }
 }
+
+/* ---------- The Word Tree ----------
+
+   A leaf for every mastered word. The scene behaves like the room and the
+   garden — same box, same pet, same seasonal light over the top — but
+   everything inside it is one SVG, because at two hundred words this is
+   two hundred leaves and the browser draws those far better in a picture
+   than as a pile of elements. */
+.wt-scene { position: relative; overflow: hidden; }
+.wt-sky { position: absolute; inset: 0 0 20% 0; }
+.wt-grass { position: absolute; inset: 80% 0 0 0; }
+.wt-art { position: absolute; inset: 0; }
+.wt-svg { width: 100%; height: 100%; display: block; }
+
+.wt-leaf { cursor: pointer; transition: transform .12s ease; transform-box: fill-box; }
+.wt-leaf:focus-visible { outline: none; }
+.wt-leaf:focus-visible path:first-of-type { stroke: var(--primary); stroke-width: 1.4; }
+.wt-leaf:active { opacity: .82; }
+
+/* The card she gets when she taps a leaf. It stays until she closes it:
+   she tapped it to look at a word, and a thing that slides away after two
+   seconds is no good for looking at something. */
+.wt-card {
+  position: absolute;
+  left: 50%; bottom: 8%;
+  transform: translateX(-50%);
+  min-width: min(300px, 78%);
+  background: var(--surface, #fffdf9);
+  border-radius: var(--r-md, 20px);
+  box-shadow: var(--shadow-soft, 0 8px 24px rgba(122, 96, 77, .2));
+  padding: 14px 16px;
+  text-align: center;
+  z-index: 12;
+}
+.wt-card[hidden] { display: none; }
+.wt-card-word { font-size: 1.9rem; font-weight: 900; letter-spacing: .01em; }
+.wt-card-when { font-size: .85rem; color: var(--ink-soft, #8a7568); margin-top: 2px; }
+.wt-card-due {
+  margin-top: 8px; font-size: .82rem; font-weight: 700;
+  color: #a86a16;
+}
+
+/* The gate at the end of the garden. Shut, it still says how far off it
+   is — a locked door with a number on it is something to work towards. */
+.garden-gate {
+  position: absolute;
+  /* On the horizon, in the fence line at the back — a gate in the
+     foreground would be a gate to nowhere, standing on the lawn. */
+  right: 5%; bottom: 56%;
+  width: 12%;
+  z-index: 3;
+  cursor: pointer;
+  background: none; border: none; padding: 0;
+  /* The drawing's feet sit a little above its box, the way the fence
+     sections do, so the gate stands ON the horizon rather than behind it. */
+  margin-bottom: -1.1%;
+}
+.garden-gate svg { width: 100%; height: auto; display: block; }
+.garden-gate-shut { opacity: .88; }

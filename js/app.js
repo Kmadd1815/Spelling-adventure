@@ -28,6 +28,7 @@ import gamesScreen    from './screens/games.js';
 import playScreen     from './screens/play.js';
 import eventScreen    from './screens/event.js';
 import gardenScreen   from './screens/garden.js';
+import treeScreen     from './screens/tree.js';
 import { liveEvent, byId as eventById } from './core/events.js';
 import { byId as gameById } from './core/games.js';
 
@@ -45,6 +46,7 @@ router.route('/progress', { title: 'My Progress', back: '/', render: progressScr
 router.route('/decorate', { title: 'Decorate', back: '/pet', render: decorateScreen });
 router.route('/shop',     { title: 'Shop', back: '/pet', render: shopScreen });
 router.route('/garden',   { title: 'The Garden', back: '/', render: gardenScreen });
+router.route('/tree',     { title: 'Your Word Tree', back: '/garden', render: treeScreen });
 router.route('/games',    { title: 'Mini-Games', back: '/', render: gamesScreen });
 router.route('/play',     { title: p => gameById(p.id)?.name || 'Mini-Game', back: '/games', render: playScreen });
 router.route('/event',    { title: p => (liveEvent() || eventById(p.preview))?.name || 'Event',

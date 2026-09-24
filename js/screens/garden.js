@@ -18,6 +18,8 @@ import * as pet from '../core/pet.js';
 import * as items from '../core/items.js';
 import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import { gardenOpen } from '../core/garden.js';
+import { treeOpen, gateLine as treeGateLine } from '../core/wordtree.js';
+import { gateSVG } from '../ui/wordtree.js';
 
 export default function gardenScreen(container) {
   /* It wanders out here too — more room than indoors, and no doorway to
@@ -55,6 +57,22 @@ export default function gardenScreen(container) {
         onClick: () => pat(),
       },
     });
+
+    /* The way on. Shut, it still says how many words are left, the same
+       way the door out of her room does — a gate with a number on it is
+       something to work towards. */
+    const openYet = treeOpen();
+    const gate = el('button', {
+      class: `garden-gate${openYet ? '' : ' garden-gate-shut'}`,
+      type: 'button',
+      'aria-label': openYet ? 'Through the gate to your word tree' : 'The gate to your word tree',
+      html: gateSVG(openYet),
+      onClick: () => {
+        if (openYet) { navigate('/tree'); return; }
+        bubble.textContent = treeGateLine();
+      },
+    });
+    scene.append(gate);
 
     const stage = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
       el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),

@@ -27,7 +27,7 @@ const n = v => Math.round(v * 100) / 100;
    resolves to the FIRST match in the whole document, so two drawings
    sharing an id means the second silently wears the first one's colours. */
 let uid = 0;
-const gid = () => `ia${(++uid).toString(36)}`;
+export const gid = () => `ia${(++uid).toString(36)}`;
 
 /* Shadows are marked, because a shadow is not part of the thing that
    throws it. Anything measuring how big a piece is — the room's fit tests

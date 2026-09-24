@@ -153,6 +153,16 @@ export const MILESTONES = [
     item: 'star_rug',
     test: s => s.mastered >= 25 },
 
+  /* Like the garden gate, this one is not a keepsake: it opens the Word
+     Tree. Forty rather than fifty so it gets a moment of its own — fifty
+     already has one — and, as with the garden, core/wordtree.js works out
+     whether the gate is open from her mastered words rather than from
+     this flag. This just fires the celebration, once. */
+  { id: 'word_tree',   title: 'The Word Tree',       emoji: '\u{1F333}',
+    blurb: 'Forty words mastered — the gate at the end of the garden opens, and every word you have learned is on the tree behind it!',
+    stars: 60,
+    test: s => s.mastered >= 40 },
+
   { id: 'master_50',   title: '50 Words Mastered',    emoji: '\u{1F396}️',
     blurb: 'Fifty words mastered. Incredible.', stars: 100,
     item: 'golden_quill',
