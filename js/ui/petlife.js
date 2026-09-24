@@ -199,3 +199,105 @@ export function roam(room, { band = ROOM_BAND } = {}) {
     leanTo(0);
   };
 }
+
+
+/* ---------- The friend ----------
+
+   The duckling does not wander: it follows. That is the whole difference
+   between a second pet and a friend, and it is why this is twenty lines
+   rather than another roam().
+
+   It trails BEHIND the axolotl rather than beside it — whichever way the
+   axolotl last went, the duckling stands on the other side of it — so the
+   pair reads as one leading and one following instead of two animals that
+   happen to be next to each other. It is also slower, and starts moving
+   after the axolotl does, which is what makes it look like it is keeping
+   up rather than being dragged along on a rail.
+
+   It reads the axolotl's `left` off the style rather than off the screen,
+   which is deliberate: that is the target of a transition still running,
+   so the duckling sets off for where the axolotl is GOING. A follower that
+   waits for the leader to arrive is always exactly one journey behind.
+*/
+
+/** The node to put the drawing in, so waddling and walking do not fight. */
+export function friendLayers(html) {
+  return el('div', { class: 'friend-body', html });
+}
+
+export function setFriendArt(node, html) {
+  const body = node?.querySelector?.('.friend-body');
+  if (body) body.innerHTML = html;
+}
+
+/**
+ * Walk the duckling after the axolotl.
+ *
+ * @param {HTMLElement} scene  the room, garden or tree scene
+ * @returns {Function} call it to stop.
+ */
+export function follow(scene, { gap = 26, band = [6, 92] } = {}) {
+  const pet = scene?.querySelector?.('.room-pet');
+  const friend = scene?.querySelector?.('.room-friend');
+  if (!pet || !friend) return () => {};
+
+  const width = parseFloat(friend.style.width) || 10;
+  const petWidth = () => parseFloat(pet.style.width) || 34;
+  const petCentre = () => (parseFloat(pet.style.left) || 0) + petWidth() / 2;
+  const lo = band[0] + width / 2, hi = band[1] - width / 2;
+
+  const standAt = x => { friend.style.left = `${clamp(x, lo, hi) - width / 2}%`; };
+
+  /* Asked not to animate: stand it next to the axolotl and leave it. */
+  if (matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+    standAt(petCentre() - gap);
+    return () => {};
+  }
+
+  let last = petCentre();
+  let side = -1;                 // which side of the axolotl to stand on
+  let stopped = false;
+  const timers = new Set();
+  const after = (ms, fn) => {
+    const t = setTimeout(() => { timers.delete(t); fn(); }, ms);
+    timers.add(t);
+    return t;
+  };
+
+  standAt(last - gap);
+
+  function step() {
+    if (stopped) return;
+    if (document.hidden) return after(900, step);
+
+    const centre = petCentre();
+    /* Behind, not in front: if the axolotl went right, the duckling is on
+       its left. */
+    if (Math.abs(centre - last) > 1) side = centre > last ? -1 : 1;
+    last = centre;
+
+    const want = clamp(centre + side * gap, lo, hi);
+    const now = (parseFloat(friend.style.left) || want - width / 2) + width / 2;
+    const dist = Math.abs(want - now);
+
+    if (dist > 0.8) {
+      /* Slower per step than the axolotl, so it is always catching up. */
+      const ms = Math.round(460 + dist * 74);
+      friend.style.transition = `left ${ms}ms ease-in-out`;
+      friend.classList.add('friend-waddling');
+      standAt(want);
+      after(ms + 70, () => friend.classList.remove('friend-waddling'));
+    }
+    after(420, step);
+  }
+
+  after(420, step);
+
+  return () => {
+    stopped = true;
+    timers.forEach(clearTimeout);
+    timers.clear();
+    friend.classList.remove('friend-waddling');
+    friend.style.transition = '';
+  };
+}

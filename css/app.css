@@ -2805,3 +2805,46 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 }
 .garden-gate svg { width: 100%; height: auto; display: block; }
 .garden-gate-shut { opacity: .88; }
+
+/* ---------- The friend ----------
+
+   Its own layers, for the same reason the axolotl has them: `left` moves
+   it across the floor and the waddle rocks it, and in CSS both would be
+   writing to the same transform if they shared a box. */
+/* Behind the axolotl in the stacking order as well as behind it on the
+   floor: when the two do overlap, the one being followed is the one in
+   front. */
+.room-friend { position: absolute; z-index: 5; cursor: pointer; }
+.friend-body { transform-origin: 50% 100%; }
+.friend-waddling .friend-body { animation: friendWaddle .5s ease-in-out infinite; }
+@keyframes friendWaddle {
+  0%, 100% { transform: rotate(-5deg) translateY(0); }
+  50%      { transform: rotate(5deg) translateY(-3%); }
+}
+.room-friend:active .friend-body { transform: scale(.95); }
+
+/* The egg, waiting on the floor. It rocks now and then on its own, which
+   is the only hint she needs that it is worth tapping. */
+.room-egg { position: absolute; z-index: 6; cursor: pointer; background: none; border: none; padding: 0; }
+.room-egg svg { width: 100%; height: auto; display: block; }
+.egg-wobble { animation: eggRest 3.4s ease-in-out infinite; }
+@keyframes eggRest {
+  0%, 62%, 100% { transform: rotate(0deg); }
+  70%  { transform: rotate(-5deg); }
+  78%  { transform: rotate(4deg); }
+  86%  { transform: rotate(-2.5deg); }
+  94%  { transform: rotate(1deg); }
+}
+/* A proper shake for the tap itself. */
+.room-egg.egg-tapped .egg-wobble { animation: eggShake .5s ease-in-out; }
+@keyframes eggShake {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-11deg); }
+  35% { transform: rotate(9deg); }
+  55% { transform: rotate(-7deg); }
+  75% { transform: rotate(5deg); }
+  90% { transform: rotate(-2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .egg-wobble, .room-egg.egg-tapped .egg-wobble { animation: none; }
+}

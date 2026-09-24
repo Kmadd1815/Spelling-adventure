@@ -6,17 +6,19 @@
 
 import { el, mount, button, bar, modal } from '../ui/dom.js';
 import { toast } from '../ui/toast.js';
-import { petSVG, petThumbSVG } from '../ui/art.js';
+import { petSVG, petThumbSVG, friendSVG } from '../ui/art.js';
 import { navigate } from '../ui/router.js';
 import * as pet from '../core/pet.js';
 import { COATS } from '../core/pet.js';
 import * as items from '../core/items.js';
 import { itemSVG } from '../ui/item-art.js';
 import { buildRoom } from '../ui/room.js';
-import { roam, setPetArt } from '../ui/petlife.js';
+import { roam, setPetArt, follow, setFriendArt } from '../ui/petlife.js';
+import { attachFriend } from '../ui/friendlife.js';
 import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 import { gardenOpen, gateLine } from '../core/garden.js';
+import * as friend from '../core/friend.js';
 
 export default function petScreen(container) {
   let mood = 'calm';
@@ -25,7 +27,11 @@ export default function petScreen(container) {
      room, so the last one's stroll has to be called off or two of them end
      up walking the same drawing in opposite directions. */
   let stopRoam = null;
-  const stopRoaming = () => { stopRoam?.(); stopRoam = null; };
+  let stopFollow = null;
+  const stopRoaming = () => {
+    stopRoam?.(); stopRoam = null;
+    stopFollow?.(); stopFollow = null;
+  };
 
   function render() {
     const info = pet.pet();
@@ -136,8 +142,24 @@ export default function petScreen(container) {
       button('Change coat', { cls: 'btn btn-quiet grow', emoji: '\u{1F3A8}', onClick: coatDialog })
     );
 
+    /* The friend gets a card of its own once it is out of the egg — a
+       place to look at it and to change its mind about the name. Before
+       that there is nothing here at all: an empty "no friend yet" card
+       would be a hole in the screen with a number in it. */
+    const friendCard = friend.hasHatched()
+      ? el('div', { class: 'card' },
+          el('div', { class: 'row', style: { alignItems: 'center', gap: '12px' } },
+            el('div', { style: { width: '72px', flex: '0 0 auto' }, html: friendSVG({ mood: 'calm' }) }),
+            el('div', { class: 'grow' },
+              el('h3', { text: friend.name(), style: { margin: '0' } }),
+              el('p', { class: 'muted tiny', style: { margin: '2px 0 0' },
+                text: `Your ${friend.SPECIES.name.toLowerCase()}. Follows you everywhere.` })),
+            button('Rename', { cls: 'btn btn-quiet', emoji: '✏️', onClick: friendNameDialog })
+          ))
+      : null;
+
     mount(container, el('div', { class: 'stack' },
-      stage, playCard, growthCard, wardrobe, actions,
+      stage, playCard, friendCard, growthCard, wardrobe, actions,
       button('Decorate the room', { cls: 'btn btn-green btn-block', emoji: '\u{1FA91}',
         onClick: () => navigate('/decorate') }),
       button('Go to the shop', { cls: 'btn btn-pink btn-block', emoji: '\u{1F6CD}\uFE0F',
@@ -146,7 +168,19 @@ export default function petScreen(container) {
         onClick: () => navigate('/practice') })
     ));
 
+    /* The same room as the home screen, so the duckling is here too. */
+    const friendNode = attachFriend(room, {
+      onTap: node => {
+        setFriendArt(node, friendSVG({ mood: 'peep' }));
+        const b = container.querySelector('.room-speech');
+        if (b) b.textContent = friend.peep();
+        burst(room, 'hearts', { origin: node });
+        setTimeout(() => setFriendArt(node, friendSVG({ mood: 'calm' })), 1600);
+      },
+    });
+
     stopRoam = roam(room);
+    if (friendNode) stopFollow = follow(room);
   }
 
   /**
@@ -213,6 +247,27 @@ export default function petScreen(container) {
       ),
     ]);
     setTimeout(() => input.focus(), 50);
+  }
+
+  function friendNameDialog() {
+    const input = el('input', { type: 'text', value: friend.friend().name,
+      placeholder: friend.SPECIES.name, maxlength: '16', autocapitalize: 'words' });
+    const close = modal(`Rename ${friend.name()}`, [
+      input,
+      el('div', { class: 'row', style: { marginTop: '12px', flexWrap: 'wrap', gap: '8px' } },
+        ...friend.NAME_IDEAS.map(idea =>
+          button(idea, { cls: 'btn btn-quiet', onClick: () => { input.value = idea; } }))),
+      el('div', { class: 'row', style: { marginTop: '14px' } },
+        button('Cancel', { cls: 'btn btn-quiet grow', onClick: () => close() }),
+        button('Save', { cls: 'btn btn-primary grow', onClick: () => {
+          friend.setName(input.value);
+          close();
+          render();
+          toast('Saved');
+        } })
+      ),
+    ]);
+    setTimeout(() => input.focus(), 60);
   }
 
   function coatDialog() {

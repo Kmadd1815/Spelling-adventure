@@ -452,3 +452,161 @@ export function starSVG(size = 20) {
           fill="#f6c453" stroke="#dda93c" stroke-width="1.2" stroke-linejoin="round"/>
   </svg>`;
 }
+
+/* ---------- The friend ----------
+
+   A duckling, and an egg for it to come out of. Drawn here rather than in
+   item-art.js because it is an animal, not an ornament: it wants the same
+   sphere, sheen and bounce the axolotl gets, and those live in this file.
+
+   What makes a duckling read as a duckling, in rough order:
+     - a round body with a smaller round head sitting right on it, no neck
+     - a wide flat bill, low on the face
+     - one big eye, high
+     - a tiny wing tucked on the side
+     - two orange webbed feet, small and far apart
+
+   Same 200-wide viewBox as the axolotl so the two can stand on the same
+   floor and be sized against each other honestly.
+*/
+
+const DUCK = {
+  body:  '#f7d774',
+  lit:   '#fdf0c4',
+  deep:  '#e0b449',
+  dark:  '#b88c32',
+  bill:  '#f5a742',
+  billDark: '#c87d24',
+  foot:  '#f09a3a',
+};
+
+/**
+ * @param {object} opts
+ * @param {'calm'|'happy'|'peep'} [opts.mood]
+ * @param {boolean} [opts.alive]  breathing and blinking
+ */
+export function friendSVG({ mood = 'calm', alive = true } = {}) {
+  const c = DUCK;
+  const bodyCx = 100, bodyCy = 150;
+  const bodyRx = 42, bodyRy = 38;
+  const headRx = 30, headRy = 28;
+  const headCx = 86;
+  const headCy = bodyCy - bodyRy - headRy + 30;
+  const groundY = bodyCy + bodyRy * 0.92 + 8;
+
+  const open = mood === 'peep';
+  const billLip = open ? 8 : 12;      // the bill's lower edge, dropped when it peeps
+
+  /* The bill: a rounded wedge, low on the face and wider than it is tall.
+     Open, the lower half drops and shows a little inside. */
+  const bill = `
+    ${open ? `<path d="M ${headCx - 30} ${headCy + 10}
+                       Q ${headCx - 46} ${headCy + 22} ${headCx - 27} ${headCy + 24}
+                       Q ${headCx - 14} ${headCy + 24} ${headCx - 12} ${headCy + 12} Z"
+                    fill="${c.billDark}" stroke="${c.billDark}" stroke-width="2"
+                    stroke-linejoin="round"/>` : ''}
+    ${litPath(`M ${headCx - 11} ${headCy + 2}
+               Q ${headCx - 30} ${headCy - 6} ${headCx - 40} ${headCy + 3}
+               Q ${headCx - 34} ${headCy + 13} ${headCx - 11} ${headCy + billLip} Z`,
+      '#fbc06a', c.bill, { stroke: c.billDark, sw: 2.2, join: 'round' })}
+    <path d="M ${headCx - 34} ${headCy + 1} q 8 -3 16 -1" fill="none"
+          stroke="#fff" stroke-opacity=".45" stroke-width="2.6" stroke-linecap="round"/>`;
+
+  const eyeY = headCy - 6;
+  const eyeX = headCx - 6;
+  const eye = `
+    <ellipse class="pet-eye" cx="${eyeX}" cy="${eyeY}" rx="5.2" ry="${mood === 'happy' ? 3.4 : 5.6}"
+             fill="#3b2f26"/>
+    <circle cx="${eyeX - 1.8}" cy="${eyeY - 2.2}" r="1.9" fill="#fff" opacity=".9"/>`;
+
+  /* A curl of down on the crown — the one detail that turns a yellow ball
+     into a baby bird. */
+  const tuft = `
+    <path d="M ${headCx + 4} ${headCy - headRy + 2}
+             q 3 -12 12 -10 q -6 3 -6 11" fill="${c.body}"
+          stroke="${c.dark}" stroke-width="2" stroke-linejoin="round"/>`;
+
+  /* A wing, tucked and pointing back — the first version was a rounded
+     rectangle on the side, which reads as a pocket. */
+  const wing = `
+    ${litPath(`M ${bodyCx + 2} ${bodyCy - 12}
+               Q ${bodyCx + 30} ${bodyCy - 14} ${bodyCx + 36} ${bodyCy + 12}
+               Q ${bodyCx + 20} ${bodyCy + 14} ${bodyCx + 6} ${bodyCy + 4} Z`,
+      c.lit, c.deep, { stroke: c.dark, sw: 2.2, join: 'round' })}
+    <path d="M ${bodyCx + 10} ${bodyCy - 6} Q ${bodyCx + 24} ${bodyCy - 4} ${bodyCx + 31} ${bodyCy + 9}"
+          fill="none" stroke="${c.dark}" stroke-width="1.8" opacity=".45" stroke-linecap="round"/>
+    <path d="M ${bodyCx + 9} ${bodyCy + 1} Q ${bodyCx + 20} ${bodyCy + 3} ${bodyCx + 26} ${bodyCy + 11}"
+          fill="none" stroke="${c.dark}" stroke-width="1.5" opacity=".3" stroke-linecap="round"/>`;
+
+  const foot = dx => `
+    <path d="M ${bodyCx + dx} ${groundY - 9}
+             l -7 9 h 14 z" fill="${c.foot}" stroke="${c.billDark}"
+          stroke-width="2" stroke-linejoin="round"/>`;
+
+  return `
+<svg class="pet-stage friend-stage${alive ? ' pet-alive' : ''}" data-mood="${mood}"
+     viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="A duckling">
+  ${contact(bodyCx, groundY, bodyRx * 0.8, 7, .24)}
+  <g class="pet-breathe" style="transform-origin:${bodyCx}px ${groundY}px">
+    ${foot(-14)}${foot(12)}
+    ${sphere(bodyCx, bodyCy, bodyRx, bodyRy, c.lit, c.body, c.deep, { stroke: c.dark, sw: 2.4 })}
+    ${softPatch(bodyCx, bodyCy + bodyRy * 0.3, bodyRx * 0.5, bodyRy * 0.45, c.lit, 0.8)}
+    ${bounce(bodyCx, bodyCy, bodyRx, bodyRy, c.lit, 0.55)}
+    ${wing}
+    ${sphere(headCx, headCy, headRx, headRy, c.lit, c.body, c.deep, { stroke: c.dark, sw: 2.4 })}
+    ${sheen(headCx - 8, headCy - 12, 14, 10, 0.5)}
+    ${bounce(headCx, headCy, headRx, headRy, c.lit, 0.45)}
+    ${tuft}
+    ${bill}
+    ${eye}
+    ${blush(headCx - 16, headCy + 9, 7, 4.5, '#f0a0a8')}
+  </g>
+</svg>`;
+}
+
+/**
+ * The egg, with `cracks` of them showing: 0 whole, 3 about to go.
+ */
+export function eggSVG({ cracks = 0 } = {}) {
+  const shell = '#fffaf0', shellMid = '#f8ecd2', shellDeep = '#e2d0ab', line = '#af9771';
+  /* Big. It is the only thing in the room she is being asked to tap, and a
+     small dull egg on a patterned floor is something she walks past. */
+  const cx = 100, cy = 148, rx = 42, ry = 54;
+
+  /* Speckles, in fixed places rather than random ones: an egg that
+     re-speckles itself every time the screen redraws is a different egg
+     each time she looks at it. */
+  const speckles = [[-15, -22, 3.6], [10, -30, 2.8], [18, 2, 3.4], [-20, 10, 3],
+                    [3, 20, 2.6], [-5, -3, 2.1], [22, -13, 2.3], [-9, 30, 2.4]]
+    .map(([dx, dy, r]) => `<circle cx="${cx + dx}" cy="${cy + dy}" r="${r}"
+                                   fill="${line}" opacity=".26"/>`).join('');
+
+  /* Each crack is drawn once and stays put, so tapping adds a crack rather
+     than rearranging the ones already there. */
+  const CRACKS = [
+    `M ${cx - 30} ${cy - 8} l 12 9 -8 11 13 8`,
+    `M ${cx + 30} ${cy + 2} l -13 8 9 12 -12 7`,
+    `M ${cx - 8} ${cy - 40} l 10 12 -11 9 12 11`,
+  ];
+  const shown = CRACKS.slice(0, Math.max(0, Math.min(3, cracks)))
+    .map(d => `<path d="${d}" fill="none" stroke="#8d7550" stroke-width="4"
+                     stroke-linecap="round" stroke-linejoin="round"/>
+               <path d="${d}" fill="none" stroke="#fffdf6" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round" opacity=".75"
+                     transform="translate(-1.4 -1.4)"/>`).join('');
+
+  return `
+<svg class="egg-stage" data-cracks="${cracks}"
+     viewBox="0 44 200 162" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="An egg">
+  ${contact(cx, cy + ry * 0.94, rx * 0.8, 6, .24)}
+  <g class="egg-wobble" style="transform-origin:${cx}px ${cy + ry}px">
+    ${sphere(cx, cy, rx, ry, shell, shellMid, shellDeep, { stroke: line, sw: 2.4 })}
+    ${speckles}
+    ${sheen(cx - 10, cy - 18, 12, 16, 0.55)}
+    ${bounce(cx, cy, rx, ry, shell, 0.5)}
+    ${shown}
+  </g>
+</svg>`;
+}

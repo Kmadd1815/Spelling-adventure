@@ -3,16 +3,19 @@
 
 import { el, mount, button, modal } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
-import { petSVG } from '../ui/art.js';
+import { petSVG, friendSVG } from '../ui/art.js';
 import * as pet from '../core/pet.js';
 import * as words from '../core/words.js';
 import * as items from '../core/items.js';
 import { buildRoom } from '../ui/room.js';
-import { roam, setPetArt } from '../ui/petlife.js';
+import { roam, setPetArt, follow, setFriendArt } from '../ui/petlife.js';
+import { attachEgg, setEggArt, attachFriend } from '../ui/friendlife.js';
 import { burst, hop } from '../ui/fx.js';
+import { confetti } from '../ui/toast.js';
 import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import * as events from '../core/events.js';
 import { gardenOpen, gateLine } from '../core/garden.js';
+import * as friend from '../core/friend.js';
 import { speak } from '../core/speech.js';
 import { settings } from '../core/state.js';
 
@@ -37,8 +40,18 @@ export default function homeScreen(container) {
   /* Now and then the axolotl mentions the time of year rather than saying
      one of its usual hellos. Often enough to notice, rarely enough that it
      never feels like the weather report. */
+  /* An egg on the floor is worth pointing at. Until she has cracked it
+     open the axolotl talks about nothing else — a new thing in the room
+     that nobody mentions is a thing she walks past. */
   const bubble = el('div', { class: 'room-speech',
-    text: Math.random() < 0.35 ? seasonLine(season) : pet.greeting() });
+    text: friend.eggWaiting()
+      ? (friend.friend().crackedTaps ? friend.eggLine() : friend.arrivalLine())
+      : (Math.random() < 0.35 ? seasonLine(season) : pet.greeting()) });
+
+  /* The duckling's follower, kept here so hatching mid-screen can start it
+     and leaving the screen can always stop it. */
+  let stopFollow = null;
+  const stopFollowing = () => { stopFollow?.(); stopFollow = null; };
 
   const drawPet = mood => petSVG({
     coat: info.coat, stage: info.stage, mood,
@@ -74,6 +87,79 @@ export default function homeScreen(container) {
       speak(bubble.textContent);
     },
   });
+
+  /* ---------- The egg, and what comes out of it ----------
+
+     She cracks it open herself: four taps, each one saved, so an egg left
+     half-cracked at bedtime is still half-cracked in the morning. */
+  const eggNode = attachEgg(room, {
+    onTap: node => {
+      const result = friend.tapEgg();
+      node.classList.remove('egg-tapped');
+      /* Restart the shake: without the reflow the class goes straight back
+         on and the animation never replays. */
+      void node.offsetWidth;
+      node.classList.add('egg-tapped');
+
+      if (!result.hatched) {
+        setEggArt(node, result.cracks);
+        bubble.textContent = friend.eggLine();
+        burst(room, 'sparkles', { origin: node });
+        return;
+      }
+
+      /* Out it comes. The egg goes, the duckling arrives where the egg
+         was standing, and she is asked what to call it. */
+      burst(room, 'stars', { origin: node });
+      confetti(40);
+      node.remove();
+      const hatched = attachFriend(room, { onTap: patFriend, mood: 'peep' });
+      if (hatched) {
+        stopFollowing();
+        stopFollow = follow(room);
+        setTimeout(() => setFriendArt(hatched, friendSVG({ mood: 'calm' })), 2400);
+      }
+      bubble.textContent = 'It hatched! What shall we call them?';
+      /* A beat before the naming box, so she gets to SEE what came out.
+         Asked straight away, the dialog covers the duckling and the first
+         thing she does with her new friend is read a form. */
+      setTimeout(nameDialog, 1700);
+    },
+  });
+
+  function patFriend(node) {
+    setFriendArt(node, friendSVG({ mood: 'peep' }));
+    bubble.textContent = friend.peep();
+    burst(room, 'hearts', { origin: node });
+    setTimeout(() => setFriendArt(node, friendSVG({ mood: 'calm' })), 1600);
+  }
+
+  /* Named once, on the day it hatches, and changed later from the Pet
+     screen. A blank name is allowed — it is just called Duckling then. */
+  function nameDialog() {
+    const input = el('input', { type: 'text', placeholder: 'A name…', maxlength: '16',
+      autocapitalize: 'words' });
+    const close = modal(`Your new friend`, [
+      el('p', { class: 'muted tiny', text:
+        'It followed you out of the egg. What would you like to call it?' }),
+      el('div', { style: { height: '10px' } }),
+      input,
+      el('div', { class: 'row', style: { marginTop: '12px', flexWrap: 'wrap', gap: '8px' } },
+        ...friend.NAME_IDEAS.map(idea =>
+          button(idea, { cls: 'btn btn-quiet', onClick: () => { input.value = idea; } }))),
+      el('div', { class: 'row', style: { marginTop: '14px' } },
+        button('Later', { cls: 'btn btn-quiet grow', onClick: () => close() }),
+        button('That is the one', { cls: 'btn btn-primary grow', onClick: () => {
+          friend.setName(input.value);
+          close();
+          bubble.textContent = friend.friendLine();
+        } })
+      ),
+    ]);
+    setTimeout(() => input.focus(), 80);
+  }
+
+  const friendNode = attachFriend(room, { onTap: patFriend });
 
   const hero = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
     el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),
@@ -197,9 +283,12 @@ export default function homeScreen(container) {
 
   mount(container, body);
 
-  /* And it goes for a wander. Stopped when the screen goes away — the
-     router calls what we return here. */
-  return roam(room);
+  /* And it goes for a wander, with the duckling after it. Both stopped
+     when the screen goes away — the router calls what we return here. */
+  const stopRoam = roam(room);
+  if (friendNode) stopFollow = follow(room);
+
+  return () => { stopRoam(); stopFollowing(); };
 
   /* Two kinds of test now, so a chooser keeps both off the hub without
      hiding either one. */

@@ -14,7 +14,10 @@ import { el, mount, button, clear } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
 import { petSVG } from '../ui/art.js';
 import { buildTree } from '../ui/wordtree.js';
-import { roam, setPetArt, GARDEN_BAND } from '../ui/petlife.js';
+import { roam, setPetArt, follow, setFriendArt, GARDEN_BAND } from '../ui/petlife.js';
+import { attachFriend } from '../ui/friendlife.js';
+import { friendSVG } from '../ui/art.js';
+import * as friendCore from '../core/friend.js';
 import { burst, hop } from '../ui/fx.js';
 import * as pet from '../core/pet.js';
 import * as items from '../core/items.js';
@@ -28,7 +31,11 @@ export default function treeScreen(container) {
   if (!treeOpen()) { navigate('/'); return; }
 
   let stopRoam = null;
-  const stopRoaming = () => { stopRoam?.(); stopRoam = null; };
+  let stopFollow = null;
+  const stopRoaming = () => {
+    stopRoam?.(); stopRoam = null;
+    stopFollow?.(); stopFollow = null;
+  };
   let mood = 'happy';
   let moodTimer = null;
 
@@ -93,7 +100,20 @@ export default function treeScreen(container) {
         onClick: () => navigate('/garden') })
     ));
 
+    /* The duckling comes out here too, and under the tree. Wherever the
+       axolotl is, it is a step behind. */
+    const friendNode = attachFriend(scene, {
+      onTap: node => {
+        setFriendArt(node, friendSVG({ mood: 'peep' }));
+        const bubble = container.querySelector('.room-speech');
+        if (bubble) bubble.textContent = friendCore.peep();
+        burst(scene, 'hearts', { origin: node });
+        setTimeout(() => setFriendArt(node, friendSVG({ mood: 'calm' })), 1600);
+      },
+    });
+
     stopRoam = roam(scene, { band: GARDEN_BAND });
+    if (friendNode) stopFollow = follow(scene, { band: [4, 94] });
   }
 
   function greeting(count, due) {

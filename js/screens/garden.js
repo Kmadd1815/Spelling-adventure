@@ -12,7 +12,10 @@ import { el, mount, button } from '../ui/dom.js';
 import { navigate } from '../ui/router.js';
 import { petSVG } from '../ui/art.js';
 import { buildGarden } from '../ui/garden.js';
-import { roam, setPetArt, GARDEN_BAND } from '../ui/petlife.js';
+import { roam, setPetArt, follow, setFriendArt, GARDEN_BAND } from '../ui/petlife.js';
+import { attachFriend } from '../ui/friendlife.js';
+import { friendSVG } from '../ui/art.js';
+import * as friendCore from '../core/friend.js';
 import { burst, hop } from '../ui/fx.js';
 import * as pet from '../core/pet.js';
 import * as items from '../core/items.js';
@@ -25,7 +28,11 @@ export default function gardenScreen(container) {
   /* It wanders out here too — more room than indoors, and no doorway to
      stand in the middle of. */
   let stopRoam = null;
-  const stopRoaming = () => { stopRoam?.(); stopRoam = null; };
+  let stopFollow = null;
+  const stopRoaming = () => {
+    stopRoam?.(); stopRoam = null;
+    stopFollow?.(); stopFollow = null;
+  };
 
   /* Reachable only through a door that will not open otherwise, but a typed
      URL is a door too, so the gate is checked here as well. */
@@ -99,7 +106,20 @@ export default function gardenScreen(container) {
 
     mount(container, body);
 
+    /* The duckling comes out here too, and under the tree. Wherever the
+       axolotl is, it is a step behind. */
+    const friendNode = attachFriend(scene, {
+      onTap: node => {
+        setFriendArt(node, friendSVG({ mood: 'peep' }));
+        const bubble = container.querySelector('.room-speech');
+        if (bubble) bubble.textContent = friendCore.peep();
+        burst(scene, 'hearts', { origin: node });
+        setTimeout(() => setFriendArt(node, friendSVG({ mood: 'calm' })), 1600);
+      },
+    });
+
     stopRoam = roam(scene, { band: GARDEN_BAND });
+    if (friendNode) stopFollow = follow(scene, { band: [4, 94] });
   }
 
   /* Petting outdoors is the same free thing it is indoors: no treats, no

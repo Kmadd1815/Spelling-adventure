@@ -168,6 +168,13 @@ export const MILESTONES = [
     item: 'golden_quill',
     test: s => s.mastered >= 50 },
 
+  /* The third of the three that open a place rather than handing her an
+     ornament. Sixty, not fifty: fifty has a keepsake of its own. */
+  { id: 'the_egg',     title: 'An Egg!',             emoji: '\u{1F95A}',
+    blurb: 'Sixty words mastered — there is an egg on your bedroom floor. Tap it and see what happens!',
+    stars: 80,
+    test: s => s.mastered >= 60 },
+
   { id: 'master_100',  title: '100 Words Mastered',   emoji: '\u{1F451}',
     blurb: 'One hundred words. You are a word champion.', stars: 200,
     item: 'champion_crown',

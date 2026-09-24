@@ -121,6 +121,16 @@ export function defaultState() {
        what she earned stays earned, and next year is a new key. */
     events: {},
 
+    /* The friend that hatches at sixty mastered words. Blank until then,
+       and a save made before this existed merges into these defaults the
+       same way everything else does. */
+    friend: {
+      crackedTaps: 0,   // taps on the egg so far, so a half-cracked egg keeps
+      hatchedAt: null,  //   its cracks overnight
+      name: '',
+      foundAt: null,
+    },
+
     /* Everything she owns. Each record is just which catalogue item it is
        and how she came by it — the name, art and price all live in the
        catalogue, so an item can never disagree with itself. */
@@ -278,6 +288,7 @@ function migrate(state) {
     settings:   { ...base.settings,   ...(state.settings || {}) },
     progress:   { ...base.progress,   ...(state.progress || {}) },
     collection: { ...base.collection, ...(state.collection || {}) },
+    friend:     { ...base.friend,     ...(state.friend     || {}) },
     events:     { ...base.events,     ...(state.events     || {}) },
     equipped:   { ...base.equipped,   ...(state.equipped   || {}) },
   };
