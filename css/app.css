@@ -2853,3 +2853,90 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 @media (prefers-reduced-motion: reduce) {
   .egg-wobble, .room-egg.egg-tapped .egg-wobble { animation: none; }
 }
+
+/* ---------- The pond ----------
+
+   A box of water seen from the side. The axolotl is in it rather than in
+   front of it, which is the whole point of the place. */
+.pond { position: relative; overflow: hidden; }
+.pond-water { position: absolute; inset: 0; }
+.pond-bed { position: absolute; left: 0; right: 0; bottom: 0; }
+
+/* The surface, seen from underneath: a bright band with the daylight
+   wobbling along it, so there is never any doubt which way is up. */
+.pond-surface {
+  position: absolute; left: 0; right: 0; top: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.22) 42%,
+                    rgba(255,255,255,0) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+.pond-surface::after {
+  content: '';
+  position: absolute; left: -12%; right: -12%; top: 26%;
+  height: 42%;
+  background: repeating-linear-gradient(96deg,
+    rgba(255,255,255,.26) 0 26px, rgba(255,255,255,0) 26px 78px);
+  filter: blur(3px);
+  animation: pondSurface 7s linear infinite;
+}
+@keyframes pondSurface { to { transform: translateX(34px); } }
+
+/* Under water the seasonal light is a hint, not a wash: the water has
+   already decided what colour everything is. */
+.pond-light { opacity: .35; }
+
+/* Anything drifting in open water — the fish, the tadpoles. */
+.pond-drifter {
+  animation: pondDrift var(--drift-dur, 8s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+@keyframes pondDrift {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(5%, -6%); }
+  50%      { transform: translate(9%, 2%); }
+  75%      { transform: translate(3%, 6%); }
+}
+
+/* Swimming. The tail goes faster than it does on land and the body sways
+   with it — and there is no walk bob, because nothing is touching a
+   floor. */
+.pet-swimming .pet-alive .pet-tail { animation-duration: .85s; }
+.pet-swimming .pet-body { animation: petSwim 2.6s ease-in-out infinite; }
+@keyframes petSwim {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33%      { transform: translateY(-2.5%) rotate(1.4deg); }
+  66%      { transform: translateY(1.5%) rotate(-1.2deg); }
+}
+
+/* The duckling on the surface bobs rather than waddles. */
+.room-friend.on-water .friend-body { animation: pondBob 3.4s ease-in-out infinite; }
+.room-friend.on-water.friend-waddling .friend-body { animation: pondPaddle 1.1s ease-in-out infinite; }
+@keyframes pondBob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-5%) rotate(1.5deg); }
+}
+@keyframes pondPaddle {
+  0%, 100% { transform: translateY(-2%) rotate(-4deg); }
+  50%      { transform: translateY(-6%) rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pond-surface::after, .pond-drifter,
+  .pet-swimming .pet-body,
+  .room-friend.on-water .friend-body { animation: none; }
+}
+
+/* The path down to the pond: front left of the garden, where a path out of
+   the picture towards the viewer belongs. */
+.garden-path {
+  position: absolute;
+  left: 3%; bottom: 1%;
+  width: 19%;
+  z-index: 9;
+  cursor: pointer;
+  background: none; border: none; padding: 0;
+}
+.garden-path svg { width: 100%; height: auto; display: block; }
+.garden-path-shut { opacity: .92; }

@@ -17,12 +17,14 @@ import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
 import { currentSeason } from '../core/season.js';
 import { gardenOpen } from '../core/garden.js';
+import { pondOpen } from '../core/pond.js';
 
 export default function shopScreen(container) {
   /* The Garden tab is hidden until the gate opens. A tab full of things for
      a place she cannot visit yet would be a tease, and the garden screen
      links straight here with ?tab=garden once it is hers. */
-  const tabs = () => items.SHOP_TABS.filter(t => t.key !== 'garden' || gardenOpen());
+  const OPEN = { garden: gardenOpen, pond: pondOpen };
+  const tabs = () => items.SHOP_TABS.filter(t => !OPEN[t.key] || OPEN[t.key]());
 
   const wanted = new URLSearchParams(location.hash.split('?')[1] || '').get('tab');
   let tab = tabs().some(t => t.key === wanted) ? wanted : tabs()[0].key;

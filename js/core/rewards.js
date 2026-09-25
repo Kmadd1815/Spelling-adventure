@@ -175,6 +175,13 @@ export const MILESTONES = [
     stars: 80,
     test: s => s.mastered >= 60 },
 
+  /* The last of the four that open a place. Eighty, clear of the hundred
+     and its crown. */
+  { id: 'the_pond',    title: 'The Pond',            emoji: '\u{1F4A7}',
+    blurb: 'Eighty words mastered — there is a path down from the garden, and water at the bottom of it. Go and see your axolotl swim!',
+    stars: 100,
+    test: s => s.mastered >= 80 },
+
   { id: 'master_100',  title: '100 Words Mastered',   emoji: '\u{1F451}',
     blurb: 'One hundred words. You are a word champion.', stars: 200,
     item: 'champion_crown',

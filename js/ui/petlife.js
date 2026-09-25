@@ -50,6 +50,7 @@ export function setPetArt(petNode, html) {
 
 const rand = (lo, hi) => lo + Math.random() * (hi - lo);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const n2 = v => Math.round(v * 100) / 100;
 
 /* How far along the floor it is allowed to get. The room is wider than
    this, but the far ends of it are the bed and the doorway, and an axolotl
@@ -302,5 +303,129 @@ export function follow(scene, { gap = 26, band = [6, 92] } = {}) {
     timers.clear();
     friend.classList.remove('friend-waddling');
     friend.style.transition = '';
+  };
+}
+
+/* ---------- Swimming ----------
+
+   The reason the pond exists. Everywhere else in this app the axolotl
+   walks along a line at the bottom of the picture: it has one coordinate
+   and the only question is how far left or right. In the water it has two,
+   and that single difference is what makes the pond a place rather than a
+   room with a blue wall.
+
+   Three things do the work, and the first is much the most important:
+
+     IT TILTS TOWARDS WHERE IT IS GOING. Rising, the nose comes up;
+     sinking, it goes down; turning, it banks. Without this it is a sticker
+     being slid around a window. The tilt comes from the direction of
+     travel, so it is always right and never has to be authored.
+
+     it is slow to start and slow to stop, because water is thick. The
+     easing is the same one walking uses; the durations are longer.
+
+     the tail goes properly. Walking speeds the tail up a little; swimming
+     speeds it up more, and the body sways with it.
+
+   It never touches the bottom and never breaks the surface — a duckling
+   is up there paddling and an axolotl surfacing through it would look
+   like a collision rather than a pond.
+*/
+export function swim(scene, { xBand = [12, 76], yBand = [12, 56] } = {}) {
+  const pet = scene?.querySelector?.('.room-pet');
+  const lean = pet?.querySelector('.pet-lean');
+  if (!pet || !lean) return () => {};
+  if (matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return () => {};
+
+  const width = parseFloat(pet.style.width) || 30;
+  let hereX = clamp((parseFloat(pet.style.left) || 0) + width / 2, xBand[0], xBand[1]);
+  let hereY = clamp(parseFloat(pet.style.bottom) || 30, yBand[0], yBand[1]);
+
+  let stopped = false;
+  const timers = new Set();
+  const after = (ms, fn) => {
+    const t = setTimeout(() => { timers.delete(t); fn(); }, ms);
+    timers.add(t);
+    return t;
+  };
+
+  const bubble = scene.parentElement?.querySelector?.('.room-speech') || null;
+
+  function pointTail(x) {
+    if (!bubble) return;
+    const r = scene.getBoundingClientRect();
+    const b = bubble.getBoundingClientRect();
+    if (!r.width || !b.width) return;
+    const px = Math.max(15, Math.min(b.width - 15, r.left + (x / 100) * r.width - b.left));
+    bubble.style.setProperty('--tail-x', `${px.toFixed(1)}px`);
+  }
+
+  const put = (x, y) => {
+    pet.style.left = `${x - width / 2}%`;
+    pet.style.bottom = `${y}%`;
+    pointTail(x);
+  };
+
+  /** Banking into the turn and pitching up or down, from one move. */
+  const tiltFor = (dx, dy) =>
+    clamp(clamp(dx * 0.5, -11, 11) + clamp(-dy * 0.45, -10, 10), -17, 17);
+
+  function glideTo(x, y, then) {
+    const dx = x - hereX, dy = y - hereY;
+    if (Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5) return then();
+
+    /* Water is thick: everything takes longer than it would on a rug. */
+    const dist = Math.hypot(dx, dy);
+    const ms = Math.round(900 + dist * 66);
+    pet.style.transition = `left ${ms}ms ease-in-out, bottom ${ms}ms ease-in-out`;
+    pet.classList.add('pet-swimming');
+    lean.style.transition = 'transform .7s ease-in-out';
+    lean.style.transform = `rotate(${n2(tiltFor(dx, dy))}deg)`;
+
+    hereX = x; hereY = y;
+    put(x, y);
+    after(ms + 80, () => {
+      /* Level off when it arrives, the way anything swimming does. */
+      lean.style.transform = 'rotate(0deg)';
+      then();
+    });
+  }
+
+  function next() {
+    if (stopped) return;
+    if (document.hidden) return after(1200, next);
+
+    const rest = () => after(rand(700, 2400), next);
+    const roll = Math.random();
+
+    if (roll < 0.2) {
+      /* Hang there. Something that is floating is still doing something. */
+      rest();
+    } else if (roll < 0.34) {
+      /* Straight up for a look at the surface, then back down. */
+      const top = yBand[1];
+      glideTo(hereX + rand(-6, 6), top, () =>
+        after(rand(900, 1800), () => glideTo(hereX + rand(-10, 10), rand(yBand[0], yBand[1] - 12), rest)));
+    } else if (roll < 0.46) {
+      /* Down to the bottom to have a look at something. */
+      glideTo(hereX + rand(-12, 12), yBand[0], () => after(rand(900, 2000), rest));
+    } else {
+      /* Off somewhere. */
+      glideTo(rand(xBand[0], xBand[1]), rand(yBand[0], yBand[1]), rest);
+    }
+  }
+
+  put(hereX, hereY);
+  pet.classList.add('pet-swimming');
+  after(140, () => { pointTail(hereX); after(rand(500, 1500), next); });
+
+  return () => {
+    stopped = true;
+    timers.forEach(clearTimeout);
+    timers.clear();
+    pet.classList.remove('pet-swimming');
+    pet.style.transition = '';
+    lean.style.transition = '';
+    lean.style.transform = 'rotate(0deg)';
   };
 }

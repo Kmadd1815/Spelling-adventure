@@ -15,11 +15,13 @@ import { toast } from '../ui/toast.js';
 import { navigate } from '../ui/router.js';
 import { buildRoom } from '../ui/room.js';
 import { buildGarden } from '../ui/garden.js';
+import { buildPond } from '../ui/pond.js';
 import { itemSVG } from '../ui/item-art.js';
 import { petSVG } from '../ui/art.js';
 import * as items from '../core/items.js';
 import * as pet from '../core/pet.js';
 import { gardenOpen } from '../core/garden.js';
+import { pondOpen } from '../core/pond.js';
 
 /* The order they are offered in walks the room the way a person would
    decorate it: surfaces first, then the big pieces, then the details. */
@@ -29,34 +31,45 @@ const ORDER = ['wallpaper', 'flooring', 'window', 'door', 'bed', 'rug', 'wallDec
    standing in it. */
 const GARDEN_ORDER = ['sky', 'ground', 'fence', 'tree', 'water', 'gardenDecor'];
 
+/* And the same walk down through the water: what it is made of, then the
+   big thing, then everything living in it. */
+const POND_ORDER = ['pondWater', 'pondFloor', 'pondFeature', 'pondPlant', 'pondFriend'];
+
 const SLOT_EMOJI = {
   wallpaper: '\u{1F3A8}', flooring: '\u{1FA9F}', window: '\u{1FA9F}', door: '\u{1F6AA}',
   bed: '\u{1F6CF}️', rug: '\u{1FA9E}', wallDecor: '\u{1F5BC}️', floorDecor: '\u{1FA91}',
   sky: '\u{2601}\uFE0F', ground: '\u{1F33F}', fence: '\u{1F6A7}', tree: '\u{1F333}',
   water: '\u{1F4A7}', gardenDecor: '\u{1F344}',
+  pondWater: '\u{1F30A}', pondFloor: '\u{1FAA8}', pondPlant: '\u{1F33F}',
+  pondFeature: '\u{1F5FF}', pondFriend: '\u{1F41F}',
 };
 
 export default function decorateScreen(container) {
   const asked = new URLSearchParams(location.hash.split('?')[1] || '').get('where');
-  let where = (asked === 'garden' && gardenOpen()) ? 'garden' : 'room';
+  const CAN = { garden: gardenOpen, pond: pondOpen };
+  let where = (CAN[asked] && CAN[asked]()) ? asked : 'room';
 
   function render() {
     const info = pet.pet();
     const worn = items.equipped();
     const outside = where === 'garden' && gardenOpen();
+    const underwater = where === 'pond' && pondOpen();
 
     const petHTML = petSVG({
       coat: info.coat, stage: info.stage, mood: 'happy',
       hat: worn.hat, accessory: worn.accessory,
     });
-    const scene = outside ? buildGarden({ petHTML }) : buildRoom({ petHTML });
+    const scene = underwater ? buildPond({ petHTML })
+      : outside ? buildGarden({ petHTML })
+      : buildRoom({ petHTML });
 
     const body = el('div', { class: 'stack' });
 
     if (gardenOpen()) {
       body.append(segmented(
         [{ value: 'room', label: '\u{1F6CF}\uFE0F My Room' },
-         { value: 'garden', label: '\u{1F333} The Garden' }],
+         { value: 'garden', label: '\u{1F333} The Garden' },
+         ...(pondOpen() ? [{ value: 'pond', label: '\u{1F4A7} The Pond' }] : [])],
         where,
         v => { where = v; render(); }
       ));
@@ -67,7 +80,8 @@ export default function decorateScreen(container) {
       el('p', { class: 'center tiny muted', text: 'Tap something to put it out or take it away.' })
     );
 
-    (outside ? GARDEN_ORDER : ORDER).forEach(slot => body.append(slotSection(slot)));
+    (underwater ? POND_ORDER : outside ? GARDEN_ORDER : ORDER)
+      .forEach(slot => body.append(slotSection(slot)));
 
     body.append(el('div', { class: 'row' },
       button('Shop for more', { cls: 'btn btn-pink grow', emoji: '\u{1F6CD}️',
@@ -100,7 +114,8 @@ export default function decorateScreen(container) {
       // A single-choice slot can be emptied again; a wallpaper cannot, since
       // a room always has walls — and nor can the sky or the ground, for the
       // same reason.
-      const clearable = max === 1 && !['wallpaper', 'flooring', 'sky', 'ground'].includes(slot);
+      const clearable = max === 1 &&
+        !['wallpaper', 'flooring', 'sky', 'ground', 'pondWater', 'pondFloor'].includes(slot);
       if (clearable && used) {
         strip.append(el('button', {
           class: 'wardrobe-item', type: 'button',

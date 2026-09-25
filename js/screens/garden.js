@@ -23,6 +23,8 @@ import { currentSeason, applySeasonTheme, seasonLine } from '../core/season.js';
 import { gardenOpen } from '../core/garden.js';
 import { treeOpen, gateLine as treeGateLine } from '../core/wordtree.js';
 import { gateSVG } from '../ui/wordtree.js';
+import { pondOpen, gateLine as pondGateLine } from '../core/pond.js';
+import { pathSVG } from '../ui/pond.js';
 
 export default function gardenScreen(container) {
   /* It wanders out here too — more room than indoors, and no doorway to
@@ -80,6 +82,22 @@ export default function gardenScreen(container) {
       },
     });
     scene.append(gate);
+
+    /* And the other way out: down to the water. The tree is through the
+       fence at the back, the pond is down a path at the front, so the two
+       are never confused for each other. */
+    const pondYet = pondOpen();
+    const path = el('button', {
+      class: `garden-path${pondYet ? '' : ' garden-path-shut'}`,
+      type: 'button',
+      'aria-label': pondYet ? 'Down the path to the pond' : 'The path down to the pond',
+      html: pathSVG(pondYet),
+      onClick: () => {
+        if (pondYet) { navigate('/pond'); return; }
+        bubble.textContent = pondGateLine();
+      },
+    });
+    scene.append(path);
 
     const stage = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
       el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),

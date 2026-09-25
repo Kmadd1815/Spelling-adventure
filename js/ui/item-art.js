@@ -753,6 +753,61 @@ const veinTile = (w, h, colour) => tile(w, h,
    </g>`);
 
 /* Sand: a ripple with a lit crest and a shaded trough. */
+/* ---------- Under the water ----------
+
+   Water is not a colour, it is a colour with things happening in it. Three
+   of them, and leaving any out gives a flat blue rectangle:
+
+     caustics  the wobbling net of light the surface throws on everything
+               below it, brightest near the top
+     motes     specks drifting in the beam, which is what tells the eye the
+               water has depth rather than being a pane of glass
+     shafts    broad beams coming down from the surface at a slight angle
+
+   All three are faint on purpose. The axolotl swims through this, and a
+   busy background behind a pink animal is a busy background.
+*/
+const causticTile = (w, h, light, o = 0.2) => tile(w, h,
+  `<path d='M 0 ${n(h * 0.28)} q ${n(w * 0.13)} ${n(-h * 0.16)} ${n(w * 0.26)} 0
+            q ${n(w * 0.11)} ${n(h * 0.14)} ${n(w * 0.24)} ${n(-h * 0.04)}
+            q ${n(w * 0.14)} ${n(-h * 0.18)} ${n(w * 0.3)} ${n(h * 0.03)}
+            q ${n(w * 0.1)} ${n(h * 0.12)} ${n(w * 0.2)} ${n(-h * 0.02)}'
+         fill='none' stroke='${light}' stroke-opacity='${o}' stroke-width='2.2'
+         stroke-linecap='round'/>
+   <path d='M ${n(-w * 0.1)} ${n(h * 0.66)} q ${n(w * 0.18)} ${n(h * 0.15)} ${n(w * 0.34)} ${n(-h * 0.03)}
+            q ${n(w * 0.12)} ${n(-h * 0.14)} ${n(w * 0.28)} ${n(h * 0.05)}
+            q ${n(w * 0.16)} ${n(h * 0.16)} ${n(w * 0.34)} ${n(-h * 0.04)}'
+         fill='none' stroke='${light}' stroke-opacity='${n(o * 0.62)}' stroke-width='1.6'
+         stroke-linecap='round'/>`);
+
+const moteTile = (size, light) => tile(size, size,
+  `<circle cx='${n(size * 0.18)}' cy='${n(size * 0.26)}' r='1.5' fill='${light}' opacity='0.5'/>
+   <circle cx='${n(size * 0.68)}' cy='${n(size * 0.12)}' r='1.1' fill='${light}' opacity='0.4'/>
+   <circle cx='${n(size * 0.82)}' cy='${n(size * 0.62)}' r='1.7' fill='${light}' opacity='0.42'/>
+   <circle cx='${n(size * 0.36)}' cy='${n(size * 0.78)}' r='1.2' fill='${light}' opacity='0.36'/>`);
+
+/* Rounded stones packed together, each lit from the upper left like
+   everything else. Two rows offset by half a stone, so the bed does not
+   read as a grid. */
+const pebbleTile = (w, h, light, mid, dark) => {
+  let out = '';
+  const put = (cx, cy, rx, ry) =>
+    `<ellipse cx='${n(cx)}' cy='${n(cy)}' rx='${n(rx)}' ry='${n(ry)}' fill='url(#s)'
+              stroke='${dark}' stroke-opacity='0.16' stroke-width='0.8'/>
+     <ellipse cx='${n(cx - rx * 0.28)}' cy='${n(cy - ry * 0.32)}' rx='${n(rx * 0.38)}'
+              ry='${n(ry * 0.32)}' fill='#ffffff' opacity='0.12'/>`;
+  /* Sizes vary per stone, or the bed reads as a printed grid rather than
+     as stones somebody tipped in. */
+  const vary = [1, 0.82, 1.14, 0.9, 1.08, 0.86];
+  for (let i = 0; i < 3; i++)
+    out += put((i + 0.5) * (w / 3), h * (0.28 + (i % 2) * 0.06),
+               w * 0.19 * vary[i], h * 0.17 * vary[i]);
+  for (let i = 0; i < 3; i++)
+    out += put(i * (w / 3), h * (0.72 + (i % 2) * 0.05),
+               w * 0.21 * vary[i + 3], h * 0.18 * vary[i + 3]);
+  return tile(w, h, `<defs>${tileGrad('s', light, mid, true)}</defs>${out}`);
+};
+
 const rippleTile = (w, h, dark) => tile(w, h,
   `<path d='M 0 ${n(h * 0.62)} q ${n(w * 0.25)} ${n(-h * 0.28)} ${n(w * 0.5)} 0
             q ${n(w * 0.25)} ${n(h * 0.28)} ${n(w * 0.5)} 0'
@@ -998,6 +1053,72 @@ export const SURFACES = {
   /* ---- The garden: ground ----
      Blades bunch up towards the fence, the same trick the floorboards use:
      that is what turns a green rectangle into a lawn going away from you. */
+  /* ---- The water ----
+
+     A vertical run from a bright surface to a darker deep, with the light
+     coming THROUGH it rather than sitting on it. The shafts are drawn as
+     wide, very faint gradients angled off the vertical. */
+  water_sunny: {
+    backgroundColor: '#4fa8c8',
+    backgroundImage:
+      'linear-gradient(104deg, rgba(255,255,255,.16) 0 6%, rgba(255,255,255,0) 6% 16%, ' +
+        'rgba(255,255,255,.13) 16% 21%, rgba(255,255,255,0) 21% 44%, ' +
+        'rgba(255,255,255,.1) 44% 52%, rgba(255,255,255,0) 52%), ' +
+      `${causticTile(168, 104, '#dff6ff', 0.22)}, ${causticTile(97, 61, '#dff6ff', 0.13)}, ` +
+      `${moteTile(70, '#eafaff')}, ` +
+      'linear-gradient(180deg, #8fdcee 0%, #62bcd9 34%, #3f96bd 74%, #2d7aa4 100%)',
+    backgroundSize: 'auto, 168px 104px, 97px 61px, 70px 70px, auto',
+    backgroundPosition: '0 0, 0 0, 40px 23px, 0 0, 0 0',
+  },
+  water_deep: {
+    backgroundColor: '#2c6d96',
+    backgroundImage:
+      'linear-gradient(104deg, rgba(255,255,255,.1) 0 5%, rgba(255,255,255,0) 5% 18%, ' +
+        'rgba(255,255,255,.08) 18% 23%, rgba(255,255,255,0) 23%), ' +
+      `${causticTile(182, 112, '#bfe6f5', 0.2)}, ${causticTile(103, 67, '#bfe6f5', 0.12)}, ` +
+      `${moteTile(80, '#cfeeff')}, ` +
+      'linear-gradient(180deg, #5fb2cd 0%, #3a86ad 30%, #23628a 72%, #17456a 100%)',
+    backgroundSize: 'auto, 182px 112px, 103px 67px, 80px 80px, auto',
+    backgroundPosition: '0 0, 0 0, 47px 29px, 0 0, 0 0',
+  },
+  water_moonlit: {
+    backgroundColor: '#2b3f6b',
+    backgroundImage:
+      'linear-gradient(100deg, rgba(220,232,255,.14) 0 5%, rgba(220,232,255,0) 5% 20%, ' +
+        'rgba(220,232,255,.1) 20% 24%, rgba(220,232,255,0) 24%), ' +
+      `${causticTile(176, 108, '#dbe8ff', 0.19)}, ${causticTile(99, 63, '#dbe8ff', 0.11)}, ` +
+      `${moteTile(76, '#e8f0ff')}, ` +
+      'linear-gradient(180deg, #6d84bb 0%, #465d94 32%, #2b3f6b 74%, #1b2a4c 100%)',
+    backgroundSize: 'auto, 176px 108px, 99px 63px, 76px 76px, auto',
+    backgroundPosition: '0 0, 0 0, 45px 27px, 0 0, 0 0',
+  },
+
+  /* ---- The bottom of it ----
+
+     Darker at the top edge, where the water above is deepest, so the bed
+     joins the water instead of being pasted onto it. */
+  bed_sand: {
+    backgroundColor: '#e3d3a6',
+    backgroundImage: 'linear-gradient(180deg, rgba(40,72,90,.42) 0%, rgba(40,72,90,.14) 12%, ' +
+      'rgba(255,255,255,0) 46%, rgba(255,255,255,.14) 100%), ' +
+      `${rippleTile(54, 22, '#b39a62')}`,
+    backgroundSize: 'auto, 54px 22px',
+  },
+  bed_pebbles: {
+    backgroundColor: '#b9b3a6',
+    backgroundImage: 'linear-gradient(180deg, rgba(40,72,90,.44) 0%, rgba(40,72,90,.14) 14%, ' +
+      'rgba(255,255,255,0) 52%), ' +
+      `${pebbleTile(64, 34, '#ded8cb', '#a9a294', '#6f695c')}`,
+    backgroundSize: 'auto, 64px 34px',
+  },
+  bed_river: {
+    backgroundColor: '#8c9aa0',
+    backgroundImage: 'linear-gradient(180deg, rgba(30,60,78,.46) 0%, rgba(30,60,78,.16) 14%, ' +
+      'rgba(255,255,255,0) 52%), ' +
+      `${pebbleTile(92, 40, '#c4ced2', '#8a969c', '#5a656a')}`,
+    backgroundSize: 'auto, 92px 40px',
+  },
+
   ground_grass: {
     backgroundColor: '#8cc472',
     backgroundImage: `${GROUND_DEPTH}, ${GRASS_ROWS}, ${bladeTile(24, 15, '#4f8a48', '#aed893')}`,
@@ -2066,6 +2187,185 @@ const DECOR = {
       <path d="M 48 64 C 51 74 46 82 49 93" fill="none" stroke="#4f9b6d"
             stroke-width="2.8" stroke-linecap="round"/>
       ${sprig(52, 72, 34)}${sprig(46, 82, -30)}${sprig(50, 92, 20)}`);
+  },
+
+  /* ---------- In the water ----------
+
+     Everything down here is drawn slightly softer than the things on dry
+     land — thinner outlines, a little of the water's own blue mixed into
+     the shadow side — because that is what water does to what is in it. A
+     crisp black-edged rock at the bottom of a pond looks like a sticker
+     on the glass. */
+
+  pond_reeds: () => {
+    const stalk = (x, lean, h, light, dark) =>
+      `<path d="M ${x} 96 q ${lean * 0.4} ${-h * 0.55} ${lean} ${-h}"
+             fill="none" stroke="${dark}" stroke-width="5.4" stroke-linecap="round"/>
+       <path d="M ${x} 96 q ${lean * 0.4} ${-h * 0.55} ${lean} ${-h}"
+             fill="none" stroke="${light}" stroke-width="2.6" stroke-linecap="round"
+             opacity=".75"/>`;
+    return `
+      ${stalk(22, 6, 62, '#a9d8a0', '#4e8a52')}
+      ${stalk(36, -5, 78, '#bce3ae', '#5b9a5c')}
+      ${stalk(50, 8, 70, '#a9d8a0', '#4e8a52')}
+      ${stalk(64, -7, 84, '#c6e8b8', '#66a566')}
+      ${stalk(78, 5, 58, '#a9d8a0', '#4e8a52')}
+      ${[[36, 16], [64, 10]].map(([x, y]) =>
+        litEllipse(x, y, 5, 11, '#b08a52', '#7d5c31', { stroke: '#5f4522', sw: 2 })).join('')}`;
+  },
+
+  pond_lilies: () => {
+    /* Seen from just under the surface, so the pads are ovals with a notch
+       cut out and a pale rim of light along the top edge. */
+    const pad = (cx, cy, r, rot, light, dark) => `
+      <g transform="translate(${cx} ${cy}) rotate(${rot})">
+        ${litPath(`M 0 0 m ${-r} 0 a ${r} ${r * 0.62} 0 1 1 ${r * 2} 0
+                   a ${r} ${r * 0.62} 0 1 1 ${-r * 2} 0 Z`, light, dark,
+          { stroke: '#3f7f4a', sw: 2, join: 'round' })}
+        <path d="M 0 0 L ${r * 0.9} ${-r * 0.3}" stroke="#3f7f4a" stroke-width="2.4"/>
+        <path d="M ${-r * 0.7} ${-r * 0.24} q ${r * 0.5} ${-r * 0.16} ${r * 1.2} 0"
+              fill="none" stroke="#ffffff" stroke-opacity=".4" stroke-width="2.4"/>
+      </g>`;
+    return `
+      ${pad(32, 34, 24, -8, '#8ed49a', '#4f9b63')}
+      ${pad(70, 22, 19, 12, '#a6e0ae', '#5faa72')}
+      ${pad(54, 62, 26, 4, '#7fcd92', '#46915c')}
+      ${litEllipse(70, 54, 7, 7, '#fbc7dd', '#e58fb4', { stroke: '#c96e93', sw: 1.8 })}
+      <circle cx="70" cy="54" r="2.6" fill="#f8e6a6"/>`;
+  },
+
+  pond_weed: () => {
+    const frond = (x, lean, h, light, dark) => {
+      let out = `<path d="M ${x} 98 q ${lean * 0.3} ${-h * 0.5} ${lean} ${-h}"
+                       fill="none" stroke="${dark}" stroke-width="4"
+                       stroke-linecap="round"/>`;
+      for (let i = 1; i <= 4; i++) {
+        const t = i / 5;
+        const px = x + lean * t * t, py = 98 - h * t;
+        const lx = px + (i % 2 ? 7 : -7);
+        /* Lit, not flat: every leaf takes the same light as everything
+           else in the app, which is what the depth suite checks. */
+        out += `<g transform="rotate(${i % 2 ? -22 : 22} ${n(px)} ${n(py)})">
+                  ${litEllipse(lx, py, 7, 4, light, dark, { stroke: dark, sw: 1.6 })}
+                </g>`;
+      }
+      return out;
+    };
+    return `${frond(26, 10, 66, '#8fd0a8', '#417f5c')}
+            ${frond(52, -8, 84, '#a3dcb8', '#4f9b6d')}
+            ${frond(76, 9, 58, '#8fd0a8', '#417f5c')}`;
+  },
+
+  pond_grass: () => {
+    /* Filled ribbons rather than two strokes on top of each other: a
+       stroke cannot take a gradient across its width, so a stroked blade
+       is a flat blade however many times it is drawn. */
+    const ribbon = (x, sway, h, light, dark) => {
+      const w = 4.6;
+      const top = 99 - h;
+      return litPath(
+        `M ${n(x - w)} 99
+         C ${n(x + sway - w)} ${n(99 - h * 0.4)} ${n(x - sway - w * 0.4)} ${n(99 - h * 0.7)}
+           ${n(x + sway * 0.6 - 1.2)} ${n(top)}
+         L ${n(x + sway * 0.6 + 1.2)} ${n(top)}
+         C ${n(x - sway + w * 0.4)} ${n(99 - h * 0.7)} ${n(x + sway + w)} ${n(99 - h * 0.4)}
+           ${n(x + w)} 99 Z`,
+        light, dark, { stroke: dark, sw: 1.8, join: 'round' });
+    };
+    return `${ribbon(20, 12, 70, '#bde8a8', '#5f9b4a')}
+            ${ribbon(38, -14, 88, '#cdefb8', '#6da855')}
+            ${ribbon(58, 13, 76, '#bde8a8', '#5f9b4a')}
+            ${ribbon(78, -11, 62, '#cdefb8', '#6da855')}`;
+  },
+
+  pond_log: () => `
+    ${litPath('M 6 74 Q 20 58 46 60 Q 74 62 94 52 L 96 74 Q 70 84 42 80 Q 18 77 6 88 Z',
+      '#a9835c', '#6f5133', { stroke: '#4e3a25', sw: 2.4, join: 'round' })}
+    ${litEllipse(8, 81, 7, 11, '#c49a6d', '#8a6a44', { stroke: '#4e3a25', sw: 2.2 })}
+    ${litEllipse(8, 81, 3.4, 5.4, '#8a6a44', '#63492c')}
+    <path d="M 26 72 Q 54 76 88 64" fill="none" stroke="#4e3a25" stroke-width="1.8"
+          opacity=".45"/>
+    <path d="M 22 66 Q 52 70 90 58" fill="none" stroke="#c9a67e" stroke-width="1.6"
+          opacity=".5"/>
+    ${[[34, 58, 7], [62, 56, 5]].map(([x, y, r]) =>
+      litEllipse(x, y, r, r * 0.6, '#8fd0a8', '#4f9b6d', { stroke: '#3f7f4a', sw: 1.4 })).join('')}`,
+
+  pond_rock: () => `
+    ${litPath('M 8 92 Q 12 52 34 34 Q 56 18 74 34 Q 94 52 94 92 Z', '#b9c2c6', '#78848b',
+      { stroke: '#56636a', sw: 2.4, join: 'round' })}
+    <path d="M 34 36 Q 48 56 42 92" fill="none" stroke="#56636a" stroke-width="2"
+          opacity=".4"/>
+    <path d="M 70 40 Q 64 62 74 92" fill="none" stroke="#56636a" stroke-width="1.7"
+          opacity=".3"/>
+    <path d="M 26 62 Q 38 42 54 32" fill="none" stroke="#ffffff" stroke-width="4"
+          opacity=".26" stroke-linecap="round"/>
+    ${[[24, 84, 8], [78, 78, 6]].map(([x, y, r]) =>
+      litEllipse(x, y, r, r * 0.55, '#7fc79a', '#468a5c', { stroke: '#3a7550', sw: 1.4 })).join('')}`,
+
+  pond_arch: () => `
+    ${litPath('M 10 96 L 10 52 A 40 40 0 0 1 90 52 L 90 96 L 70 96 L 70 54 A 20 20 0 0 0 30 54 L 30 96 Z',
+      '#c3cbcf', '#7d888f', { stroke: '#5a666d', sw: 2.4, join: 'round' })}
+    ${[[20, 40], [20, 62], [20, 84], [80, 40], [80, 62], [80, 84]].map(([x, y]) =>
+      `<path d="M ${x - 9} ${y} h 18" stroke="#5a666d" stroke-width="1.6" opacity=".35"/>`).join('')}
+    <path d="M 16 74 Q 18 48 38 34" fill="none" stroke="#ffffff" stroke-width="4"
+          opacity=".24" stroke-linecap="round"/>
+    ${litEllipse(84, 92, 8, 5, '#7fc79a', '#468a5c', { stroke: '#3a7550', sw: 1.4 })}`,
+
+  pond_fish: () => {
+    const fish = (cx, cy, s, light, dark) => `
+      <g transform="translate(${cx} ${cy}) scale(${s})">
+        <path d="M 16 0 L 32 -13 L 30 13 Z" fill="${dark}" opacity=".9"/>
+        ${litPath('M 16 0 C 10 -16 -18 -16 -24 0 C -18 16 10 16 16 0 Z', light, dark,
+          { stroke: '#c0641f', sw: 2, join: 'round' })}
+        <path d="M -2 -11 L 4 -19 L 10 -9 Z" fill="${dark}" opacity=".85"/>
+        <circle cx="-15" cy="-3" r="3.4" fill="#3b2f26"/>
+        <circle cx="-16.2" cy="-4.2" r="1.2" fill="#fff" opacity=".9"/>
+      </g>`;
+    return `${fish(40, 34, 0.95, '#fbb45e', '#e07f22')}
+            ${fish(66, 62, 0.7, '#fdc987', '#e89a44')}
+            ${fish(26, 74, 0.55, '#fbb45e', '#e07f22')}`;
+  },
+
+  pond_tadpoles: () => {
+    const tad = (cx, cy, s, rot) => `
+      <g transform="translate(${cx} ${cy}) rotate(${rot}) scale(${s})">
+        <path d="M 6 0 Q 20 -9 26 -2 Q 18 0 26 8 Q 18 9 6 2 Z" fill="#4a4034" opacity=".85"/>
+        ${litEllipse(0, 0, 13, 10, '#6d6151', '#3f372c', { stroke: '#2f2820', sw: 1.6 })}
+        <circle cx="-5" cy="-3" r="2.6" fill="#1f1a15"/>
+        <circle cx="-6" cy="-4" r="1" fill="#fff" opacity=".8"/>
+      </g>`;
+    return `${tad(34, 30, 0.9, -12)}${tad(62, 50, 0.75, 14)}
+            ${tad(40, 70, 0.65, 6)}${tad(74, 24, 0.55, -20)}`;
+  },
+
+  pond_snail: () => {
+    /* A spiral drawn as one shrinking arc chain rather than a path with a
+       clever formula: three half-turns is all the eye needs, and it is the
+       only way it stays readable at the size this actually appears. */
+    const cx = 46, cy = 62, r = 24;
+    let spiral = `M ${cx + r} ${cy}`;
+    for (let i = 0; i < 5; i++) {
+      const rr = r * (1 - i * 0.18), sweep = i % 2 ? -1 : -1;
+      const nx = cx + (i % 2 ? rr : -rr) * (i % 2 ? 1 : 1) * (i % 2 ? 1 : 1);
+      spiral += ` A ${n(rr)} ${n(rr)} 0 0 ${sweep < 0 ? 0 : 1} ${n(cx + (i % 2 ? rr * 0.82 : -rr))} ${n(cy)}`;
+    }
+    return `
+      <!-- the foot it glides on -->
+      ${litPath('M 18 88 Q 22 78 38 78 L 78 78 Q 88 78 86 86 Q 80 92 60 92 L 28 92 Q 18 92 18 88 Z',
+        '#f2dcb4', '#c9ab78', { stroke: '#8c7443', sw: 2, join: 'round' })}
+      <!-- head and eyestalks -->
+      <path d="M 80 80 q 5 -12 2 -20" fill="none" stroke="#c9ab78" stroke-width="3.4"
+            stroke-linecap="round"/>
+      <path d="M 86 80 q 8 -9 8 -17" fill="none" stroke="#c9ab78" stroke-width="3.4"
+            stroke-linecap="round"/>
+      <circle cx="82" cy="58" r="3.2" fill="#4a3b2a"/>
+      <circle cx="94" cy="62" r="3.2" fill="#4a3b2a"/>
+      <!-- the shell, and its spiral -->
+      ${litEllipse(cx, cy, r, r, '#f0c88a', '#b9854a', { stroke: '#8c6a32', sw: 2.4 })}
+      <path d="${spiral}" fill="none" stroke="#8c6a32" stroke-width="2.6"
+            stroke-linecap="round" opacity=".85"/>
+      <path d="M ${cx - 13} ${cy - 13} q 8 -7 17 -6" fill="none" stroke="#ffffff"
+            stroke-opacity=".45" stroke-width="3.4" stroke-linecap="round"/>`;
   },
 
   map: () => `

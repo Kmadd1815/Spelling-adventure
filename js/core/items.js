@@ -44,10 +44,22 @@ export const SLOTS = {
   water:      { max: 1, label: 'Water',          group: 'garden' },
   fence:      { max: 1, label: 'Fence',          group: 'garden' },
   gardenDecor:{ max: 3, label: 'In the garden',  group: 'garden' },
+
+  /* Under the water. Separate again, for the same reason the garden is
+     separate from the room: a bed on the grass is a bug, and so is a rug
+     at the bottom of a pond. */
+  pondWater:  { max: 1, label: 'The water',       group: 'pond' },
+  pondFloor:  { max: 1, label: 'The bottom',      group: 'pond' },
+  pondPlant:  { max: 3, label: 'Water plants',    group: 'pond' },
+  pondFeature:{ max: 1, label: 'Something big',   group: 'pond' },
+  pondFriend: { max: 2, label: 'Little swimmers', group: 'pond' },
 };
 
 /** The slots that belong outdoors, in the order the garden draws them. */
 export const GARDEN_SLOTS = ['sky', 'ground', 'fence', 'tree', 'water', 'gardenDecor'];
+
+/** And the slots under the water, in the order the pond draws them. */
+export const POND_SLOTS = ['pondWater', 'pondFloor', 'pondFeature', 'pondPlant', 'pondFriend'];
 
 export const isMulti = slot => (SLOTS[slot]?.max ?? 1) > 1;
 
@@ -61,6 +73,9 @@ export const SHOP_TABS = [
      for a place she cannot visit yet would only be a tease. */
   { key: 'garden', label: 'Garden',  emoji: '\u{1F333}',
     slots: ['sky', 'ground', 'tree', 'water', 'fence', 'gardenDecor'] },
+  /* Hidden the same way until the water is hers. */
+  { key: 'pond',   label: 'Pond',    emoji: '\u{1F4A7}',
+    slots: ['pondWater', 'pondFloor', 'pondFeature', 'pondPlant', 'pondFriend'] },
 ];
 
 /* ---------- The catalogue ----------
@@ -278,6 +293,35 @@ export const CATALOG = [
   { id: 'bed_lilypad',  name: 'Lily Pad Bed',    category: 'bed', price: 255, blurb: 'Floats, sort of.' },
   { id: 'bed_mushroom', name: 'Mushroom Bed',    category: 'bed', price: 330, blurb: 'Red with white spots.' },
   { id: 'bed_cloud',    name: 'Cloud Bed',       category: 'bed', price: 520, blurb: 'As soft as it looks.', season: 'winter' },
+
+  /* ---- The pond ----
+
+     Priced for a child who already has eighty words and a shop she has
+     been buying from for months: the starter water and bottom are free so
+     the pond is never an empty blue box, and everything else costs what a
+     garden thing costs. */
+  { id: 'water_sunny',   name: 'Sunny Water',     category: 'pondWater', price: 0,   blurb: 'Light all the way down.' },
+  { id: 'water_deep',    name: 'Deep Water',      category: 'pondWater', price: 200, blurb: 'You cannot quite see the bottom.' },
+  { id: 'water_moonlit', name: 'Moonlit Water',   category: 'pondWater', price: 320, blurb: 'Silver on every ripple.', season: 'winter' },
+
+  /* bed_, not floor_: the room already has a floor_sand and one id is one
+     item. */
+  { id: 'bed_sand',      name: 'Sandy Bottom',    category: 'pondFloor', price: 0,   blurb: 'Soft and pale.' },
+  { id: 'bed_pebbles',   name: 'Pebble Bottom',   category: 'pondFloor', price: 140, blurb: 'Smooth, round and cold.' },
+  { id: 'bed_river',     name: 'River Stones',    category: 'pondFloor', price: 230, blurb: 'Worn flat by the water.' },
+
+  { id: 'pond_reeds',    name: 'Reeds',           category: 'pondPlant', price: 110, blurb: 'They lean when it is windy.' },
+  { id: 'pond_lilies',   name: 'Lily Pads',       category: 'pondPlant', price: 165, blurb: 'Floating right on the top.', season: 'summer' },
+  { id: 'pond_weed',     name: 'Water Weed',      category: 'pondPlant', price: 130, blurb: 'Waves about very slowly.' },
+  { id: 'pond_grass',    name: 'Ribbon Grass',    category: 'pondPlant', price: 185, blurb: 'Long green ribbons.' },
+
+  { id: 'pond_log',      name: 'Sunken Log',      category: 'pondFeature', price: 260, blurb: 'A good place to hide behind.' },
+  { id: 'pond_rock',     name: 'Big Rock',        category: 'pondFeature', price: 210, blurb: 'It was here first.' },
+  { id: 'pond_arch',     name: 'Stone Arch',      category: 'pondFeature', price: 380, blurb: 'Swim through it. Go on.' },
+
+  { id: 'pond_fish',     name: 'Goldfish',        category: 'pondFriend', price: 240, blurb: 'Three of them, always together.' },
+  { id: 'pond_tadpoles', name: 'Tadpoles',        category: 'pondFriend', price: 190, blurb: 'Wiggly, and in a hurry.', season: 'spring' },
+  { id: 'pond_snail',    name: 'Pond Snail',      category: 'pondFriend', price: 150, blurb: 'Going somewhere, slowly.' },
 
   /* ---- More rugs ---- */
   { id: 'rug_moss',     name: 'Moss Mat',        category: 'rug', price: 130, blurb: 'A little patch of forest.' },
