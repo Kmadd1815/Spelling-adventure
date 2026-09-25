@@ -2940,3 +2940,78 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 }
 .garden-path svg { width: 100%; height: auto; display: block; }
 .garden-path-shut { opacity: .92; }
+
+/* ---------- Letters ----------
+
+   Paper, not cards. Cream, a soft edge, and the lines set a little wider
+   than the rest of the app so a letter reads like a letter. */
+.lt-paper {
+  background: linear-gradient(180deg, #fffdf4, #fdf6e4);
+  border-radius: var(--r-md, 20px);
+  box-shadow: var(--shadow-soft, 0 8px 24px rgba(122, 96, 77, .14));
+  padding: 16px 18px;
+  border: 1px solid rgba(180, 158, 118, .35);
+}
+.lt-mine {
+  background: linear-gradient(180deg, #f4fbff, #e9f4fb);
+  border-color: rgba(120, 160, 190, .32);
+}
+.lt-fresh { animation: ltArrive .5s ease-out; }
+@keyframes ltArrive {
+  from { opacity: 0; transform: translateY(10px) rotate(-1deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+.lt-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.lt-stamp {
+  width: 62px; flex: 0 0 auto;
+  background: #fffdf4;
+  border: 2.5px dashed #cbb894;
+  border-radius: 8px;
+  padding: 2px;
+  overflow: hidden;
+}
+.lt-stamp svg { width: 100%; height: auto; display: block; }
+.lt-from { font-weight: 800; }
+.lt-when { font-size: .78rem; color: var(--ink-soft, #8a7568); }
+
+.lt-body { display: flex; flex-direction: column; gap: 8px; }
+.lt-line { margin: 0; font-size: 1.04rem; line-height: 1.55; }
+.lt-writing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lt-choose { color: var(--ink-faint, #b8a595); letter-spacing: .2em; }
+
+/* The word she is spelling, one box per letter. */
+.lt-answer { display: inline-flex; gap: 4px; }
+.lt-tile {
+  min-width: 1.5em; height: 1.9em;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .8);
+  border: 2px solid rgba(160, 140, 105, .4);
+  font-weight: 800; text-transform: lowercase;
+}
+.lt-tile.filled { border-color: var(--primary, #ef9345); background: #fff; }
+.lt-wrong { animation: ltShake .4s ease-in-out; }
+@keyframes ltShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.lt-choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.lt-choice { font-size: 1.1rem; font-weight: 800; padding: 12px 18px; }
+
+/* The postbox, standing in the garden by the fence. */
+.garden-post {
+  position: absolute;
+  left: 27%; bottom: 44%;
+  width: 11%;
+  z-index: 4;
+  cursor: pointer;
+  background: none; border: none; padding: 0;
+}
+.garden-post svg { width: 100%; height: auto; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-fresh, .lt-wrong { animation: none; }
+}

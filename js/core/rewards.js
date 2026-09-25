@@ -187,6 +187,13 @@ export const MILESTONES = [
     item: 'champion_crown',
     test: s => s.mastered >= 100 },
 
+  /* The last of the five that open something. A hundred and ten rather
+     than a hundred: the hundred already has the crown. */
+  { id: 'the_letters', title: 'A Letter For You',     emoji: '\u2709\uFE0F',
+    blurb: 'A hundred and ten words mastered — there is a postbox in your garden, and somebody a long way away has written to you!',
+    stars: 130,
+    test: s => s.mastered >= 110 },
+
   { id: 'master_200',  title: '200 Words Mastered',   emoji: '\u{1F3F0}',
     blurb: 'Two hundred words! Your whole world grew.', stars: 400,
     item: 'word_castle',

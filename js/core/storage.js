@@ -131,6 +131,15 @@ export function defaultState() {
       foundAt: null,
     },
 
+    /* The correspondence with Marbles, from a hundred and ten words on.
+       Both sides of it are kept, so she can read back through what she
+       has written — which is most of the point of writing letters. */
+    letters: {
+      thread: [],        // { id, from: 'pal' | 'her', at, lines, words? }
+      lastArrivedAt: null,
+      unread: false,
+    },
+
     /* Everything she owns. Each record is just which catalogue item it is
        and how she came by it — the name, art and price all live in the
        catalogue, so an item can never disagree with itself. */
@@ -289,6 +298,7 @@ function migrate(state) {
     progress:   { ...base.progress,   ...(state.progress || {}) },
     collection: { ...base.collection, ...(state.collection || {}) },
     friend:     { ...base.friend,     ...(state.friend     || {}) },
+    letters:    { ...base.letters,    ...(state.letters    || {}) },
     events:     { ...base.events,     ...(state.events     || {}) },
     equipped:   { ...base.equipped,   ...(state.equipped   || {}) },
   };

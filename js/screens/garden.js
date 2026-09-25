@@ -25,6 +25,8 @@ import { treeOpen, gateLine as treeGateLine } from '../core/wordtree.js';
 import { gateSVG } from '../ui/wordtree.js';
 import { pondOpen, gateLine as pondGateLine } from '../core/pond.js';
 import { pathSVG } from '../ui/pond.js';
+import * as letters from '../core/letters.js';
+import { postboxSVG } from '../ui/postbox.js';
 
 export default function gardenScreen(container) {
   /* It wanders out here too — more room than indoors, and no doorway to
@@ -98,6 +100,24 @@ export default function gardenScreen(container) {
       },
     });
     scene.append(path);
+
+    /* And the postbox. Its flag is up when there is something to read,
+       which is the whole state of the thing readable from the doorway. */
+    const postYet = letters.lettersOpen();
+    if (postYet) letters.deliverIfDue();
+    const post = el('button', {
+      class: 'garden-post',
+      type: 'button',
+      'aria-label': postYet
+        ? (letters.waiting() ? 'A letter is waiting' : 'Your letters')
+        : 'The postbox',
+      html: postboxSVG({ open: postYet, waiting: postYet && letters.waiting() }),
+      onClick: () => {
+        if (postYet) { navigate('/letters'); return; }
+        bubble.textContent = letters.gateLine();
+      },
+    });
+    scene.append(post);
 
     const stage = el('div', { class: 'hub-hero hub-hero-room', style: { position: 'relative' } },
       el('div', { class: 'room-season-chip', text: `${season.emoji} ${season.name}` }),
