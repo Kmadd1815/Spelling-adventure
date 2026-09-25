@@ -12,7 +12,7 @@
 import { el, mount, button, segmented, confirmDialog, modal } from '../ui/dom.js';
 import { toast, confetti } from '../ui/toast.js';
 import { navigate } from '../ui/router.js';
-import { itemSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/thumbs.js';
 import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
 import { currentSeason } from '../core/season.js';

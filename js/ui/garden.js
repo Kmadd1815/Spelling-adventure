@@ -59,9 +59,16 @@ const PLACES = {
   fenceSpan:   { count: 6, bottom: 100 - HORIZON, width: 100 / 6, depth: 2, footGap: 4 },
 
   tree:        { left: 1,  bottom: 100 - HORIZON - 6, width: 29, depth: 3 },
+  /* Three places to stand something, and none of them may be a place the
+     garden already uses for something else. The front-left spot used to be
+     exactly where the path down to the pond was later dug, so whatever she
+     put there was buried under it — which is the kind of thing nobody
+     notices until they own three garden ornaments. Kept clear of: the path
+     (left 3-22%, along the bottom), the postbox (left 27-38%, up at 44%),
+     the pond, and the gate in the fence. */
   gardenDecor: [
     { left: 63, bottom: 100 - HORIZON - 6, width: 15, depth: 3 },   // back right
-    { left: 3,  bottom: 2,  width: 17, depth: 9 },                  // front left
+    { left: 24, bottom: 17, width: 15, depth: 5 },                  // mid left
     /* Far enough right to be beside the water rather than standing in it. */
     { left: 85, bottom: 3,  width: 14, depth: 9 },                  // front right
   ],
@@ -83,10 +90,10 @@ function place(node, spec, left) {
   return node;
 }
 
-function piece(itemId, spec, left) {
+function piece(itemId, spec, left, extraClass = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
-  return place(el('div', { class: 'room-piece', html: art }), spec, left);
+  return place(el('div', { class: `room-piece ${extraClass}`.trim(), html: art }), spec, left);
 }
 
 /* Stars, for the skies that have them.
@@ -158,7 +165,7 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
   if (worn.fence) {
     const f = PLACES.fenceSpan;
     for (let i = 0; i < f.count; i++) {
-      garden.append(piece(worn.fence, f, i * (100 / f.count)));
+      garden.append(piece(worn.fence, f, i * (100 / f.count), 'garden-fence'));
     }
   }
 
@@ -183,4 +190,4 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
 }
 
 /** Which spot the next garden decoration would take, for the hints. */
-export const GARDEN_SPOTS = ['back right', 'front left', 'front right'];
+export const GARDEN_SPOTS = ['back right', 'left of the lawn', 'front right'];

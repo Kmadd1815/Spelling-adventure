@@ -49,7 +49,9 @@ export const SEASONS = {
   fall: {
     key: 'fall', name: 'Fall', emoji: '\u{1F342}',
     sky: '#e3e9ef', land: '#e0bf8a',
-    glass: '#e8d9b8',
+    /* Warm, but still daylight. The old value was so warm the pane read as
+       a square of oatmeal rather than as a bright afternoon outside. */
+    glass: '#cfe0ea',
     weather: 'leaves', pieces: 11,
     light: 'linear-gradient(160deg, rgba(226,138,58,.26), rgba(240,196,120,.13) 55%, rgba(255,255,255,0) 85%)',
     lines: [

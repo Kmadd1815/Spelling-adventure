@@ -21,7 +21,7 @@ import { navigate, render as rerender } from '../ui/router.js';
 import { confetti } from '../ui/toast.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { createBuddy } from '../ui/buddy.js';
-import { itemSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/thumbs.js';
 import { burst } from '../ui/fx.js';
 import * as speech from '../core/speech.js';
 import * as words from '../core/words.js';

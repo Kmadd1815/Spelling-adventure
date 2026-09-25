@@ -67,11 +67,15 @@ const PALETTES = {
    words near a tree rather than words ON one. This is the tree's own
    shadow of itself: darker than any leaf, so every leaf reads on top of
    it. */
+/* The mass behind the leaves, which has to be DARKER than the leaves in
+   front of it in every season. In fall it was the same tan as the leaves,
+   and the whole crown came out as one brown cloud with words faintly
+   printed on it. */
 const MASS = {
-  spring: ['#7cc79a', '#5fae7f'],
-  summer: ['#5aa97d', '#47905f'],
-  fall:   ['#c88a3a', '#a96c28'],
-  winter: ['#7fb79a', '#639b82'],
+  spring: ['#5fae7f', '#458c62'],
+  summer: ['#4d9a6e', '#3a7a4e'],
+  fall:   ['#a0631f', '#7a4715'],
+  winter: ['#6aa288', '#50866f'],
 };
 
 /* A word that is due for a review is marked, and marked GENTLY: a pale
@@ -139,7 +143,7 @@ function canopyMass(rx, ry, season) {
     <defs><linearGradient id="${id}" x1="10%" y1="0%" x2="90%" y2="100%">
       <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
     </linearGradient></defs>
-    <g class="wt-mass" opacity=".95">
+    <g class="wt-mass" opacity=".82">
       ${blobs.map(([dx, dy, r]) =>
         `<ellipse cx="${n(CROWN.x + dx * rx)}" cy="${n(CROWN.y + dy * ry)}"
                   rx="${n(rx * r)}" ry="${n(ry * r * 1.05)}" fill="url(#${id})"/>`).join('')}

@@ -97,7 +97,7 @@ const audit = await page.evaluate(async () => {
   const items = await import('/js/core/items.js');
   const shop = new Set(items.shopItems().map(i => i.id));
   const bad = { missing: [], sellable: [], noArt: [] };
-  const art = await import('/js/ui/item-art.js');
+  const art = await import('/js/ui/thumbs.js');
   for (const e of ev.EVENTS) {
     for (const r of e.rewards) {
       const item = items.byId(r.item);

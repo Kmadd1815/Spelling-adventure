@@ -1263,6 +1263,11 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .wardrobe-item:active { transform: translateY(2px); }
 .wardrobe-item.on { background: #dff3e4; box-shadow: inset 0 0 0 3px var(--green); }
 .wardrobe-art { line-height: 0; }
+
+/* The axolotl wearing the thing, in a shop card or a wardrobe row. It is
+   the pet's own drawing with its view aimed at whichever part is wearing
+   it, so it must not inherit the room-sized width .pet-stage carries. */
+.wear-thumb { width: 100%; height: auto; display: block; }
 .wardrobe-name { font-size: .74rem; font-weight: 800; text-align: center; line-height: 1.2; }
 .wardrobe-tag { font-size: .62rem; font-weight: 800; color: #7a5a14; }
 .wardrobe-on {
@@ -2911,6 +2916,17 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 }
 
 /* The duckling on the surface bobs rather than waddles. */
+/* On the water, the bottom of the duckling is UNDER the water: the feet
+   are clipped off and a ring of ripple sits where it cuts the surface.
+   Without those two things it reads as a duckling hanging in mid-water,
+   which is the one thing a duckling never does. */
+.room-friend.on-water .friend-body { clip-path: inset(0 0 26% 0); }
+.room-friend.on-water::after {
+  content: ''; position: absolute; left: -16%; right: -16%; bottom: 14%;
+  height: 30%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%,
+              rgba(255,255,255,.55) 0%, rgba(255,255,255,.24) 46%, rgba(255,255,255,0) 72%);
+}
 .room-friend.on-water .friend-body { animation: pondBob 3.4s ease-in-out infinite; }
 .room-friend.on-water.friend-waddling .friend-body { animation: pondPaddle 1.1s ease-in-out infinite; }
 @keyframes pondBob {

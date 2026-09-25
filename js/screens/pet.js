@@ -11,7 +11,7 @@ import { navigate } from '../ui/router.js';
 import * as pet from '../core/pet.js';
 import { COATS } from '../core/pet.js';
 import * as items from '../core/items.js';
-import { itemSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/thumbs.js';
 import { buildRoom } from '../ui/room.js';
 import { roam, setPetArt, follow, setFriendArt } from '../ui/petlife.js';
 import { attachFriend } from '../ui/friendlife.js';

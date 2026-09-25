@@ -132,7 +132,12 @@ export function buildPond({ petHTML = '', petProps = {}, season = currentSeason(
 }
 
 /** Where the duckling paddles: on the surface, not in the water. */
-export const SURFACE_BOTTOM = 100 - SURFACE - 6;
+/* Where the duckling floats. The surface is the top `SURFACE` per cent of
+   the pond, so the waterline is at 100 - SURFACE; this sits the duckling so
+   that line crosses the bottom third of it. Any lower and it hangs in
+   mid-water, which is the one thing a duckling never does; any higher and
+   its head goes out through the top of the scene. */
+export const SURFACE_BOTTOM = 100 - SURFACE - 3;
 
 /** Which plant spot the next water plant would take, for the hints. */
 export const POND_SPOTS = ['left', 'right', 'middle'];

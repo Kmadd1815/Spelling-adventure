@@ -10,7 +10,7 @@ import * as words from '../core/words.js';
 import * as pet from '../core/pet.js';
 import * as rewards from '../core/rewards.js';
 import * as items from '../core/items.js';
-import { itemSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/thumbs.js';
 import { getState } from '../core/state.js';
 import { gardenOpen, mastered, GARDEN_AT } from '../core/garden.js';
 

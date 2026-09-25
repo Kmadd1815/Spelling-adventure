@@ -16,7 +16,7 @@ import { navigate } from '../ui/router.js';
 import { buildRoom } from '../ui/room.js';
 import { buildGarden } from '../ui/garden.js';
 import { buildPond } from '../ui/pond.js';
-import { itemSVG } from '../ui/item-art.js';
+import { itemSVG } from '../ui/thumbs.js';
 import { petSVG } from '../ui/art.js';
 import * as items from '../core/items.js';
 import * as pet from '../core/pet.js';

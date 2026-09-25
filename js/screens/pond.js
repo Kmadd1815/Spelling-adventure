@@ -63,6 +63,10 @@ export default function pondScreen(container) {
        what a duckling does and what keeps the two of them from ending up
        in the same piece of water. */
     const friendNode = attachFriend(scene, {
+      /* Smaller here than on land: it has to sit inside the thin band of
+         surface at the top of the pond without its head leaving the
+         picture. */
+      width: 8,
       onTap: node => {
         setFriendArt(node, friendSVG({ mood: 'peep' }));
         bubble.textContent = friendCore.peep();
@@ -101,10 +105,15 @@ export default function pondScreen(container) {
     ));
 
     stopSwim = swim(scene);
-    /* It follows along the top while the axolotl goes wherever it likes
+    /* It paddles along the top while the axolotl goes wherever it likes
        underneath — follow() only ever writes `left`, so the duckling stays
-       on the surface without being told twice. */
-    if (friendNode) stopFollow = follow(scene, { band: [6, 92] });
+       on the surface without being told twice.
+
+       The band stops well short of the middle because the speech bubble
+       hangs over the top of the pond: a duckling that follows the axolotl
+       all the way across ends up behind it, and the one place in this
+       scene a duckling must never be is invisible. */
+    if (friendNode) stopFollow = follow(scene, { band: [5, 32] });
   }
 
   function pat() {

@@ -27,7 +27,7 @@ const BASE = `http://127.0.0.1:${PORT}/index.html`;
    rather than after the six mini-games have been played through. */
 const ORDER = ['shell', 'resilience', 'regress', 'mastery', 'review', 'streak', 'milestone', 'shop', 'petplay', 'fxcheck', 'depth',
                'room', 'roomfit', 'seasons', 'garden', 'backup', 'calendar',
-               'events', 'games', 'paper', 'week', 'reading', 'writing', 'tree', 'friend', 'pond', 'letters'];
+               'events', 'games', 'paper', 'week', 'reading', 'writing', 'tree', 'friend', 'pond', 'letters', 'fit'];
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',

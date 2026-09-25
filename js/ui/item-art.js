@@ -361,22 +361,52 @@ const ACCESSORIES = {
 
   cape: (g, c = {}) => {
     const main = c.main || '#c0405e', light = c.light || '#d9647e', line = c.line || '#8a2b42';
-    const topY = g.hy + g.hry * 0.92;
-    /* A cape has to be wider than the body it hangs behind, or the body
-       simply covers it. This sweeps well past the silhouette on both sides. */
-    const w = g.brx * 1.52;
+    /* A cape is worn BEHIND the animal, so the only parts of it anyone
+       ever sees are the collar either side of the neck and the cloth that
+       sweeps out past the body. The first draft was one smooth arc that
+       bulged below the body and read, on every screen, as a cushion the
+       axolotl was sitting on. What fixes it is shape, not size: cloth that
+       leaves the shoulders narrow, flares outward, and stops ABOVE the
+       feet with a hem that has corners in it. */
+    const shoulderY = g.by - g.bry * 0.86;   // where it leaves the shoulders
+    const hemY      = g.by + g.bry * 0.56;   // well clear of the feet
+    const top = g.brx * 0.74;                // shoulder width
+    const w   = g.brx * 1.34;                // the flare
+    /* A hem of three shallow scallops, so the bottom edge reads as cloth
+       hanging in folds rather than as the rim of a cushion. */
+    const hem = (from, to) => {
+      const span = to - from, dip = g.bry * 0.13;
+      let d = '';
+      for (let i = 0; i < 3; i++) {
+        const a = from + (span * i) / 3, b = from + (span * (i + 1)) / 3;
+        d += `Q ${n((a + b) / 2)} ${n(hemY + dip)} ${n(b)} ${n(hemY - dip * 0.35)} `;
+      }
+      return d;
+    };
+    const fold = side => `
+      <path d="M ${n(g.bx + side * top * 0.82)} ${n(shoulderY + g.bry * 0.18)}
+               Q ${n(g.bx + side * w * 0.62)} ${n(g.by)}
+                 ${n(g.bx + side * w * 0.80)} ${n(hemY - g.bry * 0.16)}"
+            fill="none" stroke="${light}" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>`;
+    /* The collar, peeking out either side of the neck — the one piece of a
+       cape that says "cape" rather than "cloth". */
+    const collar = side => `
+      <path d="M ${n(g.bx + side * top * 0.30)} ${n(shoulderY - g.bry * 0.10)}
+               L ${n(g.bx + side * top * 1.12)} ${n(shoulderY - g.bry * 0.26)}
+               Q ${n(g.bx + side * top * 1.22)} ${n(shoulderY + g.bry * 0.16)}
+                 ${n(g.bx + side * top * 0.84)} ${n(shoulderY + g.bry * 0.30)} Z"
+            fill="${light}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round"/>`;
     return `
-      <path d="M ${n(g.bx - g.brx * 0.40)} ${n(topY)}
-               Q ${n(g.bx - w)} ${n(g.by + g.bry * 0.20)} ${n(g.bx - w * 0.86)} ${n(g.by + g.bry * 1.14)}
-               Q ${n(g.bx)} ${n(g.by + g.bry * 0.84)} ${n(g.bx + w * 0.86)} ${n(g.by + g.bry * 1.14)}
-               Q ${n(g.bx + w)} ${n(g.by + g.bry * 0.20)} ${n(g.bx + g.brx * 0.40)} ${n(topY)} Z"
+      <path d="M ${n(g.bx - top)} ${n(shoulderY)}
+               Q ${n(g.bx - w * 0.92)} ${n(g.by - g.bry * 0.10)}
+                 ${n(g.bx - w)} ${n(hemY - g.bry * 0.22)}
+               ${hem(g.bx - w, g.bx + w)}
+               Q ${n(g.bx + w * 0.92)} ${n(g.by - g.bry * 0.10)}
+                 ${n(g.bx + top)} ${n(shoulderY)}
+               Q ${n(g.bx)} ${n(shoulderY + g.bry * 0.22)} ${n(g.bx - top)} ${n(shoulderY)} Z"
             fill="${main}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
-      <path d="M ${n(g.bx - w * 0.72)} ${n(g.by + g.bry * 0.70)}
-               Q ${n(g.bx)} ${n(g.by + g.bry * 0.44)} ${n(g.bx + w * 0.72)} ${n(g.by + g.bry * 0.70)}"
-            fill="none" stroke="${light}" stroke-width="2.4" opacity=".8"/>
-      <rect x="${n(g.bx - g.brx * 0.46)}" y="${n(topY - g.bry * 0.12)}"
-            width="${n(g.brx * 0.92)}" height="${n(g.bry * 0.22)}"
-            rx="${n(g.bry * 0.11)}" fill="#f6c453" stroke="#c9922c" stroke-width="2.2"/>`;
+      ${fold(-1)}${fold(1)}
+      ${collar(-1)}${collar(1)}`;
   },
 
   star_glasses: g => {
@@ -481,16 +511,23 @@ const ACCESSORIES = {
   },
 
   fairy_wings: g => {
-    const y = g.by - g.bry * 0.10;
-    const wing = side => `
-      <ellipse cx="${n(g.bx + side * g.brx * 0.98)}" cy="${n(y - g.bry * 0.34)}"
-               rx="${n(g.brx * 0.44)}" ry="${n(g.bry * 0.62)}"
-               transform="rotate(${side * 22} ${n(g.bx + side * g.brx * 0.98)} ${n(y - g.bry * 0.34)})"
-               fill="#dcefff" stroke="#a8c8f0" stroke-width="2.4" opacity=".92"/>
-      <ellipse cx="${n(g.bx + side * g.brx * 0.86)}" cy="${n(y + g.bry * 0.40)}"
-               rx="${n(g.brx * 0.32)}" ry="${n(g.bry * 0.44)}"
-               transform="rotate(${side * 16} ${n(g.bx + side * g.brx * 0.86)} ${n(y + g.bry * 0.40)})"
-               fill="#f2e2ff" stroke="#c9a3e0" stroke-width="2.4" opacity=".92"/>`;
+    /* Drawn behind the body, so anything that does not rise above the
+       shoulders is simply never seen. These stand well clear of the
+       silhouette: a tall upper wing and a smaller lower one. */
+    const wing = side => {
+      const ux = g.bx + side * g.brx * 1.00, uy = g.by - g.bry * 0.66;
+      const lx = g.bx + side * g.brx * 0.92, ly = g.by + g.bry * 0.34;
+      return `
+      <ellipse cx="${n(ux)}" cy="${n(uy)}" rx="${n(g.brx * 0.54)}" ry="${n(g.bry * 0.86)}"
+               transform="rotate(${side * 24} ${n(ux)} ${n(uy)})"
+               fill="#dcefff" stroke="#a8c8f0" stroke-width="2.4" opacity=".94"/>
+      <ellipse cx="${n(ux)}" cy="${n(uy)}" rx="${n(g.brx * 0.28)}" ry="${n(g.bry * 0.46)}"
+               transform="rotate(${side * 24} ${n(ux)} ${n(uy)})"
+               fill="#ffffff" opacity=".55"/>
+      <ellipse cx="${n(lx)}" cy="${n(ly)}" rx="${n(g.brx * 0.38)}" ry="${n(g.bry * 0.56)}"
+               transform="rotate(${side * 14} ${n(lx)} ${n(ly)})"
+               fill="#f2e2ff" stroke="#c9a3e0" stroke-width="2.4" opacity=".94"/>`;
+    };
     return wing(-1) + wing(1);
   },
 
@@ -1204,14 +1241,30 @@ const DECOR = {
 
   /* ---- Gathering Week ---- */
 
+  /* A pie in a dish with a crimped crust, a slice cut out of it and a
+     swirl of cream. The first one was a flat beige disc with a white dot
+     on it and could have been anything. */
   pumpkin_pie: () => shadeFills(`
-    <ellipse cx="50" cy="86" rx="36" ry="7" fill="#e8dcc9" opacity=".7"/>
-    <path d="M 12 62 Q 50 50 88 62 L 84 78 Q 50 90 16 78 Z"
+    <path d="M 12 58 Q 50 44 88 58 L 82 80 Q 50 92 18 80 Z"
           fill="#e8b98a" stroke="#a5754a" stroke-width="3" stroke-linejoin="round"/>
-    <ellipse cx="50" cy="62" rx="38" ry="13" fill="#d99a52" stroke="#a5754a" stroke-width="3"/>
-    <ellipse cx="50" cy="61" rx="30" ry="9" fill="#c8812f"/>
-    <path d="M 24 58 q 10 6 20 0 q 10 6 20 0 q 8 5 14 1" fill="none" stroke="#e8b98a" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="50" cy="52" r="6" fill="#fff6e8" stroke="#dcc9ae" stroke-width="2"/>`) + contact(50, 95, 30, 5.7, .26),
+    <path d="M 14 68 Q 50 80 86 68" fill="none" stroke="#a5754a" stroke-width="2.4" opacity=".5"/>
+    <ellipse cx="50" cy="58" rx="38" ry="14" fill="#e0a868" stroke="#a5754a" stroke-width="3"/>
+    ${/* The crimped rim: a ring of little humps all the way round. */ ''}
+    ${[...Array(16)].map((_, i) => {
+      const a = (i / 16) * Math.PI * 2;
+      return `<ellipse cx="${n2(50 + Math.cos(a) * 36)}" cy="${n2(58 + Math.sin(a) * 13)}"
+                       rx="4.6" ry="3.2" fill="#f0c791" stroke="#a5754a" stroke-width="1.8"
+                       transform="rotate(${n2(a * 57)} ${n2(50 + Math.cos(a) * 36)} ${n2(58 + Math.sin(a) * 13)})"/>`;
+    }).join('')}
+    <ellipse cx="50" cy="58" rx="30" ry="10" fill="#c8812f" stroke="#9a5f22" stroke-width="2"/>
+    <ellipse cx="46" cy="55" rx="18" ry="5" fill="#d9903c" opacity=".7"/>
+    ${/* One slice taken out, so it is a pie somebody is eating. */ ''}
+    <path d="M 50 58 L 74 53 A 30 10 0 0 1 68 65 Z" fill="#a8681f" stroke="#9a5f22" stroke-width="2"
+          stroke-linejoin="round"/>
+    <path d="M 40 48 q 5 -7 10 -2 q 6 -7 10 0 q 4 5 -1 8" fill="#fff6e8" stroke="#dcc9ae"
+          stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 24 52 q 8 -5 16 -2" fill="none" stroke="#f3d2a8" stroke-width="2.6"
+          stroke-linecap="round" opacity=".8"/>`) + contact(50, 92, 34, 6, .26),
 
   leaf_wreath: () => {
     const leaf = (a) => {
@@ -1274,8 +1327,13 @@ const DECOR = {
   /* ---- Midnight Sparklers ---- */
 
   sparkler_jar: () => shadeFills(`
-    <rect x="30" y="52" width="40" height="38" rx="7" fill="#d9eef6" stroke="#7fa8bb" stroke-width="3" opacity=".94"/>
-    <rect x="26" y="48" width="48" height="8" rx="4" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
+    <rect x="29" y="50" width="42" height="42" rx="8" fill="#cfe7f2" stroke="#5f8fa5"
+          stroke-width="3.4" opacity=".96"/>
+    <rect x="33" y="54" width="10" height="34" rx="5" fill="#ffffff" opacity=".5"/>
+    <rect x="62" y="58" width="5" height="26" rx="2.5" fill="#ffffff" opacity=".3"/>
+    <path d="M 29 78 h 42" stroke="#9fc6d6" stroke-width="2" opacity=".7"/>
+    <rect x="25" y="45" width="50" height="9" rx="4.5" fill="#c9a887" stroke="#8a6f54" stroke-width="2.5"/>
+    <path d="M 27 49.5 h 46" stroke="#e4cdac" stroke-width="2.4" opacity=".8"/>
     ${[[38, 20, -16], [50, 12, 0], [62, 20, 16]].map(([x, y, rot]) => `
       <g transform="rotate(${rot} 50 60)">
         <path d="M ${x} 50 L ${x} ${y + 10}" stroke="#8a7f74" stroke-width="3" stroke-linecap="round"/>
@@ -1473,12 +1531,20 @@ const DECOR = {
     ${litEllipse(62, 83, 16, 10, '#dbd1c5', '#ab9f93', { stroke: '#8a7f74', sw: 2.5 })}
     ${litEllipse(50, 68, 12, 8, '#e8dfd4', '#bdb2a6', { stroke: '#8a7f74', sw: 2.5 })}`,
 
+  /* A beach ball with coloured panels. Two white arcs across a blue circle
+     read as a lens, or a mouth, but never as a ball. */
   toy_ball: () => `
     ${contact(50, 90, 24, 5, .28)}
     ${litEllipse(50, 66, 26, 26, '#8ac6e6', '#3f7d9e', { stroke: '#3f7d9e', sw: 3 })}
-    <path d="M 24 66 Q 50 50 76 66" fill="none" stroke="#fff6e8" stroke-width="5"/>
-    <path d="M 24 66 Q 50 82 76 66" fill="none" stroke="#fff6e8" stroke-width="5"/>
-    <ellipse cx="41" cy="55" rx="7" ry="5" fill="#fff" opacity=".55" transform="rotate(-28 41 55)"/>`,
+    <clipPath id="ballclip"><circle cx="50" cy="66" r="25"/></clipPath>
+    <g clip-path="url(#ballclip)">
+      <path d="M 50 41 q 14 25 0 50 q -9 -25 0 -50 z" fill="#fdf3e2"/>
+      <path d="M 50 41 q -15 25 0 50 q -22 -8 -24 -25 q 2 -17 24 -25 z" fill="#f7a8b8"/>
+      <path d="M 50 41 q 26 8 25 25 q -1 17 -25 25 q 13 -25 0 -50 z" fill="#ffe08a"/>
+      <path d="M 26 66 h 48" stroke="#3f7d9e" stroke-width="1.6" opacity=".25"/>
+    </g>
+    <circle cx="50" cy="66" r="25" fill="none" stroke="#3f7d9e" stroke-width="3"/>
+    <ellipse cx="41" cy="55" rx="7" ry="5" fill="#fff" opacity=".6" transform="rotate(-28 41 55)"/>`,
 
   potted_plant: () => `
     ${contact(50, 90, 24, 5, .28)}
@@ -1683,22 +1749,51 @@ const DECOR = {
     <path d="M 62 56 q 4 7 0 14 M 78 56 q 4 7 0 14" fill="none" stroke="#6f9fb3" stroke-opacity=".32" stroke-width="2.4"/>
     <path d="M 48 71 q 20 5 40 0" fill="none" stroke="#5d8a9c" stroke-opacity=".3" stroke-width="2.4"/>`,
 
-  bed_shell: () => `
-    ${contact(50, 86, 42, 6, .26)}
-    ${litPath('M 10 80 q 0 -46 40 -46 q 40 0 40 46 z', '#fdd9e5', '#dfa0b6', { stroke: '#c07e96', sw: 3.5, join: 'round' })}
-    <path d="M 50 34 v 46 M 28 42 q 6 22 4 38 M 72 42 q -6 22 -4 38"
-          fill="none" stroke="#e0a3b8" stroke-width="3"/>
-    <path d="M 51.8 34 v 46 M 74 42 q -6 22 -4 38"
-          fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>
-    ${litEllipse(50, 80, 42, 9, '#fff2f7', '#efc4d3', { stroke: '#c07e96', sw: 3 })}`,
+  /* A scallop shell standing open behind the mattress. The first one was a
+     smooth dome and read as a swimming cap; what makes a shell a shell is
+     the fan of ribs meeting at the hinge and the scalloped edge they make
+     where they end. */
+  bed_shell: () => {
+    const RIBS = 7;
+    /* The outline is walked rib by rib, so the scalloped edge and the ribs
+       can never drift apart. */
+    const hinge = { x: 50, y: 82 };
+    const pt = (i, r) => {
+      const a = Math.PI + (Math.PI * i) / RIBS;      // left round to right
+      return [hinge.x + Math.cos(a) * r * 1.05, hinge.y + Math.sin(a) * r * 0.92];
+    };
+    let edge = `M ${n2(pt(0, 42)[0])} ${n2(pt(0, 42)[1])} `;
+    for (let i = 1; i <= RIBS; i++) {
+      const [mx, my] = pt(i - 0.5, 48);
+      const [ex, ey] = pt(i, 42);
+      edge += `Q ${n2(mx)} ${n2(my)} ${n2(ex)} ${n2(ey)} `;
+    }
+    const ribs = [...Array(RIBS - 1)].map((_, i) => {
+      const [x, y] = pt(i + 1, 40);
+      return `<path d="M ${hinge.x} ${hinge.y} L ${n2(x)} ${n2(y)}"
+                    stroke="#e0a3b8" stroke-width="2.6" stroke-linecap="round"/>`;
+    }).join('');
+    return `
+      ${contact(50, 88, 44, 6, .26)}
+      ${litPath(`${edge} Z`, '#fdd9e5', '#dfa0b6', { stroke: '#c07e96', sw: 3.5, join: 'round' })}
+      ${ribs}
+      <path d="M ${n2(pt(1.2, 36)[0])} ${n2(pt(1.2, 36)[1])} L ${hinge.x} ${hinge.y}"
+            stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>
+      ${litEllipse(50, 82, 30, 8, '#fff2f7', '#efc4d3', { stroke: '#c07e96', sw: 3 })}
+      ${litEllipse(50, 80, 13, 4.4, '#ffffff', '#f6dde6')}`;
+  },
 
   /* ---- Rugs ---- */
+  /* Every rug is drawn lying in the same band of its square — low down,
+     and about half as tall as it is wide — because the room hangs a rug's
+     box by its bottom edge and a rug drawn any rounder stands up off the
+     floor and leans against the wall. */
   rug_round: () => `
-    ${contact(50, 62, 47, 32, .18)}
-    ${litEllipse(50, 60, 44, 30, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 3.5, cy: '30%' })}
-    ${litEllipse(50, 60, 31, 21, '#eef8f4', '#cbe4dc', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
-    ${litEllipse(50, 60, 16, 11, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
-    <path d="M 6 62 a 44 30 0 0 0 88 0" fill="none" stroke="#3f6d5c" stroke-opacity=".16" stroke-width="3.5"/>`,
+    ${contact(50, 76, 47, 22, .18)}
+    ${litEllipse(50, 74, 44, 20, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 3.5, cy: '30%' })}
+    ${litEllipse(50, 74, 31, 14, '#eef8f4', '#cbe4dc', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
+    ${litEllipse(50, 74, 16, 7.3, '#c2e5d8', '#98c9b7', { stroke: '#5f9683', sw: 2.5, cy: '30%' })}
+    <path d="M 6 76 a 44 20 0 0 0 88 0" fill="none" stroke="#3f6d5c" stroke-opacity=".16" stroke-width="3.5"/>`,
 
   /* ---- Wall decorations ---- */
   /* On the wall, so it casts its shadow onto the wall behind rather than
@@ -1990,10 +2085,15 @@ const DECOR = {
   floor_lamp: () => `
     ${contact(50, 90, 22, 5, .26)}
     ${litEllipse(50, 88, 20, 7, '#d5b48a', '#a5875f', { stroke: '#8a6340', sw: 3 })}
-    <path d="M 50 86 V 40 q 0 -10 -12 -12" fill="none" stroke="#8a6340" stroke-width="5" stroke-linecap="round"/>
-    ${litPath('M 18 24 h 34 l -6 20 h -22 z', '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3, join: 'round' })}
-    <ellipse cx="35" cy="46" rx="12" ry="4" fill="#fff6e8" opacity=".85"/>
-    <path d="M 21 26 h 12 l -3 16 h -7 z" fill="#fff" opacity=".24"/>`,
+    <path d="M 50 86 V 32" fill="none" stroke="#8a6340" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 48.4 82 V 36" stroke="#c09667" stroke-opacity=".6" stroke-width="2"/>
+    ${/* The shade sits ON the pole. It used to hang off to one side with
+          the pole showing past its edge, and a pale cone of "light" that
+          read as a second object leaning against it. */ ''}
+    ${litPath('M 31 22 h 38 l -7 22 h -24 z', '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3, join: 'round' })}
+    <ellipse cx="50" cy="43.6" rx="12" ry="3.6" fill="#fff6e8" opacity=".92"/>
+    <ellipse cx="50" cy="48" rx="19" ry="7" fill="#ffe9a8" opacity=".22"/>
+    <path d="M 35 24 h 11 l -3 18 h -7 z" fill="#fff" opacity=".24"/>`,
 
   easel: () => `
     ${contact(50, 92, 30, 5, .24)}
@@ -2043,7 +2143,10 @@ const DECOR = {
     <circle cx="28" cy="48" r="7" fill="#fff" opacity=".92"/><circle cx="52" cy="40" r="9" fill="#fff" opacity=".95"/>
     <circle cx="72" cy="50" r="6" fill="#fff" opacity=".85"/><circle cx="40" cy="57" r="4.6" fill="#fff" opacity=".85"/>
     <path d="M 12 60 a 40 28 0 0 1 22 -24" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="4"/>
-    ${litEllipse(62, 80, 26, 11, '#fff2f7', '#eabfcf', { stroke: '#c07e96', sw: 3 })}`,
+    ${/* The mattress goes at the foot of the stalk, where a bed would be.
+          Floating it half way up read as a plate leaning on a mushroom. */ ''}
+    ${litEllipse(50, 84, 32, 11, '#fff2f7', '#eabfcf', { stroke: '#c07e96', sw: 3 })}
+    ${litEllipse(50, 82, 20, 6, '#ffffff', '#f6dde6')}`,
 
   bed_cloud: () => `
     ${contact(50, 88, 40, 5, .16)}
@@ -2057,52 +2160,74 @@ const DECOR = {
   /* ================= More rugs ================= */
 
   rug_moss: () => `
-    ${contact(50, 64, 44, 26, .18)}
-    ${litEllipse(50, 62, 42, 24, '#a8d494', '#83b271', { stroke: '#5f8a4f', sw: 3.5, cy: '30%' })}
+    ${contact(50, 76, 44, 19, .18)}
+    ${litEllipse(50, 74, 42, 17, '#a8d494', '#83b271', { stroke: '#5f8a4f', sw: 3.5, cy: '30%' })}
     ${[...Array(14)].map((_, i) => {
       const a = (i / 14) * Math.PI * 2;
-      return `<ellipse cx="${n2(50 + Math.cos(a) * 26)}" cy="${n2(62 + Math.sin(a) * 14)}" rx="7" ry="4.6"
+      return `<ellipse cx="${n2(50 + Math.cos(a) * 26)}" cy="${n2(74 + Math.sin(a) * 10)}" rx="7" ry="4"
                 fill="#a4cf90" opacity="${n2(0.95 - Math.sin(a) * 0.22)}"/>`;
     }).join('')}
-    ${litEllipse(50, 62, 16, 9, '#d0efbd', '#a8d194')}`,
+    ${litEllipse(50, 74, 16, 6.4, '#d0efbd', '#a8d194')}
+    ${[...Array(9)].map((_, i) => {
+      /* A few tufts standing up out of the moss, so it is a mat of living
+         stuff rather than a green puddle. */
+      const x = 14 + i * 9, y = 70 + (i % 3) * 3;
+      return `<path d="M ${x} ${y} q 1.6 -5 3.4 -6.4 M ${x + 2.2} ${y} q -0.4 -4.6 -2 -6"
+                fill="none" stroke="#6ba455" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`;
+    }).join('')}`,
 
   rug_star: () => {
     let d = '';
     for (let i = 0; i < 10; i++) {
       const a = (Math.PI / 5) * i - Math.PI / 2;
       const r = i % 2 ? 18 : 44;
-      d += `${i ? 'L' : 'M'} ${n2(50 + Math.cos(a) * r)} ${n2(62 + Math.sin(a) * r * 0.58)} `;
+      d += `${i ? 'L' : 'M'} ${n2(50 + Math.cos(a) * r)} ${n2(75 + Math.sin(a) * r * 0.40)} `;
     }
-    return contact(50, 64, 44, 26, .16) +
+    return contact(50, 77, 44, 19, .16) +
       litPath(`${d}Z`, '#ffd97a', '#dda634', { stroke: '#c9922c', sw: 3.5, join: 'round' }) +
-      litEllipse(50, 62, 11, 11, '#fff2c9', '#e8c976', { stroke: '#c9922c', sw: 2.5 });
+      litEllipse(50, 75, 11, 7, '#fff2c9', '#e8c976', { stroke: '#c9922c', sw: 2.5 });
   },
 
   rug_flower: () => `
-    ${contact(50, 64, 45, 28, .16)}
+    ${contact(50, 77, 45, 20, .16)}
     ${[...Array(8)].map((_, i) => {
       const a = (i / 8) * Math.PI * 2;
-      return litEllipse(n2(50 + Math.cos(a) * 26), n2(62 + Math.sin(a) * 15), 17, 11,
+      return litEllipse(n2(50 + Math.cos(a) * 26), n2(75 + Math.sin(a) * 10), 17, 7.6,
         '#ffb9d2', '#dd87a8', { stroke: '#c07e96', sw: 3 });
     }).join('')}
-    ${litEllipse(50, 62, 20, 12, '#ffe9a8', '#e0b455', { stroke: '#c9922c', sw: 3 })}`,
+    ${litEllipse(50, 75, 20, 8, '#ffe9a8', '#e0b455', { stroke: '#c9922c', sw: 3 })}`,
 
   rug_cloud: () => `
-    ${contact(50, 68, 42, 20, .14)}
-    ${litEllipse(30, 60, 18, 12, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
-    ${litEllipse(70, 60, 18, 12, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
-    ${litEllipse(50, 54, 24, 15, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
-    ${litEllipse(50, 66, 40, 16, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
-    <ellipse cx="50" cy="64" rx="22" ry="8" fill="#dbe8f7" opacity=".8"/>`,
+    ${contact(50, 80, 42, 16, .14)}
+    ${litEllipse(30, 74, 18, 8.5, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(70, 74, 18, 8.5, '#f2f8ff', '#cfdeee', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(50, 70, 24, 10.5, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
+    ${litEllipse(50, 78, 40, 11, '#fbfdff', '#dae7f5', { stroke: '#bcd0e4', sw: 3 })}
+    <ellipse cx="50" cy="77" rx="22" ry="5.6" fill="#dbe8f7" opacity=".8"/>`,
 
   /* ================= More for the walls ================= */
 
+  /* Three butterflies. Each has a big upper wing and a small lower one, a
+     slim body and antennae — the first pair were two blobs either side of
+     a thick black bar, which read as a moth pinned to a board. */
   butterflies: () => castShadow(shadeFills(`
-    ${[[28, 40, '#f2849f', 1], [58, 26, '#a8c8f0', .82], [70, 52, '#ffd980', .7]].map(([x, y, c, sc]) =>
-      `<g transform="translate(${x} ${y}) scale(${sc})">
-         <path d="M 0 0 C -16 -16 -22 -2 -4 6 Z" fill="${c}" stroke="#8a6f7c" stroke-width="2" stroke-linejoin="round"/>
-         <path d="M 0 0 C 16 -16 22 -2 4 6 Z"  fill="${c}" stroke="#8a6f7c" stroke-width="2" stroke-linejoin="round"/>
-         <path d="M 0 -4 V 8" stroke="#5a4033" stroke-width="3" stroke-linecap="round"/>
+    ${[[26, 42, '#f2849f', '#d05d7c', 1, -12], [58, 24, '#a8c8f0', '#7099cc', .84, 10],
+       [72, 54, '#ffd980', '#dcae44', .72, -6]].map(([x, y, c, edge, sc, rot]) =>
+      `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${sc})">
+         ${[-1, 1].map(side => `
+           <path d="M 0 -1 C ${side * 6} -17 ${side * 20} -15 ${side * 17} -4
+                    C ${side * 15} 2 ${side * 5} 3 0 -1 Z"
+                 fill="${c}" stroke="${edge}" stroke-width="2" stroke-linejoin="round"/>
+           <path d="M 0 1 C ${side * 6} 6 ${side * 14} 8 ${side * 12} 13
+                    C ${side * 9} 17 ${side * 3} 8 0 1 Z"
+                 fill="${c}" stroke="${edge}" stroke-width="2" stroke-linejoin="round"/>
+           <circle cx="${side * 11}" cy="-7" r="2.6" fill="#fff" opacity=".6"/>
+           <path d="M 0 -6 q ${side * 5} -6 ${side * 8} -7" fill="none" stroke="#5a4033"
+                 stroke-width="1.4" stroke-linecap="round"/>
+           <circle cx="${side * 8}" cy="-13" r="1.3" fill="#5a4033"/>`).join('')}
+         <path d="M 0 -6 q 2 8 0 15" fill="none" stroke="#5a4033" stroke-width="2.6"
+               stroke-linecap="round"/>
+         <circle cx="0" cy="-6.4" r="2.2" fill="#5a4033"/>
        </g>`).join('')}`)),
 
   small_shelf: () => `
@@ -2118,7 +2243,18 @@ const DECOR = {
     <circle class="${SHADOW}" cx="52.4" cy="50.6" r="32" fill="#3a2c1e" opacity=".17"/>
     ${litEllipse(50, 48, 32, 32, '#e6f0f7', '#bccddb', { stroke: '#a5875f', sw: 6 })}
     ${litEllipse(50, 48, 26, 26, '#fbfdff', '#d3e3ee')}
-    <path d="M 32 58 q 14 -26 34 -14" fill="none" stroke="#fff" stroke-width="7" opacity=".85" stroke-linecap="round"/>
+    ${/* A mirror with nothing in it is a white disc. This is the room
+          reflected: a band of wall, a line where the floor starts, and the
+          gleam across it. */ ''}
+    <clipPath id="mirglass"><circle cx="50" cy="48" r="26"/></clipPath>
+    <g clip-path="url(#mirglass)">
+      <rect x="24" y="22" width="52" height="34" fill="#e7eef6"/>
+      <rect x="24" y="56" width="52" height="24" fill="#f0e2cc"/>
+      <path d="M 24 56 h 52" stroke="#d9c7ab" stroke-width="2"/>
+      <rect x="34" y="34" width="13" height="22" rx="2" fill="#dbe8f2" opacity=".9"/>
+      <path d="M 60 56 q 5 -12 10 0 z" fill="#cfe3d5" opacity=".9"/>
+    </g>
+    <path d="M 32 58 q 14 -26 34 -14" fill="none" stroke="#fff" stroke-width="7" opacity=".7" stroke-linecap="round"/>
     <circle cx="50" cy="12" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
 
   /* A hanging plant has to say "hanging" before it says "plant", and the
@@ -2206,12 +2342,20 @@ const DECOR = {
              opacity=".75"/>`;
     return `
       ${stalk(22, 6, 62, '#a9d8a0', '#4e8a52')}
-      ${stalk(36, -5, 78, '#bce3ae', '#5b9a5c')}
+      ${stalk(36, -5, 72, '#bce3ae', '#5b9a5c')}
       ${stalk(50, 8, 70, '#a9d8a0', '#4e8a52')}
-      ${stalk(64, -7, 84, '#c6e8b8', '#66a566')}
+      ${stalk(64, -7, 78, '#c6e8b8', '#66a566')}
       ${stalk(78, 5, 58, '#a9d8a0', '#4e8a52')}
-      ${[[36, 16], [64, 10]].map(([x, y]) =>
-        litEllipse(x, y, 5, 11, '#b08a52', '#7d5c31', { stroke: '#5f4522', sw: 2 })).join('')}`;
+      ${/* The cattail heads sit on the tips of two of the stalks. Worked
+            out from the same curve the stalk is drawn with rather than
+            typed in by eye, which is how they ended up floating beside
+            them in the first place. */ ''}
+      ${[[36, -5, 72], [64, -7, 78]].map(([x, lean, h]) => {
+        const tx = x + lean, ty = 96 - h;
+        return litEllipse(tx, ty + 2, 5, 11, '#b08a52', '#7d5c31', { stroke: '#5f4522', sw: 2 }) +
+          `<path d="M ${n2(tx)} ${n2(ty - 9)} v -6" stroke="#7d5c31" stroke-width="2.4"
+                 stroke-linecap="round"/>`;
+      }).join('')}`;
   },
 
   pond_lilies: () => {
@@ -2445,7 +2589,13 @@ const DECOR = {
   door_star: () => `
     ${contact(50, 97, 31, 2.6, .32)}
     ${litRect(20, 8, 60, 88, 6, '#5b6aa8', '#39457a', { stroke: '#333d66', sw: 5 })}
-    ${[[50, 34, 15], [34, 58, 8], [66, 62, 9], [50, 76, 6]].map(([x, y, r]) => {
+    ${/* A panel inside the frame, so it reads as a door rather than as a
+          rectangle of night sky leaning on the wall. */ ''}
+    ${litRect(26, 15, 48, 74, 4, '#4a5794', '#2f3a69', { stroke: '#333d66', sw: 2.6 })}
+    <path d="M 26 52 h 48" stroke="#333d66" stroke-width="2.4" opacity=".7"/>
+    <path d="M 64 20 a 13 13 0 1 0 0 20 a 10 10 0 1 1 0 -20 z"
+          fill="#ffe9a8" stroke="#dcb95e" stroke-width="2" stroke-linejoin="round"/>
+    ${[[38, 62, 8], [58, 70, 6.5], [44, 80, 5]].map(([x, y, r]) => {
       let d = '';
       for (let i = 0; i < 10; i++) {
         const a = (Math.PI / 5) * i - Math.PI / 2;
@@ -2455,8 +2605,8 @@ const DECOR = {
       return `<path d="${d}Z" fill="#000" opacity=".2" transform="translate(1.4 1.6)"/>` +
              litPath(`${d}Z`, '#fff6d4', '#e8c976', { stroke: '#e0c274', sw: 1.6, join: 'round' });
     }).join('')}
-    <circle cx="70" cy="54" r="4.6" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>
-    <circle cx="68.4" cy="52.4" r="1.7" fill="#fff" opacity=".75"/>`,
+    ${litEllipse(71, 54, 5.4, 5.4, '#ffe08a', '#c9922c', { stroke: '#a8762a', sw: 2 })}
+    <circle cx="69.4" cy="52.4" r="1.8" fill="#fff" opacity=".8"/>`,
 
   /* ---- Special decorations ---- */
   /* These two are the same shape as a lamp and a rug in another colour.
@@ -2489,7 +2639,28 @@ const DECOR = {
       return `<path d="${d}Z" fill="#ffe9a8" stroke="#d9b45e" stroke-width="1.4" stroke-linejoin="round"/>`;
     }).join('')}
     <path d="M 12 74 a 42 19 0 0 0 76 0" fill="none" stroke="#4d3a68" stroke-opacity=".16" stroke-width="3"/>`,
-  word_castle:  () => DECOR.castle(),
+  /* Not the playset again. A castle built out of lettered blocks, which is
+     what a WORD castle should be — and two drawings of the same thing in
+     the same catalogue is how a shop ends up selling the same toy twice. */
+  word_castle: () => {
+    const block = (x, y, w, h, ch, light, dark) =>
+      litRect(x, y, w, h, 3, light, dark, { stroke: '#9a7146', sw: 2.6 }) +
+      `<text x="${n2(x + w / 2)}" y="${n2(y + h / 2 + h * 0.19)}" text-anchor="middle"
+             font-family="system-ui, sans-serif" font-weight="700"
+             font-size="${n2(Math.min(w, h) * 0.66)}" fill="#7a5836">${ch}</text>`;
+    return `
+      ${contact(50, 92, 36, 5, .26)}
+      ${block(14, 50, 22, 22, 'A', '#f6c98a', '#d29a55')}
+      ${block(64, 50, 22, 22, 'C', '#a8d4ef', '#6fa7cc')}
+      ${block(36, 44, 28, 28, 'B', '#f7a8b8', '#d2768d')}
+      ${block(14, 72, 22, 18, 'D', '#b9e0b0', '#7fb277')}
+      ${block(36, 72, 28, 18, 'E', '#ffe08a', '#dcb95e')}
+      ${block(64, 72, 22, 18, 'F', '#d3bdea', '#a58ccb')}
+      ${litPath('M 36 44 v -7 h 6 v 4 h 7 v -4 h 7 v 4 h 8 v 7 z', '#f7a8b8', '#d2768d',
+                { stroke: '#9a7146', sw: 2.4, join: 'round' })}
+      <path d="M 50 37 v -13 l 13 5 -13 5" fill="#ef6f8e" stroke="#b34a66"
+            stroke-width="2" stroke-linejoin="round"/>`;
+  },
   cozy_candle: () => shadeFills(`
     <rect x="40" y="44" width="20" height="42" rx="5" fill="#fdf0d8" stroke="#c9a97c" stroke-width="3"/>
     <rect x="36" y="82" width="28" height="9" rx="4" fill="#e8d3ba" stroke="#a5875f" stroke-width="2.5"/>
@@ -2518,13 +2689,26 @@ const DECOR = {
     <path d="M 50 20 l 8 -10 4 6 -6 6 z" fill="#ef6f8e"/>
     <path d="M 50 20 l -8 -10 -4 6 6 6 z" fill="#ef6f8e"/>
     <circle cx="50" cy="21" r="4" fill="#f78ba6" stroke="#b34a66" stroke-width="1.8"/>`,
+  /* A cup with handles and a star on it, standing on a plinth, with a
+     medal hanging either side. The first one was a yellow wedge between
+     two coloured balls. */
   trophy_shelf: () => castShadow(shadeFills(`
-    <rect x="14" y="62" width="72" height="8" rx="3" fill="#c99a6e" stroke="#8a6340" stroke-width="3"/>
-    <path d="M 40 58 h 20 l -3 -16 h -14 z" fill="#f6c453" stroke="#c9922c" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M 43 42 q -12 2 -10 -10 M 57 42 q 12 2 10 -10" fill="none" stroke="#c9922c" stroke-width="3"/>
-    <rect x="42" y="56" width="16" height="7" rx="2" fill="#c9922c"/>
-    <circle cx="24" cy="54" r="7" fill="#c9a3e0" stroke="#8a6fa8" stroke-width="2.5"/>
-    <circle cx="76" cy="54" r="7" fill="#8fd3a8" stroke="#4f9b6d" stroke-width="2.5"/>`)),
+    <rect x="12" y="66" width="76" height="8" rx="3" fill="#c99a6e" stroke="#8a6340" stroke-width="3"/>
+    <path d="M 20 74 v 7 M 80 74 v 7" stroke="#8a6340" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 38 58 q -14 0 -13 -13 q 0 -5 5 -5 h 8" fill="none" stroke="#dcae44" stroke-width="3.4"/>
+    <path d="M 62 58 q 14 0 13 -13 q 0 -5 -5 -5 h -8" fill="none" stroke="#dcae44" stroke-width="3.4"/>
+    <path d="M 36 30 h 28 l -3 20 q -1 9 -11 9 q -10 0 -11 -9 z"
+          fill="#f6c453" stroke="#c9922c" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M 40 33 q -1 14 2 21" fill="none" stroke="#fff6cf" stroke-width="3"
+          stroke-linecap="round" opacity=".7"/>
+    <path d="M 50 36 l 2.6 5.4 6 .8 -4.4 4.2 1.1 5.9 -5.3 -2.9 -5.3 2.9 1.1 -5.9 -4.4 -4.2 6 -.8 z"
+          fill="#fff6cf" stroke="#c9922c" stroke-width="1.2" stroke-linejoin="round"/>
+    <rect x="44" y="59" width="12" height="4" fill="#dcae44"/>
+    <rect x="38" y="62" width="24" height="5" rx="2" fill="#c9922c" stroke="#a8762a" stroke-width="2"/>
+    ${[[24, '#c9a3e0', '#8a6fa8'], [76, '#8fd3a8', '#4f9b6d']].map(([x, c, edge]) => `
+      <path d="M ${x - 4} 48 l 4 9 l 4 -9" fill="none" stroke="#d94f5c" stroke-width="3"/>
+      <circle cx="${x}" cy="61" r="6.4" fill="${c}" stroke="${edge}" stroke-width="2.5"/>
+      <circle cx="${x - 1.6}" cy="59.4" r="2" fill="#fff" opacity=".55"/>`).join('')}`)),
   /* ===================== The garden =====================
 
      Outdoors, so these are drawn standing in the open rather than against
@@ -2565,21 +2749,42 @@ const DECOR = {
     ${litPath('M 50 46 L 84 80 H 16 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}
     ${litPath('M 50 26 L 78 60 H 22 Z', '#6bb372', '#417a49', { stroke: '#3a6e42', sw: 4, join: 'round' })}
     ${litPath('M 50 8 L 72 40 H 28 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}`,
-  /* Strands first, canopy last: the canopy has to cap where they start,
-     or a willow looks like a jellyfish. */
-  tree_willow: () => `
-    ${contact(50, 95, 30, 5, .3)}
-    <path d="M 50 96 V 50" stroke="#9a7a52" stroke-width="11" stroke-linecap="round"/>
-    <path d="M 47 92 V 54" stroke="#b8946a" stroke-opacity=".5" stroke-width="3"/>
-    <path d="M 50 62 q -9 -7 -15 -15 M 50 57 q 9 -6 16 -13" fill="none" stroke="#9a7a52" stroke-width="5" stroke-linecap="round"/>
-    ${[20, 26, 32, 38, 44, 56, 62, 68, 74, 80].map((x, i) => {
-      const end = 66 + (i % 4) * 7;
-      const bow = x < 50 ? -5 : 5;
-      return `<path d="M ${x} 34 q ${bow} ${(end - 34) / 2} ${bow / 2} ${end - 34}" fill="none"
-                    stroke="${i % 2 ? '#6fae5f' : '#88c477'}" stroke-width="3.6" stroke-linecap="round"/>`;
-    }).join('')}
-    ${litEllipse(50, 36, 33, 18, '#8cc87a', '#548c4c', { stroke: '#548c4c', sw: 4 })}
-    <ellipse cx="38" cy="30" rx="15" ry="7" fill="#a8d898" opacity=".26"/>`,
+  /* A weeping willow: a short leaning trunk, and curtains of leaf that
+     fall from the outside of the crown. Drawn as filled shapes with wavy
+     bottoms rather than as strands hanging off a dome, which is what made
+     the first one look like a jellyfish. */
+  tree_willow: () => {
+    /* One curtain: a broad leaf-shape falling from (x, top) to (x2, end),
+       with a scalloped bottom edge. */
+    const curtain = (x, top, dx, end, w, light, dark) => {
+      const bx = x + dx;
+      let hem = '';
+      for (let i = 0; i < 3; i++) {
+        const a = bx - w + (2 * w * i) / 3, b = bx - w + (2 * w * (i + 1)) / 3;
+        hem += `Q ${n2((a + b) / 2)} ${n2(end + 5)} ${n2(b)} ${n2(end)} `;
+      }
+      return litPath(
+        `M ${n2(x - w * 0.7)} ${n2(top)} Q ${n2(bx - w * 1.05)} ${n2((top + end) / 2)} ${n2(bx - w)} ${n2(end)} ` +
+        hem +
+        `Q ${n2(bx + w * 1.05)} ${n2((top + end) / 2)} ${n2(x + w * 0.7)} ${n2(top)} Z`,
+        light, dark, { stroke: '#4b8244', sw: 2.6, join: 'round' });
+    };
+    return `
+      ${contact(50, 95, 30, 5, .3)}
+      <path d="M 50 96 q -2 -22 -1 -42" fill="none" stroke="#9a7a52" stroke-width="11" stroke-linecap="round"/>
+      <path d="M 47 92 q -2 -20 -1 -36" fill="none" stroke="#b8946a" stroke-opacity=".5" stroke-width="3"/>
+      <path d="M 49 58 q -9 -7 -15 -14 M 49 53 q 9 -6 16 -12" fill="none" stroke="#9a7a52"
+            stroke-width="5" stroke-linecap="round"/>
+      ${curtain(30, 38, -6, 76, 10, '#7fbd6d', '#4b8244')}
+      ${curtain(70, 38, 6, 74, 10, '#7fbd6d', '#4b8244')}
+      ${curtain(40, 34, -4, 84, 11, '#8cc87a', '#548c4c')}
+      ${curtain(60, 34, 4, 82, 11, '#8cc87a', '#548c4c')}
+      ${litEllipse(50, 32, 26, 15, '#95d081', '#548c4c', { stroke: '#4b8244', sw: 3.6 })}
+      ${litEllipse(33, 38, 15, 10, '#89c775', '#4b8244', { stroke: '#4b8244', sw: 3 })}
+      ${litEllipse(67, 38, 15, 10, '#89c775', '#4b8244', { stroke: '#4b8244', sw: 3 })}
+      <ellipse cx="42" cy="27" rx="12" ry="5.5" fill="#b4e3a2" opacity=".35"/>`;
+  },
+
 
   /* ---- Water ----
 
@@ -2760,10 +2965,17 @@ const DECOR = {
     ${litPath('M 6 82 a 16 12 0 0 1 32 0 z', '#f2867a', '#bd514a', { stroke: '#a83c33', sw: 3, join: 'round' })}
     <ellipse cx="16" cy="76" rx="3.4" ry="2.4" fill="#fff4ea"/><ellipse cx="28" cy="78" rx="3" ry="2.2" fill="#fff4ea"/>`,
 
+  /* Set INTO the grass rather than lying on top of it: each stone gets a
+     rim of turf pushed up around its lower edge, which is the difference
+     between a path and three grey ovals floating in the air. */
   stepping_stones: () => `
     ${[[22, 82, 20, 9], [50, 70, 19, 8.6], [76, 58, 17, 8]].map(([x, y, rx, ry]) =>
-      contact(x, n2(y + ry * 0.7), n2(rx * 1.1), n2(ry * 0.8), .24) +
-      litEllipse(x, y, rx, ry, '#e2dbcd', '#aaa192', { stroke: '#9a9182', sw: 4 })).join('')}`,
+      contact(x, n2(y + ry * 0.55), n2(rx * 1.16), n2(ry * 0.9), .3) +
+      `<ellipse cx="${x}" cy="${n2(y + ry * 0.3)}" rx="${n2(rx * 1.04)}" ry="${n2(ry * 1.05)}"
+                fill="#6ea355" opacity=".55"/>` +
+      litEllipse(x, y, rx, ry, '#e2dbcd', '#aaa192', { stroke: '#9a9182', sw: 4 }) +
+      `<ellipse cx="${n2(x - rx * 0.2)}" cy="${n2(y - ry * 0.3)}" rx="${n2(rx * 0.5)}"
+                ry="${n2(ry * 0.34)}" fill="#fdfbf6" opacity=".4"/>`).join('')}`,
 
   birdhouse: () => `
     ${contact(50, 95, 10, 3, .26)}
@@ -2817,23 +3029,40 @@ const DECOR = {
     ${litPath('M 36 76 a 14 10 0 0 1 28 0 z', '#f79a90', '#c96259', { stroke: '#a83c33', sw: 2.8, join: 'round' })}
     <ellipse cx="44" cy="72" rx="3" ry="2.1" fill="#fff4ea"/><ellipse cx="55" cy="73" rx="2.6" ry="1.8" fill="#fff4ea"/>`,
 
+  /* A bench has to stand on the grass, and the first one did not: its legs
+     were two thin grey pipes that stopped in mid-air, so it hovered over
+     the lawn like a shelf. Now it has proper wooden legs that reach the
+     ground, a shadow under each foot, and arms. */
   garden_bench: () => `
-    ${contact(50, 96, 38, 4, .26)}
-    <path d="M 14 58 h 72 M 14 68 h 72" stroke="#c09667" stroke-width="9" stroke-linecap="round"/>
-    <path d="M 14 55 h 72 M 14 65 h 72" stroke="#e0b98f" stroke-opacity=".7" stroke-width="2.6" stroke-linecap="round"/>
-    ${litRect(10, 74, 80, 10, 4, '#d9ab7c', '#a87f55', { stroke: '#8a6340', sw: 3.5 })}
-    <path d="M 18 84 v 12 M 82 84 v 12" stroke="#7d8a92" stroke-width="7" stroke-linecap="round"/>
-    <path d="M 18 58 v 26 M 82 58 v 26" stroke="#7d8a92" stroke-width="6" stroke-linecap="round"/>
-    <path d="M 16.6 58 v 26 M 80.6 58 v 26" stroke="#a8b4bc" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
-    <path d="M 14 59 h 72 M 14 69 h 72" stroke="#8a6340" stroke-width="2.5"/>`,
+    ${contact(50, 95, 40, 5, .28)}
+    <path d="M 20 94 v -26 M 80 94 v -26" stroke="#7d5a3a" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 24 94 v -22 M 76 94 v -22" stroke="#8a6340" stroke-width="6" stroke-linecap="round"/>
+    ${litRect(12, 44, 76, 9, 4, '#d9ab7c', '#a87f55', { stroke: '#8a6340', sw: 3 })}
+    ${litRect(12, 56, 76, 9, 4, '#d9ab7c', '#a87f55', { stroke: '#8a6340', sw: 3 })}
+    <path d="M 18 42 v 28 M 82 42 v 28" stroke="#7d5a3a" stroke-width="6" stroke-linecap="round"/>
+    ${litRect(10, 68, 80, 11, 4, '#e0b489', '#a87f55', { stroke: '#8a6340', sw: 3.5 })}
+    ${grain(14, 70, 72, 7, 8, 1, { color: '#8a6340', strength: .26, sw: 1.4 })}
+    <path d="M 14 68 h 72" stroke="#fdebd6" stroke-opacity=".5" stroke-width="2.4"/>
+    <path d="M 16 79 h 68" stroke="#7d5a3a" stroke-width="2.4" stroke-opacity=".7"/>
+    ${contact(22, 95, 7, 2.6, .3)}${contact(78, 95, 7, 2.6, .3)}`,
 
+  /* A lantern on a post, not a dark slab with a blob of light on it: a
+     base plate it stands on, a slim column, a glazed box with bars, and a
+     warm pool of light on the grass around its foot. */
   lamp_post: () => `
-    ${contact(50, 94, 17, 4.5, .28)}
-    ${litRect(45, 34, 10, 60, 4, '#5c6673', '#343b44', { stroke: '#343b44', sw: 3.5 })}
-    <path d="M 36 34 h 28" stroke="#343b44" stroke-width="4" stroke-linecap="round"/>
-    ${litPath('M 34 34 L 50 6 L 66 34 z', '#fff4cf', '#e8cf80', { stroke: '#343b44', sw: 4, join: 'round' })}
-    <circle cx="50" cy="26" r="7" fill="#fff6d0"/>
-    <path d="M 40 90 h 20" stroke="#343b44" stroke-width="5" stroke-linecap="round"/>`,
+    ${contact(50, 95, 22, 5, .26)}
+    <ellipse cx="50" cy="93" rx="26" ry="8" fill="#ffe9a8" opacity=".22"/>
+    ${litEllipse(50, 92, 15, 5, '#4a545f', '#2b323a', { stroke: '#232930', sw: 3 })}
+    ${litRect(45.5, 40, 9, 52, 3, '#5c6673', '#343b44', { stroke: '#2b323a', sw: 3 })}
+    <path d="M 48 44 v 46" stroke="#8d98a5" stroke-opacity=".55" stroke-width="2.4" stroke-linecap="round"/>
+    ${litRect(36, 46, 28, 5, 2.5, '#4a545f', '#2b323a', { stroke: '#232930', sw: 2.6 })}
+    ${litPath('M 36 46 L 36 22 L 50 10 L 64 22 L 64 46 Z', '#fff4cf', '#f0d99a',
+              { stroke: '#2b323a', sw: 3.4, join: 'round' })}
+    <circle cx="50" cy="32" r="8" fill="#fff6d0" opacity=".95"/>
+    <circle cx="50" cy="32" r="13" fill="#ffe9a8" opacity=".35"/>
+    <path d="M 36 30 h 28 M 50 22 v 24" stroke="#2b323a" stroke-width="2.2" opacity=".65"/>
+    <path d="M 50 10 L 50 5" stroke="#2b323a" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="50" cy="4" r="3" fill="#4a545f" stroke="#232930" stroke-width="2"/>`,
   /* A free-standing frame, not a rope over a branch. She can put this
      anywhere in the garden, and a swing hanging from thin air three feet
      from the nearest tree reads as a bug. */
@@ -2922,32 +3151,10 @@ export function decorSVG(itemId, { size = 100 } = {}) {
                xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${fn()}</svg>`;
 }
 
-/** A wearable shown on its own, for the shop and the book. */
-export function wearableThumbSVG(itemId, { size = 100 } = {}) {
-  const geom = { hx: 50, hy: 56, hrx: 30, hry: 24, bx: 50, by: 84, brx: 26, bry: 18 };
-  const art = wearableSVG(itemId, geom);
-  if (!art) return '';
-  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}"
-               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <ellipse cx="50" cy="60" rx="30" ry="24" fill="#f0e6da" opacity=".5"/>
-    ${art}</svg>`;
-}
-
 /** A wallpaper or flooring shown as a swatch, for the shop and the book. */
 export function surfaceSwatch(itemId, { size = 92 } = {}) {
   const style = Object.entries(surfaceStyle(itemId))
     .map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`)
     .join(';');
   return `<div class="surface-swatch" style="width:${size}px;height:${size}px;${style}"></div>`;
-}
-
-/**
- * Draw an item, whatever kind it is. Dispatching on which drawing exists
- * rather than on the category means moving an item between slots — a
- * lantern from the floor to the wall, say — never silently loses its art.
- */
-export function itemSVG(item, opts) {
-  if (!item) return '';
-  if (SURFACES[item.id]) return surfaceSwatch(item.id, opts);
-  return decorSVG(item.id, opts) || wearableThumbSVG(item.id, opts);
 }

@@ -6,7 +6,7 @@
 */
 
 import { el, modal, button } from './dom.js';
-import { itemSVG } from './item-art.js';
+import { itemSVG } from './thumbs.js';
 import { petSVG } from './art.js';
 import { confetti } from './toast.js';
 import { burst } from './fx.js';
