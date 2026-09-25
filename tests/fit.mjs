@@ -162,6 +162,86 @@ ok('a hat is shown head and shoulders, with the hat inside the view',
 ok('and a cape is shown with enough of the body to see it on',
    aimed.acc.over[3] <= 14, JSON.stringify(aimed.acc.over));
 
+/* ---------- what she wears, where it sits ----------
+
+   A hat is drawn against the head it is worn on, and the head changes size
+   five times as the axolotl grows. So a hat that looks right on the grown
+   animal can cover the baby's eyes, or go out through the top of the
+   picture, and nobody would ever see it unless they thought to look at a
+   baby in a chef's hat. These two checks look, at every stage. */
+
+const worn = await page.evaluate(async () => {
+  const items = await import('./js/core/items.js');
+  const { wearableSVG } = await import('./js/ui/item-art.js');
+  const { STAGES } = await import('./js/core/pet.js');
+  const out = { clipped: [], eyes: [], missing: [] };
+  for (const stage of STAGES) {
+    const h = stage.headScale, b = stage.bodyScale;
+    const hrx = 46 * h, hry = 36 * h, bx = 100, by = 148, brx = 44 * b, bry = 36 * b;
+    const hy = by - bry - hry + 22 * h, hx = 100;
+    const g = { hx, hy, hrx, hry, bx, by, brx, bry,
+                coat: { body: '#f7bdd0', belly: '#fde9f1', gill: '#f2849f', dark: '#b56a83' } };
+    for (const item of items.CATALOG) {
+      if (item.category !== 'hat') continue;
+      const art = wearableSVG(item.id, g);
+      if (!art) { if (stage === STAGES[0]) out.missing.push(item.id); continue; }
+      const host = document.createElement('div');
+      host.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 44 200 162" width="400">' + art + '</svg>';
+      document.body.append(host);
+      const bb = host.querySelector('svg').getBBox();
+      host.remove();
+      /* The pet is drawn into a view that starts at y = 44. */
+      if (bb.y < 44) out.clipped.push(`${item.id}@${stage.key} ${bb.y.toFixed(0)}`);
+      /* And it must stop above the eyes. */
+      const eyeTop = hy - hry * 0.16 - hrx * 0.09;
+      if (bb.y + bb.height > eyeTop) out.eyes.push(`${item.id}@${stage.key}`);
+    }
+  }
+  return out;
+});
+ok('every hat has a drawing', worn.missing.length === 0, worn.missing.join(','));
+ok('no hat goes out through the top of the picture, at any size',
+   worn.clipped.length === 0, worn.clipped.slice(0, 6).join(' | '));
+ok('and none of them comes down over the eyes',
+   worn.eyes.length === 0, worn.eyes.slice(0, 6).join(' | '));
+
+/* A scarf goes round the neck and a jumper round the body, which means
+   their sides follow the animal's outline rather than sticking out past
+   it. */
+const fitted = await page.evaluate(async () => {
+  const { wearableSVG } = await import('./js/ui/item-art.js');
+  const hrx = 46, hry = 36, bx = 100, by = 148, brx = 44, bry = 36;
+  const hy = by - bry - hry + 22, hx = 100;
+  const g = { hx, hy, hrx, hry, bx, by, brx, bry,
+              coat: { body: '#f7bdd0', belly: '#fde9f1', gill: '#f2849f', dark: '#b56a83' } };
+  const box = id => {
+    const host = document.createElement('div');
+    host.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 44 200 162" width="400">' +
+      wearableSVG(id, g) + '</svg>';
+    document.body.append(host);
+    const bb = host.querySelector('svg').getBBox();
+    host.remove();
+    return { left: bb.x, right: bb.x + bb.width, top: bb.y, bottom: bb.y + bb.height };
+  };
+  return { scarf: box('scarf'), sweater: box('sweater'), head: { hx, hy, hrx, hry },
+           body: { bx, by, brx, bry } };
+});
+ok('the scarf sits at the neck, not across the chest',
+   fitted.scarf.top > fitted.head.hy && fitted.scarf.top < fitted.head.hy + fitted.head.hry,
+   JSON.stringify(fitted.scarf));
+ok('and it is no wider than the head it is wrapped round',
+   fitted.scarf.left > fitted.head.hx - fitted.head.hrx - 1,
+   `${fitted.scarf.left.toFixed(0)} vs ${(fitted.head.hx - fitted.head.hrx).toFixed(0)}`);
+ok('the jumper stays inside the body it is wrapped round',
+   fitted.sweater.left > fitted.body.bx - fitted.body.brx - 2 &&
+   fitted.sweater.right < fitted.body.bx + fitted.body.brx + 2,
+   JSON.stringify(fitted.sweater));
+ok('and it stops short of the feet',
+   fitted.sweater.bottom < fitted.body.by + fitted.body.bry,
+   `${fitted.sweater.bottom.toFixed(0)} vs ${(fitted.body.by + fitted.body.bry).toFixed(0)}`);
+
 /* ---------- the places, and who stands in them ---------- */
 
 const SEED = ({ mastered = 130, equipped = {}, owned = [] }) => {

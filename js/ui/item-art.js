@@ -17,6 +17,11 @@
 */
 
 const n = v => Math.round(v * 100) / 100;
+
+/* Unique ids for clip paths and gradients. Two drawings on one page sharing
+   an id means the second one silently wears the first one's clip. */
+let uid = 0;
+const wid = () => `w${(++uid).toString(36)}`;
 const n2 = n;   // alias, so nested template helpers read clearly
 
 /* ============================ WEARABLES ============================ */
@@ -29,19 +34,132 @@ const n2 = n;   // alias, so nested template helpers read clearly
    clipped off the top. Tall hats lower their brim to buy height rather than
    growing upward past that line. */
 
+/* How wide the animal is at a given height.
+
+   `k` is a height measured from the centre of the head or body in units of
+   that ellipse's vertical radius, downward positive. Everything that sits
+   ON the animal — a hat band, a brim, a scarf, the hem of a sweater — takes
+   its width from here rather than from a number typed by eye, which is what
+   stops a brim from hovering a little off the skull at one growth stage and
+   cutting into it at another. */
+const across = (r, k) => r * Math.sqrt(Math.max(0, 1 - k * k));
+
+/**
+ * A band wrapped round something round.
+ *
+ * The sides of the band ARE the ellipse's own outline, so a garment can
+ * never bulge past the animal wearing it, and both hems bow downward the
+ * way a hem bows on something round. That is the whole difference between
+ * clothing and a sticker: a sticker has straight edges and stops where the
+ * drawing stops.
+ *
+ * @param {number} topK  top hem, in vertical radii from the centre
+ * @param {number} botK  bottom hem, same units
+ * @param {number} bow   how much the hems sag in the middle
+ */
+function wrapBand(cx, cy, rx, ry, topK, botK, bow = 0.16) {
+  const ty = cy + topK * ry, by = cy + botK * ry;
+  const tw = across(rx, topK), bw = across(rx, botK);
+  return `M ${n(cx - tw)} ${n(ty)}
+          Q ${n(cx)} ${n(ty + bow * ry)} ${n(cx + tw)} ${n(ty)}
+          A ${n(rx)} ${n(ry)} 0 0 1 ${n(cx + bw)} ${n(by)}
+          Q ${n(cx)} ${n(by + bow * ry)} ${n(cx - bw)} ${n(by)}
+          A ${n(rx)} ${n(ry)} 0 0 1 ${n(cx - tw)} ${n(ty)} Z`;
+}
+
+/** A line following one hem of a wrapped band, for knit rows and trim. */
+function hemLine(cx, cy, rx, ry, k, bow = 0.16, shrink = 0.94) {
+  const y = cy + k * ry, w = across(rx, k) * shrink;
+  return `M ${n(cx - w)} ${n(y)} Q ${n(cx)} ${n(y + bow * ry)} ${n(cx + w)} ${n(y)}`;
+}
+
+/* A trunk that flares where it meets the ground, tapers as it rises, and
+   forks into branches that carry on up INTO the leaves. A straight rounded
+   rectangle stopping at the edge of a circle is what makes a tree read as a
+   lollipop. */
+function trunk({ topY = 52, spread = 9, light = '#c79a6d', dark = '#8a6340', line = '#7d5a3a' } = {}) {
+  const footL = 50 - spread * 1.5, footR = 50 + spread * 1.5;
+  const wTop = spread * 0.62;
+  return `
+    ${litPath(`M ${n2(footL)} 96
+               C ${n2(50 - spread * 0.9)} 88 ${n2(50 - wTop * 1.1)} ${n2(topY + 18)} ${n2(50 - wTop)} ${n2(topY)}
+               L ${n2(50 + wTop)} ${n2(topY)}
+               C ${n2(50 + wTop * 1.1)} ${n2(topY + 18)} ${n2(50 + spread * 0.9)} 88 ${n2(footR)} 96 Z`,
+              light, dark, { stroke: line, sw: 3.2, join: 'round' })}
+    ${grain(50 - wTop * 0.7, topY + 8, wTop * 1.4, 96 - topY - 16, 3, 2,
+            { color: '#5f4328', strength: .26, sw: 1.5 })}
+    <path d="M 50 ${n2(topY + 12)} q -7 -6 -13 -14 M 50 ${n2(topY + 18)} q 8 -6 14 -15"
+          fill="none" stroke="${dark}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 50 ${n2(topY + 12)} q -7 -6 -13 -14 M 50 ${n2(topY + 18)} q 8 -6 14 -15"
+          fill="none" stroke="${light}" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
+    <path d="M ${n2(footL + 2)} 95 q 6 -5 12 -4 M ${n2(footR - 2)} 95 q -6 -5 -12 -4"
+          fill="none" stroke="${line}" stroke-width="2.4" stroke-linecap="round" opacity=".6"/>`;
+}
+
+/* A cloud of leaves: `lobes` bumps round an ellipse, each one bulging out
+   between its neighbours, with the radius wobbling from a fixed seed. */
+function leafy(cx, cy, rx, ry, { lobes = 9, wobble = 0.13, seed = 1 } = {}) {
+  const at = i => {
+    const a = (i / lobes) * Math.PI * 2 - Math.PI / 2;
+    const r = 1 + Math.sin(i * 2.7 + seed * 1.9) * wobble;
+    return [cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r];
+  };
+  const mid = i => {
+    const a = ((i - 0.5) / lobes) * Math.PI * 2 - Math.PI / 2;
+    const r = 1 + wobble * 1.9 + Math.cos(i * 1.7 + seed) * wobble * 0.5;
+    return [cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r];
+  };
+  let [x0, y0] = at(0);
+  let d = `M ${n2(x0)} ${n2(y0)} `;
+  for (let i = 1; i <= lobes; i++) {
+    const [mx, my] = mid(i), [x, y] = at(i % lobes);
+    d += `Q ${n2(mx)} ${n2(my)} ${n2(x)} ${n2(y)} `;
+  }
+  return d + 'Z';
+}
+
 const HATS = {
+  /* A bow with some volume in it: two full loops with a fold in each, a
+     knot that sits proud of them, and short ribbon tails. The first one was
+     two small flat ovals and a dot, which at head size read as a bruise. */
   bow: (g, c = {}) => {
     const main = c.main || '#ef6f8e', light = c.light || '#f78ba6', line = c.line || '#b34a66';
-    const w = g.hrx * 0.30, y = g.hy - g.hry * 0.86;
-    const loop = side => `<ellipse cx="${n(g.hx + side * w * 0.72)}" cy="${n(y)}"
-        rx="${n(w * 0.62)}" ry="${n(w * 0.46)}" fill="${main}" stroke="${line}" stroke-width="2"
-        transform="rotate(${side * 18} ${n(g.hx + side * w * 0.72)} ${n(y)})"/>`;
-    return loop(-1) + loop(1) +
-      `<circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.30)}" fill="${light}" stroke="${line}" stroke-width="2"/>`;
+    const w = g.hrx * 0.50, y = g.hy - g.hry * 0.86;
+    /* Each loop leaves the knot, swells, and comes back with a notch bitten
+       out of its outer edge — the notch is what says "ribbon". */
+    const loop = side => {
+      const ox = g.hx + side * w * 1.02;
+      return `
+      <path d="M ${n(g.hx)} ${n(y)}
+               C ${n(g.hx + side * w * 0.42)} ${n(y - w * 0.86)} ${n(ox)} ${n(y - w * 0.74)}
+                 ${n(ox + side * w * 0.10)} ${n(y - w * 0.20)}
+               L ${n(ox - side * w * 0.10)} ${n(y)}
+               L ${n(ox + side * w * 0.10)} ${n(y + w * 0.22)}
+               C ${n(ox)} ${n(y + w * 0.74)} ${n(g.hx + side * w * 0.42)} ${n(y + w * 0.70)}
+                 ${n(g.hx)} ${n(y)} Z"
+            fill="${main}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M ${n(g.hx + side * w * 0.22)} ${n(y - w * 0.10)}
+               Q ${n(g.hx + side * w * 0.62)} ${n(y - w * 0.44)} ${n(ox)} ${n(y - w * 0.34)}"
+            fill="none" stroke="${light}" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>
+      <path d="M ${n(g.hx + side * w * 0.26)} ${n(y + w * 0.06)}
+               Q ${n(g.hx + side * w * 0.60)} ${n(y + w * 0.30)} ${n(ox - side * w * 0.04)} ${n(y + w * 0.28)}"
+            fill="none" stroke="${line}" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>`;
+    };
+    const tail = side => `
+      <path d="M ${n(g.hx)} ${n(y + w * 0.08)}
+               Q ${n(g.hx + side * w * 0.30)} ${n(y + w * 0.40)} ${n(g.hx + side * w * 0.26)} ${n(y + w * 0.62)}
+               L ${n(g.hx + side * w * 0.46)} ${n(y + w * 0.54)}
+               Q ${n(g.hx + side * w * 0.46)} ${n(y + w * 0.24)} ${n(g.hx)} ${n(y + w * 0.08)} Z"
+            fill="${main}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`;
+    return tail(-1) + tail(1) + loop(-1) + loop(1) + `
+      <ellipse cx="${n(g.hx)}" cy="${n(y)}" rx="${n(w * 0.30)}" ry="${n(w * 0.26)}"
+               fill="${light}" stroke="${line}" stroke-width="2.2"/>
+      <ellipse cx="${n(g.hx - w * 0.09)}" cy="${n(y - w * 0.08)}" rx="${n(w * 0.12)}" ry="${n(w * 0.09)}"
+               fill="#ffffff" opacity=".5"/>`;
   },
 
   party_hat: g => {
-    const baseY = g.hy - g.hry * 0.52, w = g.hrx * 0.46, h = g.hry * 0.56;
+    const baseY = g.hy - g.hry * 0.72, w = across(g.hrx, 0.72) * 0.74, h = g.hry * 0.42;
     return `
       <path d="M ${n(g.hx - w)} ${n(baseY)} L ${n(g.hx)} ${n(baseY - h)} L ${n(g.hx + w)} ${n(baseY)} Z"
             fill="#f7b955" stroke="#c98d34" stroke-width="2.4" stroke-linejoin="round"/>
@@ -55,8 +173,8 @@ const HATS = {
   /* Halloween 2026. Soft purple rather than black, and the point leans back
      instead of stabbing upward, so it reads as dressing-up rather than spooky. */
   witch_hat: g => {
-    const baseY = g.hy - g.hry * 0.46;
-    const w = g.hrx * 0.52, h = g.hry * 0.84;
+    const baseY = g.hy - g.hry * 0.72;
+    const w = across(g.hrx, 0.72) * 0.76, h = g.hry * 0.60;
     const tipX = g.hx + w * 0.62, tipY = baseY - h;
     const bandY = baseY - g.hry * 0.16;
     return `
@@ -75,7 +193,7 @@ const HATS = {
   /* A pet discovery. A soft cap with one long feather, angled so the gills
      stay visible underneath it. */
   feather_cap: g => {
-    const y = g.hy - g.hry * 0.48, w = g.hrx * 0.88, dome = g.hry * 0.54;
+    const y = g.hy - g.hry * 0.76, w = across(g.hrx, 0.76) * 1.06, dome = g.hry * 0.38;
     const quillX = g.hx + w * 0.34, quillY = y - dome * 0.72;
     const tipX = g.hx + w * 1.02, tipY = y - dome * 1.52;
     return `
@@ -98,7 +216,7 @@ const HATS = {
 
   /* Gathering Week. The cap of an acorn, textured rather than smooth. */
   acorn_hat: g => {
-    const y = g.hy - g.hry * 0.20, w = g.hrx * 0.95, dome = g.hry * 0.72;
+    const y = g.hy - g.hry * 0.62, w = across(g.hrx, 0.62) * 1.04, dome = g.hry * 0.42;
     return `
       <path d="M ${n(g.hx - w)} ${n(y)}
                Q ${n(g.hx)} ${n(y - dome * 1.9)} ${n(g.hx + w)} ${n(y)} Z"
@@ -109,14 +227,14 @@ const HATS = {
               fill="none" stroke="#8d6238" stroke-width="2.2" stroke-linecap="round" opacity=".65"/>`).join('')}
       <path d="M ${n(g.hx - w * 1.04)} ${n(y)} Q ${n(g.hx)} ${n(y + g.hry * 0.22)} ${n(g.hx + w * 1.04)} ${n(y)}"
             fill="none" stroke="#c9975f" stroke-width="${n(g.hry * 0.18)}" stroke-linecap="round"/>
-      <path d="M ${n(g.hx)} ${n(y - dome * 1.24)} v ${n(-g.hry * 0.20)}"
+      <path d="M ${n(g.hx)} ${n(y - dome * 1.24)} v ${n(-g.hry * 0.14)}"
             stroke="#7d5730" stroke-width="3.4" stroke-linecap="round"/>`;
   },
 
   /* Trim the Tree. The point flops forward, which keeps it inside the
      canvas and looks friendlier than a spike. */
   santa_hat: g => {
-    const y = g.hy - g.hry * 0.44, w = g.hrx * 0.82, dome = g.hry * 0.72;
+    const y = g.hy - g.hry * 0.72, w = across(g.hrx, 0.72) * 1.02, dome = g.hry * 0.46;
     const tipX = g.hx - w * 1.02, tipY = y - dome * 0.58;
     return `
       <path d="M ${n(g.hx - w)} ${n(y)}
@@ -135,11 +253,11 @@ const HATS = {
   /* Spring Egg Hunt. Long ears on a band, leaning apart so both stay clear
      of the gills. */
   bunny_ears: g => {
-    const y = g.hy - g.hry * 0.50;
+    const y = g.hy - g.hry * 0.68;
     const ear = side => {
       const cx = g.hx + side * g.hrx * 0.36;
-      const cy = y - g.hry * 0.34;
-      const rx = g.hrx * 0.175, ry = g.hry * 0.46;
+      const cy = y - g.hry * 0.28;
+      const rx = g.hrx * 0.17, ry = g.hry * 0.37;
       const rot = side * 15;
       const spin = `rotate(${rot} ${n(cx)} ${n(cy)})`;
       return `
@@ -154,7 +272,7 @@ const HATS = {
   },
 
   flower_crown: g => {
-    const y = g.hy - g.hry * 0.80, r = g.hrx * 0.115;
+    const y = g.hy - g.hry * 0.90, r = g.hrx * 0.115;
     const colours = ['#f2849f', '#ffd980', '#c9a3e0', '#8fd3a8', '#f7a8c6'];
     let out = `<path d="M ${n(g.hx - g.hrx * 0.62)} ${n(y + r * 0.6)}
                        Q ${n(g.hx)} ${n(y - r * 1.5)} ${n(g.hx + g.hrx * 0.62)} ${n(y + r * 0.6)}"
@@ -174,7 +292,7 @@ const HATS = {
   },
 
   wizard_hat: g => {
-    const baseY = g.hy - g.hry * 0.54, w = g.hrx * 0.70, h = g.hry * 0.76;
+    const baseY = g.hy - g.hry * 0.76, w = across(g.hrx, 0.76) * 0.94, h = g.hry * 0.56;
     return `
       <path d="M ${n(g.hx - w)} ${n(baseY)}
                Q ${n(g.hx - w * 0.30)} ${n(baseY - h * 0.55)} ${n(g.hx + w * 0.22)} ${n(baseY - h)}
@@ -188,7 +306,7 @@ const HATS = {
   },
 
   gold_crown: g => {
-    const y = g.hy - g.hry * 0.78, w = g.hrx * 0.62, h = g.hry * 0.46;
+    const y = g.hy - g.hry * 0.86, w = across(g.hrx, 0.86) * 1.04, h = g.hry * 0.40;
     return `
       <path d="M ${n(g.hx - w)} ${n(y)} L ${n(g.hx - w)} ${n(y - h * 0.55)}
                L ${n(g.hx - w * 0.5)} ${n(y - h * 0.10)} L ${n(g.hx)} ${n(y - h)}
@@ -201,7 +319,7 @@ const HATS = {
   },
 
   flower_pin: g => {
-    const x = g.hx + g.hrx * 0.50, y = g.hy - g.hry * 0.60, r = g.hrx * 0.20;
+    const x = g.hx + g.hrx * 0.46, y = g.hy - g.hry * 0.72, r = g.hrx * 0.20;
     return `<g>${[...Array(6)].map((_, i) => {
       const a = (i / 6) * Math.PI * 2;
       return `<ellipse cx="${n(x + Math.cos(a) * r * 0.86)}" cy="${n(y + Math.sin(a) * r * 0.86)}"
@@ -214,7 +332,7 @@ const HATS = {
 
   headband: (g, c = {}) => {
     const main = c.main || '#6fb3d9', gem = c.light || '#f2849f', line = c.line || '#b3596e';
-    const y = g.hy - g.hry * 0.60;
+    const y = g.hy - g.hry * 0.74;
     return `<path d="M ${n(g.hx - g.hrx * 0.94)} ${n(y + g.hry * 0.22)}
                      Q ${n(g.hx)} ${n(y - g.hry * 0.34)} ${n(g.hx + g.hrx * 0.94)} ${n(y + g.hry * 0.22)}"
                   fill="none" stroke="${main}" stroke-width="${n(g.hry * 0.17)}" stroke-linecap="round"/>
@@ -225,39 +343,41 @@ const HATS = {
   sun_hat: (g, c = {}) => {
     const main = c.main || '#f0d79a', light = c.light || '#f7e2b0',
           line = c.line || '#c9a462', band = c.band || '#e2566f';
-    const y = g.hy - g.hry * 0.56;
-    return `<ellipse cx="${n(g.hx)}" cy="${n(y)}" rx="${n(g.hrx * 1.12)}" ry="${n(g.hry * 0.30)}"
+    const y = g.hy - g.hry * 0.76;
+    const w = across(g.hrx, 0.76);
+    return `<ellipse cx="${n(g.hx)}" cy="${n(y)}" rx="${n(g.hrx * 1.10)}" ry="${n(g.hry * 0.26)}"
                      fill="${main}" stroke="${line}" stroke-width="2.4"/>
-            <path d="M ${n(g.hx - g.hrx * 0.52)} ${n(y)} a ${n(g.hrx * 0.52)} ${n(g.hry * 0.52)} 0 0 1 ${n(g.hrx * 1.04)} 0 z"
+            <path d="M ${n(g.hx - w * 1.02)} ${n(y)} a ${n(w * 1.02)} ${n(g.hry * 0.54)} 0 0 1 ${n(w * 2.04)} 0 z"
                   fill="${light}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
-            <path d="M ${n(g.hx - g.hrx * 0.50)} ${n(y - g.hry * 0.04)} q ${n(g.hrx * 0.50)} ${n(g.hry * 0.18)} ${n(g.hrx * 1.0)} 0"
-                  fill="none" stroke="${band}" stroke-width="${n(g.hry * 0.12)}"/>`;
+            <path d="M ${n(g.hx - w * 1.02)} ${n(y - g.hry * 0.03)} q ${n(w * 1.02)} ${n(g.hry * 0.16)} ${n(w * 2.04)} 0"
+                  fill="none" stroke="${band}" stroke-width="${n(g.hry * 0.11)}"/>`;
   },
 
   beanie: (g, c = {}) => {
     const main = c.main || '#8a7fc4', light = c.light || '#a79ade', line = c.line || '#5f568f';
-    const y = g.hy - g.hry * 0.32;
-    return `<path d="M ${n(g.hx - g.hrx * 0.82)} ${n(y)} a ${n(g.hrx * 0.82)} ${n(g.hry * 0.72)} 0 0 1 ${n(g.hrx * 1.64)} 0 z"
+    const y = g.hy - g.hry * 0.60;
+    const w = across(g.hrx, 0.60);
+    return `<path d="M ${n(g.hx - w)} ${n(y)} a ${n(w)} ${n(g.hry * 0.58)} 0 0 1 ${n(w * 2)} 0 z"
                   fill="${main}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
-            <rect x="${n(g.hx - g.hrx * 0.88)}" y="${n(y - g.hry * 0.10)}"
-                  width="${n(g.hrx * 1.76)}" height="${n(g.hry * 0.26)}" rx="${n(g.hry * 0.13)}"
+            <rect x="${n(g.hx - w * 1.08)}" y="${n(y - g.hry * 0.09)}"
+                  width="${n(w * 2.16)}" height="${n(g.hry * 0.24)}" rx="${n(g.hry * 0.12)}"
                   fill="${light}" stroke="${line}" stroke-width="2.4"/>
-            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.76)}" r="${n(g.hrx * 0.14)}"
+            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.52)}" r="${n(g.hrx * 0.13)}"
                     fill="${c.bobble || '#fff6e8'}" stroke="#c9b8a4" stroke-width="2"/>`;
   },
 
   chef_hat: g => {
-    const y = g.hy - g.hry * 0.36;
+    const y = g.hy - g.hry * 0.64;
     return `<rect x="${n(g.hx - g.hrx * 0.46)}" y="${n(y - g.hry * 0.26)}"
                   width="${n(g.hrx * 0.92)}" height="${n(g.hry * 0.34)}" rx="${n(g.hry * 0.10)}"
                   fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx - g.hrx * 0.34)}" cy="${n(y - g.hry * 0.40)}" r="${n(g.hrx * 0.26)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx + g.hrx * 0.34)}" cy="${n(y - g.hry * 0.40)}" r="${n(g.hrx * 0.26)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
-            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.54)}" r="${n(g.hrx * 0.28)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>`;
+            <circle cx="${n(g.hx - g.hrx * 0.30)}" cy="${n(y - g.hry * 0.28)}" r="${n(g.hrx * 0.22)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
+            <circle cx="${n(g.hx + g.hrx * 0.30)}" cy="${n(y - g.hry * 0.28)}" r="${n(g.hrx * 0.22)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>
+            <circle cx="${n(g.hx)}" cy="${n(y - g.hry * 0.40)}" r="${n(g.hrx * 0.24)}" fill="#fff6e8" stroke="#c9b8a4" stroke-width="2.4"/>`;
   },
 
   pirate_hat: g => {
-    const y = g.hy - g.hry * 0.60;
+    const y = g.hy - g.hry * 0.80;
     return `<path d="M ${n(g.hx - g.hrx * 1.06)} ${n(y + g.hry * 0.20)}
                      Q ${n(g.hx)} ${n(y - g.hry * 1.10)} ${n(g.hx + g.hrx * 1.06)} ${n(y + g.hry * 0.20)}
                      Q ${n(g.hx)} ${n(y - g.hry * 0.14)} ${n(g.hx - g.hrx * 1.06)} ${n(y + g.hry * 0.20)} Z"
@@ -269,12 +389,12 @@ const HATS = {
   },
 
   tiara: g => {
-    const y = g.hy - g.hry * 0.60, w = g.hrx * 0.74;
+    const y = g.hy - g.hry * 0.78, w = across(g.hrx, 0.78) * 1.10;
     return `
       <path d="M ${n(g.hx - w)} ${n(y + g.hry * 0.30)}
                L ${n(g.hx - w * 0.52)} ${n(y - g.hry * 0.30)}
                L ${n(g.hx - w * 0.22)} ${n(y + g.hry * 0.06)}
-               L ${n(g.hx)} ${n(y - g.hry * 0.56)}
+               L ${n(g.hx)} ${n(y - g.hry * 0.44)}
                L ${n(g.hx + w * 0.22)} ${n(y + g.hry * 0.06)}
                L ${n(g.hx + w * 0.52)} ${n(y - g.hry * 0.30)}
                L ${n(g.hx + w)} ${n(y + g.hry * 0.30)} Z"
@@ -283,7 +403,7 @@ const HATS = {
               fill="#a8c8f0" stroke="#7f9fd0" stroke-width="2"/>
       <circle cx="${n(g.hx - w * 0.52)}" cy="${n(y - g.hry * 0.16)}" r="${n(g.hrx * 0.07)}" fill="#f7a8c6"/>
       <circle cx="${n(g.hx + w * 0.52)}" cy="${n(y - g.hry * 0.16)}" r="${n(g.hrx * 0.07)}" fill="#f7a8c6"/>
-      <path d="M ${n(g.hx - w * 0.30)} ${n(y - g.hry * 0.74)} l 2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#fff3cc"/>`;
+      <path d="M ${n(g.hx - w * 0.30)} ${n(y - g.hry * 0.56)} l 2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#fff3cc"/>`;
   },
 
   champion_crown: g => HATS.gold_crown(g) + `
@@ -294,15 +414,25 @@ const HATS = {
 const ACCESSORIES = {
   bowtie: (g, c = {}) => {
     const main = c.main || '#e2566f', light = c.light || '#f0778c', line = c.line || '#a23b50';
-    const y = g.hy + g.hry * 1.02, w = g.hrx * 0.26;
-    return `
-      <path d="M ${n(g.hx - w)} ${n(y - w * 0.62)} L ${n(g.hx - w * 0.16)} ${n(y)}
-               L ${n(g.hx - w)} ${n(y + w * 0.62)} Z"
-            fill="${main}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M ${n(g.hx + w)} ${n(y - w * 0.62)} L ${n(g.hx + w * 0.16)} ${n(y)}
-               L ${n(g.hx + w)} ${n(y + w * 0.62)} Z"
-            fill="${main}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="${n(g.hx)}" cy="${n(y)}" r="${n(w * 0.24)}" fill="${light}" stroke="${line}" stroke-width="1.8"/>`;
+    const y = g.hy + g.hry * 1.02, w = g.hrx * 0.40;
+    /* Each half swells away from the knot and is pinched back in at the
+       outer edge, so it reads as folded ribbon rather than as two triangles
+       meeting at a point. */
+    const half = side => `
+      <path d="M ${n(g.hx + side * w * 0.14)} ${n(y)}
+               C ${n(g.hx + side * w * 0.55)} ${n(y - w * 0.74)} ${n(g.hx + side * w * 0.96)} ${n(y - w * 0.66)}
+                 ${n(g.hx + side * w * 1.02)} ${n(y - w * 0.16)}
+               L ${n(g.hx + side * w * 0.86)} ${n(y)}
+               L ${n(g.hx + side * w * 1.02)} ${n(y + w * 0.16)}
+               C ${n(g.hx + side * w * 0.96)} ${n(y + w * 0.66)} ${n(g.hx + side * w * 0.55)} ${n(y + w * 0.62)}
+                 ${n(g.hx + side * w * 0.14)} ${n(y)} Z"
+            fill="${main}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M ${n(g.hx + side * w * 0.34)} ${n(y - w * 0.12)}
+               Q ${n(g.hx + side * w * 0.66)} ${n(y - w * 0.40)} ${n(g.hx + side * w * 0.92)} ${n(y - w * 0.30)}"
+            fill="none" stroke="${light}" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>`;
+    return half(-1) + half(1) + `
+      <ellipse cx="${n(g.hx)}" cy="${n(y)}" rx="${n(w * 0.22)}" ry="${n(w * 0.28)}"
+               fill="${light}" stroke="${line}" stroke-width="2"/>`;
   },
 
   /* Birthday Week. A sash across the chest, following the body rather than
@@ -335,16 +465,41 @@ const ACCESSORIES = {
       <circle cx="${n(x)}" cy="${n(y)}" r="${n(g.hrx * 0.10)}" fill="#ffd980" stroke="#c9922c" stroke-width="2"/>`;
   },
 
+  /* A scarf goes ROUND the neck. This one is a band wrapped on the lower
+     curve of the head, so it narrows towards the chin the way the head
+     does, with a knot off to one side and an end hanging over the chest.
+     The first one was a straight bar drawn under the chin, which read as a
+     line somebody had ruled across the animal. */
   scarf: (g, c = {}) => {
     const main = c.main || '#e2566f', stripe = c.light || '#f7b955', line = c.line || '#a23b50';
-    const y = g.hy + g.hry * 0.98, w = g.brx * 0.52, h = g.bry * 0.20;
+    const topK = 0.46, botK = 0.88, bow = 0.24;
+    const band = wrapBand(g.hx, g.hy, g.hrx, g.hry, topK, botK, bow);
+    const clip = wid();
+    const ty = g.hy + topK * g.hry, by = g.hy + botK * g.hry;
+    const tw = across(g.hrx, topK);
+    /* Stripes run across the width of a scarf, so on the wrapped band they
+       are short bars leaning outward with the curve. */
+    const stripes = [-0.62, -0.18, 0.28, 0.70].map(t => `
+      <path d="M ${n(g.hx + t * tw)} ${n(ty - 2)} L ${n(g.hx + t * tw * 1.14)} ${n(by + 3)}"
+            stroke="${stripe}" stroke-width="${n(g.hrx * 0.13)}" stroke-linecap="butt"/>`).join('');
+    const knotX = g.hx + tw * 0.52, knotY = by - g.hry * 0.06;
     return `
-      <rect x="${n(g.hx - w)}" y="${n(y - h / 2)}" width="${n(w * 2)}" height="${n(h)}"
-            rx="${n(h * 0.45)}" fill="${main}" stroke="${line}" stroke-width="2"/>
-      <rect x="${n(g.hx - w * 0.62)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="${stripe}"/>
-      <rect x="${n(g.hx + w * 0.26)}" y="${n(y - h / 2)}" width="${n(w * 0.34)}" height="${n(h)}" fill="${stripe}"/>
-      <rect x="${n(g.hx + w * 0.30)}" y="${n(y)}" width="${n(h * 0.9)}" height="${n(h * 2.1)}"
-            rx="${n(h * 0.35)}" fill="${main}" stroke="${line}" stroke-width="2"/>`;
+      <clipPath id="${clip}"><path d="${band}"/></clipPath>
+      <path d="${band}" fill="${main}"/>
+      <g clip-path="url(#${clip})">${stripes}</g>
+      <path d="${band}" fill="none" stroke="${line}" stroke-width="2.2" stroke-linejoin="round"/>
+      ${/* The end, hanging down over the chest with a fringe on it. */ ''}
+      <path d="M ${n(knotX - g.hrx * 0.10)} ${n(knotY)}
+               Q ${n(knotX + g.hrx * 0.16)} ${n(knotY + g.hry * 0.44)} ${n(knotX + g.hrx * 0.06)} ${n(knotY + g.hry * 0.80)}
+               L ${n(knotX + g.hrx * 0.34)} ${n(knotY + g.hry * 0.74)}
+               Q ${n(knotX + g.hrx * 0.42)} ${n(knotY + g.hry * 0.34)} ${n(knotX + g.hrx * 0.22)} ${n(knotY - g.hry * 0.04)} Z"
+            fill="${main}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M ${n(knotX + g.hrx * 0.02)} ${n(knotY + g.hry * 0.74)} v ${n(g.hry * 0.12)}
+               M ${n(knotX + g.hrx * 0.14)} ${n(knotY + g.hry * 0.76)} v ${n(g.hry * 0.12)}
+               M ${n(knotX + g.hrx * 0.26)} ${n(knotY + g.hry * 0.74)} v ${n(g.hry * 0.12)}"
+            stroke="${stripe}" stroke-width="2.2" stroke-linecap="round"/>
+      <ellipse cx="${n(knotX)}" cy="${n(knotY - g.hry * 0.10)}" rx="${n(g.hrx * 0.17)}" ry="${n(g.hry * 0.15)}"
+               fill="${stripe}" stroke="${line}" stroke-width="2.2"/>`;
   },
 
   goggles: g => {
@@ -369,9 +524,9 @@ const ACCESSORIES = {
        leaves the shoulders narrow, flares outward, and stops ABOVE the
        feet with a hem that has corners in it. */
     const shoulderY = g.by - g.bry * 0.86;   // where it leaves the shoulders
-    const hemY      = g.by + g.bry * 0.56;   // well clear of the feet
+    const hemY      = g.by + g.bry * 0.66;   // well clear of the feet
     const top = g.brx * 0.74;                // shoulder width
-    const w   = g.brx * 1.34;                // the flare
+    const w   = g.brx * 1.46;                // the flare
     /* A hem of three shallow scallops, so the bottom edge reads as cloth
        hanging in folds rather than as the rim of a cushion. */
     const hem = (from, to) => {
@@ -496,18 +651,49 @@ const ACCESSORIES = {
             rx="${n(h * 0.07)}" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`;
   },
 
+  /* A jumper, wrapped. Its sides are the body's own outline and its hems
+     sag in the middle, so it sits ON the animal; it has a rolled collar,
+     ribbing at the bottom and short sleeves over the arms. The first one
+     was a flat trapezoid pasted over the belly with straight sides, which
+     is exactly what a sticker looks like. */
   sweater: (g, c = {}) => {
     const main = c.main || '#e2566f', line = c.line || '#a23b50', knit = c.light || '#fff6e8';
-    const top = g.hy + g.hry * 0.96;
-    return `<path d="M ${n(g.bx - g.brx * 0.82)} ${n(top + g.bry * 0.20)}
-                     Q ${n(g.bx)} ${n(top - g.bry * 0.16)} ${n(g.bx + g.brx * 0.82)} ${n(top + g.bry * 0.20)}
-                     L ${n(g.bx + g.brx * 0.90)} ${n(g.by + g.bry * 0.70)}
-                     Q ${n(g.bx)} ${n(g.by + g.bry * 1.00)} ${n(g.bx - g.brx * 0.90)} ${n(g.by + g.bry * 0.70)} Z"
-                  fill="${main}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
-            <path d="M ${n(g.bx - g.brx * 0.86)} ${n(g.by + g.bry * 0.10)} Q ${n(g.bx)} ${n(g.by + g.bry * 0.34)} ${n(g.bx + g.brx * 0.86)} ${n(g.by + g.bry * 0.10)}"
-                  fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.13)}"/>
-            <path d="M ${n(g.bx - g.brx * 0.88)} ${n(g.by + g.bry * 0.42)} Q ${n(g.bx)} ${n(g.by + g.bry * 0.66)} ${n(g.bx + g.brx * 0.88)} ${n(g.by + g.bry * 0.42)}"
-                  fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.13)}"/>`;
+    const topK = -0.52, botK = 0.78, bow = 0.17;
+    const band = wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow);
+    const collarY = g.by + topK * g.bry, collarW = across(g.brx, topK);
+    /* The sleeve follows the arm the pet draws: out and down from the
+       shoulder, stopping short so the paws stay out in the open. */
+    const sleeve = side => {
+      const ax = g.bx + side * g.brx * 0.56, ay = g.by + g.bry * 0.16;
+      const tx = g.bx + side * g.brx * 0.84, ty = g.by + g.bry * 0.42;
+      return `
+      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
+            stroke="${line}" stroke-width="${n(g.bry * 0.40)}" stroke-linecap="round"/>
+      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
+            stroke="${main}" stroke-width="${n(g.bry * 0.32)}" stroke-linecap="round"/>
+      <path d="M ${n(tx - side * g.brx * 0.03)} ${n(ty - g.bry * 0.09)}
+               l ${n(side * g.brx * 0.06)} ${n(g.bry * 0.18)}"
+            stroke="${knit}" stroke-width="${n(g.bry * 0.09)}" stroke-linecap="round"/>`;
+    };
+    return `
+      ${sleeve(-1)}${sleeve(1)}
+      ${litPath(band, main, line, { stroke: line, sw: 2.6, join: 'round' })}
+      <path d="${hemLine(g.bx, g.by, g.brx, g.bry, 0.12, bow)}"
+            fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.11)}" opacity=".9"/>
+      <path d="${hemLine(g.bx, g.by, g.brx, g.bry, 0.44, bow)}"
+            fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.11)}" opacity=".9"/>
+      ${/* Ribbing at the hem: short strokes standing on the bottom edge. */ ''}
+      ${[-0.66, -0.34, 0, 0.34, 0.66].map(t => {
+        const x = g.bx + t * across(g.brx, botK) * 0.94;
+        const y = g.by + botK * g.bry + (1 - t * t) * bow * g.bry * 0.9;
+        return `<path d="M ${n(x)} ${n(y)} v ${n(-g.bry * 0.11)}"
+                      stroke="${line}" stroke-width="2" stroke-linecap="round" opacity=".45"/>`;
+      }).join('')}
+      ${/* The rolled collar, sitting proud of the shoulders. */ ''}
+      <path d="M ${n(g.bx - collarW)} ${n(collarY)}
+               Q ${n(g.bx)} ${n(collarY + bow * g.bry)} ${n(g.bx + collarW)} ${n(collarY)}
+               Q ${n(g.bx)} ${n(collarY + bow * g.bry + g.bry * 0.13)} ${n(g.bx - collarW)} ${n(collarY)} Z"
+            fill="${knit}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round" opacity=".95"/>`;
   },
 
   fairy_wings: g => {
@@ -1533,18 +1719,18 @@ const DECOR = {
 
   /* A beach ball with coloured panels. Two white arcs across a blue circle
      read as a lens, or a mouth, but never as a ball. */
-  toy_ball: () => `
+  toy_ball: () => { const ball = wid(); return `
     ${contact(50, 90, 24, 5, .28)}
     ${litEllipse(50, 66, 26, 26, '#8ac6e6', '#3f7d9e', { stroke: '#3f7d9e', sw: 3 })}
-    <clipPath id="ballclip"><circle cx="50" cy="66" r="25"/></clipPath>
-    <g clip-path="url(#ballclip)">
+    <clipPath id="${ball}"><circle cx="50" cy="66" r="25"/></clipPath>
+    <g clip-path="url(#${ball})">
       <path d="M 50 41 q 14 25 0 50 q -9 -25 0 -50 z" fill="#fdf3e2"/>
       <path d="M 50 41 q -15 25 0 50 q -22 -8 -24 -25 q 2 -17 24 -25 z" fill="#f7a8b8"/>
       <path d="M 50 41 q 26 8 25 25 q -1 17 -25 25 q 13 -25 0 -50 z" fill="#ffe08a"/>
       <path d="M 26 66 h 48" stroke="#3f7d9e" stroke-width="1.6" opacity=".25"/>
     </g>
     <circle cx="50" cy="66" r="25" fill="none" stroke="#3f7d9e" stroke-width="3"/>
-    <ellipse cx="41" cy="55" rx="7" ry="5" fill="#fff" opacity=".6" transform="rotate(-28 41 55)"/>`,
+    <ellipse cx="41" cy="55" rx="7" ry="5" fill="#fff" opacity=".6" transform="rotate(-28 41 55)"/>`; },
 
   potted_plant: () => `
     ${contact(50, 90, 24, 5, .28)}
@@ -1613,12 +1799,16 @@ const DECOR = {
 
   little_tree: () => `
     ${contact(50, 92, 26, 5, .26)}
-    ${litRect(44, 58, 12, 32, 4, '#b08557', '#845f3c', { stroke: '#7a5836', sw: 2.5 })}
-    ${litEllipse(50, 36, 24, 24, '#93d8ae', '#57a17a', { stroke: '#4f9b6d', sw: 3 })}
-    ${litEllipse(32, 48, 15, 15, '#a3dcb8', '#63ab83', { stroke: '#4f9b6d', sw: 3 })}
-    ${litEllipse(68, 48, 15, 15, '#8fcfa6', '#539a72', { stroke: '#4f9b6d', sw: 3 })}
-    <circle cx="40" cy="30" r="4" fill="#f2849f"/><circle cx="60" cy="42" r="4" fill="#f2849f"/>
-    <circle cx="56" cy="26" r="3.4" fill="#ffd980"/>`,
+    ${trunk({ topY: 54, spread: 7, light: '#c49a72', dark: '#8a6647', line: '#7a5836' })}
+    ${litPath(leafy(50, 40, 28, 24, { lobes: 10, seed: 1 }), '#93d8ae', '#57a17a',
+              { stroke: '#4f9b6d', sw: 3.2, join: 'round' })}
+    ${litPath(leafy(32, 50, 14, 12, { lobes: 8, seed: 4 }), '#a3dcb8', '#63ab83',
+              { stroke: '#4f9b6d', sw: 2.8, join: 'round' })}
+    ${litPath(leafy(69, 48, 14, 12, { lobes: 8, seed: 8 }), '#8fcfa6', '#539a72',
+              { stroke: '#4f9b6d', sw: 2.8, join: 'round' })}
+    <path d="${leafy(50, 48, 25, 15, { lobes: 9, seed: 3 })}" fill="#2f6b4c" opacity=".14"/>
+    <circle cx="40" cy="32" r="3.6" fill="#f2849f"/><circle cx="60" cy="44" r="3.6" fill="#f2849f"/>
+    <circle cx="56" cy="27" r="3" fill="#ffd980"/>`,
 
   fish_tank: () => `
     ${contact(50, 86, 38, 5, .26)}
@@ -2038,13 +2228,23 @@ const DECOR = {
     ${litEllipse(50, 50, 30, 12, '#ded6c8', '#a29887', { stroke: '#7d7468', sw: 3 })}
     <ellipse cx="50" cy="48" rx="24" ry="8.5" fill="#4f93ad"/>
     ${litEllipse(50, 48, 23, 8, '#a7dcec', '#4a8ba6', { cy: '78%', r: '92%' })}
-    <g class="ia-rings" style="transform-origin:56% 48%">
+    <g class="ia-rings bath-rings" style="transform-origin:56% 48%">
       <ellipse cx="56" cy="48" rx="6" ry="2.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.4"/>
       <ellipse cx="56" cy="48" rx="11" ry="4.2" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.4"/>
     </g>
-    ${litEllipse(28, 40, 7, 6, '#f2849f', '#c9738c', { stroke: '#a85d78', sw: 1.8 })}
-    <circle cx="25" cy="38" r="1.4" fill="#3a2e28"/>
-    <path d="M 22 40 l -4 1 4 1 z" fill="#f6c453"/>`,
+    ${/* The bird. It stands on the rim, dips for a drink, shakes itself and
+          stands up again — and the rings above are timed to spread just
+          after the dip, so the splash belongs to the bird. */ ''}
+    <g class="ia-dip">
+      <g class="ia-flick">
+        ${litEllipse(28, 40, 7, 6, '#f2849f', '#c9738c', { stroke: '#a85d78', sw: 1.8 })}
+        <path d="M 29 39 q 6 1 7 5 q -5 1 -7 -5 z" fill="#d8748f" opacity=".8"/>
+      </g>
+      <circle cx="25" cy="38" r="1.4" fill="#3a2e28"/>
+      <circle cx="24.6" cy="37.6" r="0.5" fill="#fff" opacity=".85"/>
+      <path d="M 22 40 l -4 1 4 1 z" fill="#f6c453"/>
+      <path d="M 28 46 v 3 M 31 46 v 3" stroke="#c9922c" stroke-width="1.4" stroke-linecap="round"/>
+    </g>`,
 
   /* A lantern on a post, for the garden path. */
   lantern_post: () => `
@@ -2239,15 +2439,15 @@ const DECOR = {
     ${litEllipse(60, 46, 8, 8, '#a3dcb8', '#69b98c', { stroke: '#4f8a5c', sw: 2.5 })}
     ${litRect(70, 42, 10, 12, 2, '#ffd980', '#dfa93c')}`,
 
-  mirror: () => `
+  mirror: () => { const glass = wid(); return `
     <circle class="${SHADOW}" cx="52.4" cy="50.6" r="32" fill="#3a2c1e" opacity=".17"/>
     ${litEllipse(50, 48, 32, 32, '#e6f0f7', '#bccddb', { stroke: '#a5875f', sw: 6 })}
     ${litEllipse(50, 48, 26, 26, '#fbfdff', '#d3e3ee')}
     ${/* A mirror with nothing in it is a white disc. This is the room
           reflected: a band of wall, a line where the floor starts, and the
           gleam across it. */ ''}
-    <clipPath id="mirglass"><circle cx="50" cy="48" r="26"/></clipPath>
-    <g clip-path="url(#mirglass)">
+    <clipPath id="${glass}"><circle cx="50" cy="48" r="26"/></clipPath>
+    <g clip-path="url(#${glass})">
       <rect x="24" y="22" width="52" height="34" fill="#e7eef6"/>
       <rect x="24" y="56" width="52" height="24" fill="#f0e2cc"/>
       <path d="M 24 56 h 52" stroke="#d9c7ab" stroke-width="2"/>
@@ -2255,7 +2455,7 @@ const DECOR = {
       <path d="M 60 56 q 5 -12 10 0 z" fill="#cfe3d5" opacity=".9"/>
     </g>
     <path d="M 32 58 q 14 -26 34 -14" fill="none" stroke="#fff" stroke-width="7" opacity=".7" stroke-linecap="round"/>
-    <circle cx="50" cy="12" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`,
+    <circle cx="50" cy="12" r="5" fill="#f6c453" stroke="#c9922c" stroke-width="2"/>`; },
 
   /* A hanging plant has to say "hanging" before it says "plant", and the
      first version said neither: a pot with a stub of rope above it and
@@ -2721,34 +2921,91 @@ const DECOR = {
                            rail that stops short leaves a gap at every join
   */
 
-  /* ---- Trees ---- */
+  /* ---- Trees ----
+
+     A tree drawn as circles on a stick reads as a lollipop, and three of
+     them read as three lollipops. What makes a tree a tree is: a trunk that
+     flares where it meets the ground and TAPERS as it rises, branches that
+     go up INTO the leaves rather than stopping at their edge, and an
+     outline with bumps in it, because leaves are not a circle.
+
+     `leafy` builds that outline: a ring of lobes whose radius wobbles, each
+     pair joined by a curve that bulges outward. Same seed, same tree, every
+     time — nothing here is random, so a tree does not change shape each
+     time she opens the garden. */
   tree_apple: () => `
-    ${contact(50, 95, 26, 5, .3)}
-    <path d="M 46 96 V 58 q -1 -8 -8 -12 M 54 96 V 62 q 1 -7 8 -11" fill="none" stroke="#8a6340" stroke-width="7" stroke-linecap="round"/>
-    ${litRect(43, 58, 14, 38, 4, '#b08557', '#7d5a3a', { stroke: '#7d5a3a', sw: 3.5 })}
-    ${grain(44.5, 60, 11, 34, 3, 2, { color: '#5f4328', strength: .3, sw: 1.6 })}
-    ${litEllipse(30, 46, 17, 17, '#84c273', '#4b8244', { stroke: '#4b8244', sw: 4 })}
-    ${litEllipse(70, 46, 17, 17, '#6fae5f', '#417539', { stroke: '#4b8244', sw: 4 })}
-    ${litEllipse(50, 34, 25, 25, '#7bbb6a', '#48803f', { stroke: '#4b8244', sw: 4 })}
-    ${[[36, 40], [58, 30], [66, 50], [46, 52], [26, 50], [60, 62]].map(([x, y]) =>
-      litEllipse(x, y, 4.6, 4.6, '#ef7268', '#b8433a', { stroke: '#a83c33', sw: 1.8 })).join('')}`,
+    ${contact(50, 95, 28, 5, .3)}
+    ${trunk({ topY: 52, spread: 9 })}
+    ${litPath(leafy(50, 40, 33, 27, { lobes: 11, seed: 2 }), '#7bbb6a', '#417539',
+              { stroke: '#3f7038', sw: 3.6, join: 'round' })}
+    ${litPath(leafy(33, 48, 17, 14, { lobes: 8, seed: 5 }), '#6fae5f', '#3d6d35',
+              { stroke: '#3f7038', sw: 3, join: 'round' })}
+    ${litPath(leafy(68, 46, 18, 15, { lobes: 8, seed: 9 }), '#84c273', '#4b8244',
+              { stroke: '#3f7038', sw: 3, join: 'round' })}
+    ${/* A pool of shade under the leaves, so the crown has an underside. */ ''}
+    <path d="${leafy(50, 48, 30, 18, { lobes: 9, seed: 4 })}" fill="#2f5c2c" opacity=".16"/>
+    <path d="${leafy(44, 30, 18, 11, { lobes: 7, seed: 7 })}" fill="#a8dc90" opacity=".34"/>
+    ${[[36, 42], [58, 32], [67, 50], [46, 54], [28, 50], [59, 61]].map(([x, y]) =>
+      `<ellipse cx="${x + 0.8}" cy="${y + 1.2}" rx="4.8" ry="4.8" fill="#2f5c2c" opacity=".2"/>` +
+      litEllipse(x, y, 4.6, 4.6, '#ef7268', '#b8433a', { stroke: '#a83c33', sw: 1.8 }) +
+      `<path d="M ${x} ${y - 4.4} q 2 -3 5 -3.4" fill="none" stroke="#5f8a3f" stroke-width="1.6"
+             stroke-linecap="round"/>`).join('')}`,
 
   tree_blossom: () => `
-    ${contact(50, 95, 25, 5, .3)}
-    ${litRect(44, 56, 12, 40, 4, '#ad825c', '#7a583c', { stroke: '#7a583c', sw: 3.5 })}
-    <path d="M 50 70 L 34 56 M 50 66 L 66 52" fill="none" stroke="#9c7350" stroke-width="5" stroke-linecap="round"/>
-    ${litEllipse(30, 44, 16, 16, '#fdd8e6', '#e8a0bc', { stroke: '#dd91ad', sw: 4 })}
-    ${litEllipse(70, 44, 16, 16, '#f6b7ce', '#d98aa8', { stroke: '#dd91ad', sw: 4 })}
-    ${litEllipse(50, 32, 24, 24, '#fbc8da', '#e096b2', { stroke: '#dd91ad', sw: 4 })}
-    ${[[40, 28], [58, 24], [64, 42], [34, 48], [52, 46]].map(([x, y]) =>
-      `<circle cx="${x}" cy="${y}" r="3" fill="#fff4f8"/>`).join('')}`,
+    ${contact(50, 95, 26, 5, .3)}
+    ${trunk({ topY: 50, spread: 8, light: '#c49a72', dark: '#8a6647', line: '#7a583c' })}
+    ${litPath(leafy(50, 38, 31, 26, { lobes: 12, wobble: 0.15, seed: 3 }), '#fbc8da', '#dd91ad',
+              { stroke: '#cf7f9e', sw: 3.6, join: 'round' })}
+    ${litPath(leafy(31, 47, 16, 14, { lobes: 8, seed: 6 }), '#fdd8e6', '#e8a0bc',
+              { stroke: '#cf7f9e', sw: 3, join: 'round' })}
+    ${litPath(leafy(70, 45, 17, 14, { lobes: 8, seed: 11 }), '#f6b7ce', '#d98aa8',
+              { stroke: '#cf7f9e', sw: 3, join: 'round' })}
+    <path d="${leafy(50, 46, 28, 17, { lobes: 9, seed: 8 })}" fill="#b2617f" opacity=".14"/>
+    <path d="${leafy(45, 28, 17, 10, { lobes: 7, seed: 2 })}" fill="#fff0f6" opacity=".45"/>
+    ${/* Single blossoms picked out on top, and a few petals coming down. */ ''}
+    ${[[40, 28], [58, 24], [65, 42], [34, 48], [53, 45], [25, 38]].map(([x, y]) =>
+      [...Array(5)].map((_, i) => {
+        const a = (i / 5) * Math.PI * 2;
+        return `<ellipse cx="${n2(x + Math.cos(a) * 2.6)}" cy="${n2(y + Math.sin(a) * 2.6)}"
+                         rx="2" ry="1.6" fill="#fff4f8" opacity=".95"
+                         transform="rotate(${n2(a * 57.3)} ${n2(x + Math.cos(a) * 2.6)} ${n2(y + Math.sin(a) * 2.6)})"/>`;
+      }).join('') + `<circle cx="${x}" cy="${y}" r="1.5" fill="#ffd980"/>`).join('')}
+    ${[[22, 66], [76, 70], [66, 80]].map(([x, y]) =>
+      `<ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.6" fill="#f6b7ce"
+                transform="rotate(${x % 40} ${x} ${y})" opacity=".85"/>`).join('')}`,
 
-  tree_pine: () => `
-    ${contact(50, 95, 30, 5, .3)}
-    ${litRect(45, 76, 10, 20, 3, '#9a7048', '#6d4d31', { stroke: '#6d4d31', sw: 3 })}
-    ${litPath('M 50 46 L 84 80 H 16 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}
-    ${litPath('M 50 26 L 78 60 H 22 Z', '#6bb372', '#417a49', { stroke: '#3a6e42', sw: 4, join: 'round' })}
-    ${litPath('M 50 8 L 72 40 H 28 Z', '#5fa565', '#3a6e42', { stroke: '#3a6e42', sw: 4, join: 'round' })}`,
+  /* A fir, not three triangles: each tier has a ragged edge of boughs that
+     droop at the tips, and the tier below catches the shadow of the one
+     above it. */
+  tree_pine: () => {
+    const tier = (cy, half, drop, light, dark) => {
+      const steps = 5;
+      let d = `M 50 ${n2(cy - drop)} `;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const x = 50 + half * t, y = cy + drop * t * 0.9;
+        d += `L ${n2(x - half * 0.06)} ${n2(y - drop * 0.14)} L ${n2(x)} ${n2(y)} `;
+      }
+      for (let i = steps; i >= 1; i--) {
+        const t = i / steps;
+        const x = 50 - half * t, y = cy + drop * t * 0.9;
+        d += `L ${n2(x)} ${n2(y)} L ${n2(x + half * 0.06)} ${n2(y - drop * 0.14)} `;
+      }
+      return litPath(d + 'Z', light, dark, { stroke: '#2f5c39', sw: 3, join: 'round' });
+    };
+    return `
+      ${contact(50, 95, 30, 5, .3)}
+      ${litRect(45.5, 78, 9, 18, 3, '#9a7048', '#6d4d31', { stroke: '#6d4d31', sw: 3 })}
+      ${litPath('M 38 96 q 12 -6 24 0 z', '#9a7048', '#6d4d31', { stroke: '#6d4d31', sw: 2.6, join: 'round' })}
+      ${tier(62, 34, 20, '#4f9459', '#316138')}
+      ${tier(42, 27, 18, '#5fa565', '#3a6e42')}
+      ${/* The shadow each tier throws on the one below it, kept inside the
+            tier it falls on. */ ''}
+      <path d="M 33 63 q 17 6 34 0 q -17 3 -34 0 z" fill="#2f5c39" opacity=".2"/>
+      ${tier(24, 19, 15, '#6bb372', '#417a49')}
+      <path d="M 38 43 q 12 5 24 0 q -12 3 -24 0 z" fill="#2f5c39" opacity=".18"/>
+      <path d="M 50 10 l 2.4 5 5 2.4 -5 2.4 -2.4 5 -2.4 -5 -5 -2.4 5 -2.4 z" fill="#fff3cc" opacity=".9"/>`;
+  },
   /* A weeping willow: a short leaning trunk, and curtains of leaf that
      fall from the outside of the crown. Drawn as filled shapes with wavy
      bottoms rather than as strands hanging off a dome, which is what made
@@ -2989,16 +3246,47 @@ const DECOR = {
     <rect x="47" y="46" width="6" height="12" rx="3" fill="#a2764e"/>
     <circle cx="50" cy="38" r="8" fill="none" stroke="#b08f68" stroke-width="2.5"/>`,
 
-  flower_bed: () => `
-    ${contact(50, 94, 44, 5, .26)}
-    ${litPath('M 8 92 q 42 -12 84 0 v 4 H 8 z', '#a2764e', '#6d4d31', { stroke: '#6d4d31', sw: 4, join: 'round' })}
-    <path d="M 10 88 q 40 -10 80 0" fill="none" stroke="#c09667" stroke-width="4"/>
-    ${[[20, 62, '#f2849f', '#cc5f7d'], [38, 52, '#ffd980', '#dfae42'], [56, 56, '#c9a3e0', '#a178c2'],
-       [74, 64, '#f7a8c6', '#d37fa3'], [29, 72, '#fbe08a', '#dcb84e'], [65, 74, '#a8d6f0', '#7aadd0']]
-      .map(([x, y, c, d]) =>
-      `<path d="M ${x} 88 V ${y + 8}" stroke="#5f9e53" stroke-width="4" stroke-linecap="round"/>` +
-      litEllipse(x, y, 8, 8, c, d, { stroke: 'rgba(120,80,100,.30)', sw: 2 }) +
-      `<circle cx="${x}" cy="${y}" r="3" fill="#fff6e8"/>`).join('')}`,
+  /* Flowers with petals on them. The first bed was six circles with a dot
+     in the middle, which is the symbol for a flower rather than a flower:
+     no petals, no leaves, and every stem the same straight line. */
+  flower_bed: () => {
+    const bloom = (x, y, r, petals, tilt, c, edge, heart) => {
+      let out = '';
+      for (let i = 0; i < petals; i++) {
+        const a = tilt + (i / petals) * Math.PI * 2;
+        const px = x + Math.cos(a) * r * 0.82, py = y + Math.sin(a) * r * 0.82;
+        out += `<ellipse cx="${n2(px)}" cy="${n2(py)}" rx="${n2(r * 0.62)}" ry="${n2(r * 0.44)}"
+                         transform="rotate(${n2(a * 57.3)} ${n2(px)} ${n2(py)})"
+                         fill="${c}" stroke="${edge}" stroke-width="1.6"/>`;
+      }
+      return out +
+        `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r * 0.38)}" fill="${heart}" stroke="${edge}" stroke-width="1.4"/>` +
+        `<circle cx="${n2(x - r * 0.12)}" cy="${n2(y - r * 0.12)}" r="${n2(r * 0.14)}" fill="#fffdf4" opacity=".7"/>`;
+    };
+    const stem = (x, y, lean) => `
+      <path d="M ${n2(x - lean)} 89 Q ${n2(x - lean * 0.2)} ${n2((89 + y) / 2)} ${n2(x)} ${n2(y + 5)}"
+            fill="none" stroke="#5f9e53" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M ${n2(x - lean * 0.5)} ${n2((89 + y) / 2 + 2)}
+               q ${n2(-6 - lean)} ${-3} ${n2(-8 - lean)} ${-8}
+               q ${n2(6 + lean)} ${1} ${n2(8 + lean)} ${8} z"
+            fill="#6fb35f" stroke="#4c8442" stroke-width="1.4"/>`;
+    const BLOOMS = [
+      [20, 60, 8, 6, 0.2, '#f2849f', '#c9617e', '#ffd980', 4],
+      [37, 50, 9, 6, 0.6, '#ffd980', '#dcae44', '#c98d34', -3],
+      [55, 55, 8, 5, 0.1, '#c9a3e0', '#9d78bc', '#fff3cc', 2],
+      [73, 62, 8.5, 6, 0.9, '#f7a8c6', '#d0769b', '#ffe9a8', -4],
+      [29, 71, 7, 5, 0.4, '#fbe08a', '#d9b44c', '#e88d5a', 3],
+      [64, 73, 7.5, 6, 0.3, '#a8d6f0', '#77aacd', '#fff3cc', -2],
+    ];
+    return `
+      ${contact(50, 94, 44, 5, .26)}
+      ${litPath('M 8 92 q 42 -12 84 0 v 4 H 8 z', '#a2764e', '#6d4d31', { stroke: '#6d4d31', sw: 4, join: 'round' })}
+      <path d="M 10 88 q 40 -10 80 0" fill="none" stroke="#c09667" stroke-width="4"/>
+      ${[[18, 87], [34, 84], [52, 83], [70, 85], [84, 88]].map(([x, y]) =>
+        `<ellipse cx="${x}" cy="${y}" rx="4" ry="1.6" fill="#8a6647" opacity=".45"/>`).join('')}
+      ${BLOOMS.map(b => stem(b[0], b[1], b[8])).join('')}
+      ${BLOOMS.map(b => bloom(b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7])).join('')}`;
+  },
 
   wheelbarrow: () => `
     ${contact(46, 94, 32, 5, .26)}
