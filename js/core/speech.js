@@ -13,6 +13,7 @@
 
 import { settings, update } from './state.js';
 import { emit } from './bus.js';
+import { syllables } from './syllables.js';
 
 const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
 
@@ -297,8 +298,37 @@ export async function promptWord(word, { withSentence = false } = {}) {
   }
 }
 
+/**
+ * Say a word in its chunks: re... mem... ber... remember.
+ *
+ * Between hearing a word and hearing it spelled there is a step the app
+ * used to skip, and it is the step spelling is actually taught in. Chunks
+ * are said a little slowly, with a beat between them, and then the whole
+ * word again so it goes back together.
+ *
+ * A word that will not split safely is simply said slowly, which is the
+ * honest answer for "cake".
+ */
+export async function sayInChunks(word) {
+  const bits = syllables(word.text);
+  if (bits.length < 2) {
+    await speak(word.text, { rateScale: 0.62 });
+    return;
+  }
+  for (const bit of bits) {
+    await speak(bit, { rateScale: 0.68 });
+    await pause(170);
+  }
+  await pause(140);
+  await speak(word.text, { rateScale: 0.85 });
+}
+
 /** Spell a word out letter by letter, for the "show me" reveal. */
-export async function spellOut(word) {
+export async function spellOut(word, { chunksFirst = false } = {}) {
+  if (chunksFirst) {
+    await sayInChunks(word);
+    await pause(260);
+  }
   const letters = word.text.split('');
   for (const letter of letters) {
     await speak(letter.toUpperCase(), { rateScale: 0.8 });

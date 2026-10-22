@@ -19,6 +19,7 @@
 */
 
 import { playFor, lineFor, POSES } from '../core/decorplay.js';
+import * as sound from '../core/sound.js';
 
 /* Long enough for the longest animation in app.css to finish, after which
    the class comes off so the next tap can put it back on. */
@@ -40,6 +41,10 @@ export function decorTap({ bubble = null, getRoam = null, onSay = null } = {}) {
   return function tapped(itemId, node) {
     const play = playFor(itemId);
     const say = lineFor(itemId);
+
+    /* The smallest sound in the app, so that a tap is answered in the ear
+       as well as on the screen. */
+    sound.pip();
 
     /* Answer the finger first. Restarting a CSS animation needs the class
        off, a reflow, and the class on again — without the reflow the

@@ -10,6 +10,7 @@ import { navigate } from '../ui/router.js';
 import * as words from '../core/words.js';
 import * as speech from '../core/speech.js';
 import { setQueue } from './spell.js';
+import { patternOf, patternSpoken } from '../core/patterns.js';
 
 export default function wordsScreen(container, params) {
   let tab = params.tab === 'mastered' ? 'mastered' : 'active';
@@ -26,6 +27,20 @@ export default function wordsScreen(container, params) {
     const list = tab === 'active' ? sortActive(active) : sortMastered(mastered);
 
     const body = el('div', { class: 'stack' }, tabs);
+
+    /* The same line practice opens with, kept here where she can look at
+       her words and the rule they share at the same time. */
+    if (tab === 'active') {
+      const found = patternOf(active);
+      if (found) body.append(el('button', {
+        class: 'pattern-note', type: 'button',
+        'aria-label': `${patternSpoken(found)} Tap to hear it.`,
+        onClick: () => speech.speak(patternSpoken(found)),
+      },
+        el('span', { class: 'pattern-key', text: found.say }),
+        el('span', { text: found.line })
+      ));
+    }
 
     if (!list.length) {
       body.append(el('div', { class: 'card center' },

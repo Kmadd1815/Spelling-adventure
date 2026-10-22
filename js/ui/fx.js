@@ -5,6 +5,7 @@
    can be fired from anywhere without re-rendering the creature. */
 
 import { el } from './dom.js';
+import * as sound from '../core/sound.js';
 
 const EFFECTS = {
   hearts:   { chars: ['❤️', '\u{1F495}', '\u{1F49E}'], count: 7,  cls: 'fx' },
@@ -26,6 +27,10 @@ const EFFECTS = {
 export function burst(host, kind = 'hearts', { origin = null } = {}) {
   if (!host) return;
   const spec = EFFECTS[kind] || EFFECTS.hearts;
+
+  /* Before the reduced-motion check, deliberately: a child who has the
+     animations turned down should still hear that the axolotl liked it. */
+  sound.pip();
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 

@@ -758,6 +758,46 @@ export function shouldSpeakSentence(word) {
   return isHomophone(word);     // 'homophone' — the default
 }
 
+/* ---------- The ones she keeps getting wrong ----------
+
+   Her list is mostly words she can already spell plus two or three that
+   keep catching her out, and those two or three were scattered through
+   every session like everything else. Picking them out into one short
+   go — five words, two minutes — is the single most useful practice in
+   the app, and it is the one thing it could not do.
+
+   A word counts as tricky if she has actually missed it, recently enough
+   to matter. Not "has ever been missed": every word has been missed once,
+   and a list of all of them is just the list again. */
+const TRICKY_DAYS = 21;
+
+export function trickyWords(count = 5) {
+  const now = Date.now();
+  const scored = activeWords()
+    .filter(w => w.incorrectCount > 0)
+    .map(w => {
+      const recentMisses = (w.recent || []).filter(ok => ok === false).length;
+      const sinceMiss = w.lastMissed ? (now - w.lastMissed) / DAY : Infinity;
+      if (sinceMiss > TRICKY_DAYS) return null;
+
+      /* Missed lately, missed often, and missed as a share of her tries —
+         so a word she got wrong twice out of three beats one she got
+         wrong twice out of twenty. */
+      const missRate = w.attempts ? w.incorrectCount / w.attempts : 0;
+      const freshness = Math.max(0, TRICKY_DAYS - sinceMiss) / TRICKY_DAYS;
+      return { w, score: recentMisses * 10 + missRate * 20 + freshness * 12 };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, Math.max(1, count)).map(x => x.w);
+}
+
+/** Whether there are enough of them to be worth offering. */
+export function hasTrickyWords(min = 3) {
+  return trickyWords(min).length >= min;
+}
+
 /* In a game, the sentence comes with the word by default.
 
    Practice and the tests save the sentence for homophones, because there

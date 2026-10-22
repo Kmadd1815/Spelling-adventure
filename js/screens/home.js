@@ -20,6 +20,7 @@ import { speak } from '../core/speech.js';
 import { settings } from '../core/state.js';
 import { decorTap } from '../ui/decortap.js';
 import { tileIcon } from '../ui/icons.js';
+import { setQueue } from './spell.js';
 
 export default function homeScreen(container) {
   const season = currentSeason();
@@ -265,6 +266,25 @@ export default function homeScreen(container) {
     ));
     body.append(el('div', { class: 'center tiny muted',
       text: `${leftToday} of ${todayTotal} ${todayTotal === 1 ? 'word' : 'words'} left today` }));
+  }
+
+  /* The handful she keeps getting wrong, as a session of their own.
+
+     They were always in her practice — the ranking has favoured them for
+     as long as the app has existed — but scattered one at a time through
+     eight words she mostly knows. Five of them together, named for what
+     they are, is two minutes that are worth more than the eight. */
+  const tricky = words.trickyWords(5);
+  if (hasWords && tricky.length >= 3) {
+    body.append(el('button', {
+      class: 'btn btn-green btn-block tricky-btn', type: 'button',
+      onClick: () => { setQueue(tricky); navigate('/practice'); },
+    },
+      el('span', { class: 'emoji', text: '\u{1F3AF}' }),
+      el('span', {}, `Fix these ${tricky.length}`)
+    ));
+    body.append(el('div', { class: 'center tiny muted',
+      text: `The ${tricky.length} words catching you out: ${tricky.map(w => w.text).join(', ')}.` }));
   }
 
   const testTile = el('button', {

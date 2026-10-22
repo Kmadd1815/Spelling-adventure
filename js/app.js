@@ -5,6 +5,7 @@
 
 import * as router from './ui/router.js';
 import * as speech from './core/speech.js';
+import * as sound from './core/sound.js';
 import { applySeasonTheme } from './core/season.js';
 import { applyTextSize } from './ui/textsize.js';
 import { getState } from './core/state.js';
@@ -131,12 +132,14 @@ document.getElementById('backBtn').addEventListener('click', () => {
 });
 document.getElementById('starCount').addEventListener('click', () => router.navigate('/progress'));
 
-/* ---------- Speech unlock ----------
-   Chrome will not speak until synthesis has been touched inside a real
-   user gesture, so the very first tap anywhere quietly primes it. */
+/* ---------- Speech and sound unlock ----------
+   Chrome will not speak, and will not make a sound, until each engine has
+   been touched inside a real user gesture, so the very first tap anywhere
+   quietly primes both. */
 
 function primeSpeech() {
   speech.unlock();
+  sound.unlock();          // the audio engine has the same rule
   removeEventListener('pointerdown', primeSpeech);
   removeEventListener('keydown', primeSpeech);
 }

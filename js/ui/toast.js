@@ -1,6 +1,7 @@
 /* Small transient messages and the celebration confetti. */
 
 import { el } from './dom.js';
+import * as sound from '../core/sound.js';
 
 const layer = () => document.getElementById('toastLayer');
 
@@ -14,6 +15,10 @@ export function toast(message, { gold = false, ms = 2600 } = {}) {
 const CONFETTI_COLORS = ['#f6c453', '#64bd80', '#6fb3d9', '#a78bc9', '#ef9a9a', '#ef9345'];
 
 export function confetti(count = 34) {
+  /* The sound comes first and comes always: confetti is switched off for
+     a child who does not want things flying about the screen, and that is
+     not a reason to take the celebration away as well. */
+  sound.fanfare();
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   for (let i = 0; i < count; i++) {
     const piece = el('div', {

@@ -20,6 +20,7 @@ import * as safety from '../core/safety.js';
 import { weekNote } from '../core/weeknote.js';
 import { SIZES, textSize, setTextSize } from '../ui/textsize.js';
 import { setQueue } from './spell.js';
+import * as sound from '../core/sound.js';
 
 /* The parent area re-locks every time it is left. A flag that survived until
    the page reloaded meant one PIN entry unlocked it for the rest of the day,
@@ -666,6 +667,22 @@ export default function parentScreen(container) {
         ], s.keyboardLayout, v => { update(st => { st.settings.keyboardLayout = v; }); toast('Saved'); }),
         el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
           'When she types on a Bluetooth keyboard the on-screen letters hide themselves to free up the screen, and a keyboard button brings them back.' })
+      ),
+
+      el('div', { class: 'card' },
+        el('h3', { text: 'Sound' }),
+        el('p', { class: 'muted tiny', text:
+          'Small sounds for a right answer, a word mastered and a tap \u2014 made by the app itself, so they work with no signal. The reading voice is separate and is never turned off by this.' }),
+        segmented([
+          { value: true,  label: 'On' },
+          { value: false, label: 'Off' },
+        ], s.sound !== false, v => {
+          update(st => { st.settings.sound = v; });
+          if (v) sound.test();
+          toast('Saved');
+        }),
+        el('p', { class: 'muted tiny', style: { marginTop: '10px' }, text:
+          'Off is for the car and the waiting room. Everything still works; it just does it quietly.' })
       ),
 
       eventsCard(),

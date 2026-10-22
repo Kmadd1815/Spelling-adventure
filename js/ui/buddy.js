@@ -15,6 +15,7 @@ import { petSVG } from './art.js';
 import { burst, hop } from './fx.js';
 import * as pet from '../core/pet.js';
 import * as items from '../core/items.js';
+import * as sound from '../core/sound.js';
 
 /* What it says, by moment. None of these are scores and none of them are
    comparisons — they are the noises a friend makes while you play. */
@@ -100,7 +101,13 @@ export function createBuddy({ layout = 'side', greeting = null } = {}) {
   }
 
   const cheer      = text => react({ mood: 'excited', effect: 'sparkles', text: text || pick(LINES.good) });
-  const sympathise = text => react({ mood: 'calm',    effect: null,       text: text || pick(LINES.miss) });
+  /* No effect, but it does make a sound: cheering comes with sparkles and
+     sparkles come with a noise, so without this a game would celebrate out
+     loud and commiserate in silence. */
+  const sympathise = text => {
+    sound.notYet();
+    return react({ mood: 'calm', effect: null, text: text || pick(LINES.miss) });
+  };
   const celebrate  = text => react({ mood: 'love',    effect: 'hearts',   text: text || pick(LINES.win), ms: 3200 });
   const think      = text => react({ mood: 'calm',    effect: null,       text: text || pick(LINES.thinking), ms: 1200 });
 

@@ -31,6 +31,9 @@ import * as pet from '../core/pet.js';
 import { getState, update, settings } from '../core/state.js';
 import { maybeDiscover } from '../core/discovery.js';
 import { showDiscovery } from '../ui/discovery.js';
+import { markedWord, markedTry } from '../ui/spellmarks.js';
+import * as sound from '../core/sound.js';
+import { patternOf, patternSpoken } from '../core/patterns.js';
 
 /* Hands a specific set of words to the next session — used by "practice the
    tricky ones", the parent's per-list practice, and reviewing mastered words. */
@@ -147,9 +150,32 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
   const feedback = el('div');
   const keyboard = el('div', { class: 'keyboard' });
 
+  /* What this list is built on, said once at the top of the session.
+
+     A list is almost always eight words with one piece of spelling in
+     common, and nobody ever told her: she was memorising eight things
+     where there was one thing to understand. It is taken from the list
+     the first word belongs to rather than from the session, so the couple
+     of review words riding along at the end cannot muddy it, and it is
+     shown ONCE — a rule repeated at every word is wallpaper. */
+  const patternNote = (() => {
+    const first = plan[0]?.word;
+    const found = first ? patternOf(words.wordsInList(first.listId)) : null;
+    if (!found) return null;
+    return el('button', {
+      class: 'pattern-note', type: 'button',
+      'aria-label': `${patternSpoken(found)} Tap to hear it.`,
+      onClick: () => speech.speak(patternSpoken(found)),
+    },
+      el('span', { class: 'pattern-key', text: found.say }),
+      el('span', { text: found.line })
+    );
+  })();
+
   const stage = el('div', { class: 'spell-stage' },
     pips,
     el('div', { class: 'spell-middle' },
+      patternNote,
       el('div', { class: 'listen-zone' }, prompt),
       tiles,
       helpRow
@@ -406,6 +432,9 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
     speech.stop();
 
     const justMastered = masteredThisSession.includes(word);
+    /* Mastering it brings confetti, and the confetti brings its own
+       sound; a plain right answer gets the little two-note one. */
+    if (!justMastered) sound.right();
     mount(feedback, el('div', { class: 'feedback feedback-good' },
       el('span', { class: 'big', text: justMastered ? '⭐ ' + pet.praiseMastered()
         : outcome?.stillRemembered ? 'You still remember it!'
@@ -421,6 +450,7 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
   }
 
   function showMissed(word, attempt, isRetry, forgotten = false) {
+    sound.notYet();
     stage.classList.add('showing-feedback');
     renderTiles('bad');
     tiles.classList.add('shake');
@@ -431,16 +461,20 @@ export default function spellScreen(container, { kind = 'daily', listId = null }
 
     mount(feedback, el('div', { class: 'feedback feedback-almost' },
       el('span', { class: 'big', text: pet.praiseAlmost() }),
-      el('div', { class: 'your-try', text: attempt }),
-      el('div', { class: 'correct-spelling', text: word.text }),
+      /* Her attempt and the word, lined up letter by letter, with the
+         difference lit — it is the whole reason the panel is here. */
+      markedTry(attempt, word.text),
+      markedWord(attempt, word.text),
       el('div', { class: 'row', style: { justifyContent: 'center', marginTop: '10px' } },
         speech.canSpeak()
           ? button('Hear it', { cls: 'btn btn-quiet', emoji: '\u{1F50A}',
               onClick: () => speech.speakWord(word) })
           : null,
         speech.canSpeak()
+          /* Chunks first, then the letters: re... mem... ber... remember,
+             r-e-m-e-m-b-e-r. The middle step is the one that teaches. */
           ? button('Show me', { cls: 'btn btn-quiet', emoji: '\u{1F524}',
-              onClick: () => speech.spellOut(word) })
+              onClick: () => speech.spellOut(word, { chunksFirst: true }) })
           : null,
         button('Next word', { cls: 'btn btn-primary', emoji: '➡️', onClick: next })
       ),
@@ -572,6 +606,10 @@ function reviewLine(word) {
       )
     );
 
+    /* The stars arriving, as a little run of notes. Under the confetti
+       when there is confetti, which is the point: it is the same moment. */
+    sound.stars(payout.lines.length + 1);
+
     /* A test that moved nothing, because one-a-day counting is on and
        today is spent. The tests show no per-word feedback at all, so
        without this the whole session passes in silence and the dots simply
@@ -631,8 +669,9 @@ function reviewLine(word) {
         el('h3', { text: 'Words to look at again' }),
         el('div', { class: 'stack-sm' }, missed.map(r =>
           el('div', { class: 'word-row' },
-            el('div', { class: 'w-text', text: r.text }),
-            el('div', { class: 'w-meta', text: `you wrote: ${r.typed}` }),
+            el('div', { class: 'w-text' }, markedWord(r.typed, r.text, { cls: '', tag: 'span' })),
+            el('div', { class: 'w-meta' },
+              'you wrote: ', markedTry(r.typed, r.text, { cls: '', tag: 'span' })),
             el('button', { class: 'icon-btn', type: 'button', 'aria-label': `Hear ${r.text}`,
               onClick: () => speech.speak(r.text) }, '\u{1F50A}')
           )))

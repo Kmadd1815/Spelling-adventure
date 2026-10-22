@@ -502,6 +502,64 @@ body {
   text-decoration: line-through;
 }
 
+/* The short session made of the words she keeps missing. It sits under
+   Today's Practice and is deliberately the second-loudest thing there. */
+.tricky-btn { margin-top: 10px; }
+
+/* ---------- What this list is built on ----------
+
+   One line at the top of a practice session naming the pattern her words
+   share. Quiet on purpose: it is a thing to notice, not an instruction,
+   and it can be tapped to hear it said. */
+.pattern-note {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 auto 6px;
+  max-width: 34rem;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: rgba(100, 189, 128, .14);
+  color: var(--ink-soft);
+  font: inherit; font-size: .84rem; font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.pattern-note:active { transform: translateY(2px); }
+.pattern-key {
+  flex: 0 0 auto;
+  background: var(--green-dark); color: #fff;
+  border-radius: 8px; padding: 2px 8px;
+  font-weight: 900; font-size: .95rem; letter-spacing: .04em;
+}
+
+/* ---------- A missed word, with the difference shown ----------
+
+   The letters she slipped on are lit in the correct spelling, and only the
+   letters that were actually wrong are struck through in hers. See
+   ui/spellmarks.js — the point is that her eye lands on the one part of
+   the word worth looking at. */
+.spell-marked { text-decoration: none; }
+.spell-marked .sp-ch { display: inline-block; }
+.spell-marked .sp-mark {
+  color: var(--green-dark);
+  background: rgba(100, 189, 128, .18);
+  border-radius: 6px;
+  padding: 0 .06em;
+  margin: 0 .02em;
+}
+/* The hole where a letter should have been. */
+.spell-marked .sp-gap {
+  width: .62em;
+  border-bottom: 3px solid #c2593f;
+  margin: 0 .04em;
+  vertical-align: baseline;
+}
+.spell-marked .sp-bad {
+  color: #c2593f;
+  text-decoration: line-through;
+  text-decoration-thickness: .1em;
+}
+
 /* ---------- Word list rows ---------- */
 
 .word-row {
@@ -2229,6 +2287,12 @@ button.room-piece:focus-visible { outline: 3px solid var(--primary); outline-off
 .ttt-side { width: 100%; max-width: 320px; }
 /* A pill, not bare text: this line sits directly on the party scene, and
    words printed straight onto bunting are words a child cannot read. */
+/* The word she missed, where her letters were. */
+.ttt-answer {
+  text-align: center; font-weight: 900; font-size: 1.6rem;
+  letter-spacing: .1em; color: var(--ink); padding: 6px 0;
+}
+
 .ttt-status {
   font-weight: 800; color: var(--ink-soft); font-size: .92rem; min-height: 1.4em;
   align-self: center;

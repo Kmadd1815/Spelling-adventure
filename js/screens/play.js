@@ -22,6 +22,7 @@ import { byId as itemById } from '../core/items.js';
 import { update } from '../core/state.js';
 import { maybeDiscover } from '../core/discovery.js';
 import { showDiscovery } from '../ui/discovery.js';
+import * as sound from '../core/sound.js';
 
 /* Back to the hub REPLACES this screen in history rather than stacking a
    new one on top of it. Five games played is otherwise ten entries deep,
@@ -159,6 +160,7 @@ export default function playScreen(container, { id = '' } = {}) {
 
     release();
     mount(container, resultsCard({ payout, treats, milestones, headline, detail, emoji, missed }));
+    if (payout.lines.length) sound.stars(payout.lines.length + 1);
 
     const found = maybeDiscover({ attempted: wordsWon });
     if (found) setTimeout(() => showDiscovery(found), 900);

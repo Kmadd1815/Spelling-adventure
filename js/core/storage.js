@@ -50,6 +50,10 @@ export function defaultState() {
       /* Input */
       keyboardLayout: 'qwerty', // 'qwerty' (real US layout) | 'abc'
 
+      /* Sound. On by default — see core/sound.js. The switch exists for
+         the car, the waiting room and the sleeping brother. */
+      sound: true,
+
       /* Mini-games */
       gamesAfterDaily: true,    // games wait until Today's Practice is done
 

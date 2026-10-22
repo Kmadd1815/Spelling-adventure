@@ -18,6 +18,7 @@ import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { sayPrompt, sayAgain } from '../ui/sayagain.js';
+import { markedWord } from '../ui/spellmarks.js';
 import { gameWords } from '../core/games.js';
 
 const LINES = [
@@ -215,6 +216,10 @@ export default function ticTacToe(ctx) {
     } else {
       renderTiles('bad');
       if (!missed.some(w => w.id === word.id)) missed.push(word);
+      /* The word, with the letters she slipped on lit, where her tiles
+         were — losing the square teaches nothing on its own. */
+      spellBox.append(el('div', { class: 'ttt-answer' },
+        markedWord(attempt, word.text, { cls: '', tag: 'span' })));
       buddy.sympathise(`It was "${word.text}" — my turn!`);
     }
 

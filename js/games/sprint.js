@@ -24,6 +24,7 @@ import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
 import { sayAgain } from '../ui/sayagain.js';
+import { markedWord } from '../ui/spellmarks.js';
 import { gameWords, rampStep } from '../core/games.js';
 
 const SECONDS = 60;
@@ -151,7 +152,7 @@ export default function sprint(ctx) {
     word = deck.next().value;
     typed = '';
     locked = false;
-    answer.textContent = '';
+    clear(answer);
     answer.className = 'sprint-answer';
     renderTiles();
     /* The clock is running, so Sprint says the word and stops there: the
@@ -195,7 +196,9 @@ export default function sprint(ctx) {
     } else {
       if (!missed.includes(word)) missed.push(word);
       renderTiles('bad');
-      answer.textContent = word.text;
+      /* The word goes up with the letters she slipped on lit, so the
+         half-second before the next word is worth something. */
+      mount(answer, markedWord(typed, word.text, { cls: '', tag: 'span' }));
       answer.className = 'sprint-answer bad';
       wait(nextWord, SHOW_WRONG);
     }
