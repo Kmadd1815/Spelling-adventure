@@ -10,11 +10,17 @@
    all. Every word she finishes is banked the moment she finishes it, so the
    last rock can never take her whole run away.
 
-   Only the letter she needs is ever placed in a gap between rocks. Wrong
-   letters drift along in open water, halfway between one pair of rocks and
-   the next, where there is room to swim over or under them — a letter she
-   has no way to avoid is not a choice, and a game made of unavoidable
-   choices is just a game you lose.
+   EVERY LETTER LOOKS THE SAME, and the one she needs is as likely to be
+   drifting in open water as riding in a gap. The first version painted the
+   needed letter gold and put it in the gap she had to fly through anyway,
+   which meant a child could finish a word without reading a single letter —
+   the game tested flying, not spelling. Now she has to look.
+
+   What has NOT changed is that no letter is ever unavoidable: the gap is
+   more than twice the height of the axolotl and a letter together, so
+   whatever is riding in it can be passed over or under. A letter you cannot
+   avoid is not a choice, and a game made of unavoidable choices is just a
+   game you lose. Taking the wrong one still costs nothing but the moment.
 
    The letters come to her in order, so this never touches a mastery streak.
 */
@@ -135,10 +141,17 @@ export default function swim(ctx) {
 
   function needed() { return target[got] || ''; }
 
+  /* A letter that is not the one she needs. */
   /* Both of these read wordIndex live rather than being computed once, so
      a word finished mid-flight speeds up the rocks already on screen. */
   const speedFactor = () => 1 + wordIndex * SPEED_STEP;
   const spawnGap = () => Math.max(MIN_SPAWN, SPAWN_MS - wordIndex * SPAWN_STEP);
+
+  /* How many rocks have gone by without the letter she needs. Letters are
+     placed at random now, so something has to promise that the one she is
+     waiting for turns up: after two rocks without it, the next one carries
+     it. Without that the random walk can strand her. */
+  let sinceNeeded = 0;
 
   function spawnRock() {
     const { w, h } = size();
@@ -154,29 +167,38 @@ export default function swim(ctx) {
     pond.append(top, bottom);
     rocks.push({ x, gapTop, gapH, top, bottom });
 
-    /* Only ever the letter she needs, riding in the middle of the gap she
-       has to fly through anyway — so getting through cleanly IS collecting
-       it. Sometimes the gap is empty and the passage is simply free. */
-    if (needed() && Math.random() < 0.72) {
-      addToken(needed(), x + 4, gapTop + gapH / 2 - 18, true);
+    /* A letter rides in the gap — the one she needs, or one she does not.
+       It sits a little off the middle of the gap so there is clear water on
+       one side of it either way. */
+    if (needed() && Math.random() < 0.82) {
+      const forced = sinceNeeded >= 2;
+      const ch = (forced || Math.random() < 0.45) ? needed() : randomOther();
+      if (ch === needed()) sinceNeeded = 0; else sinceNeeded += 1;
+      const high = Math.random() < 0.5;
+      addToken(ch, x + 4, gapTop + (high ? gapH * 0.26 : gapH * 0.74) - 18);
+    } else {
+      sinceNeeded += 1;
     }
   }
 
-  /* Wrong letters live in open water, well clear of any gap, so she can
-     always swim over or under them. */
+  /* And letters drift along in open water between the rocks too — which is
+     where the one she needs often is. */
   function spawnDecoy() {
     const { w, h } = size();
-    const ch = randomOther();
+    const ch = (sinceNeeded >= 2 || Math.random() < 0.4) ? needed() : randomOther();
     if (!ch) return;
+    if (ch === needed()) sinceNeeded = 0;
     const y = 24 + Math.random() * Math.max(10, h - 84);
-    addToken(ch, w + 40, y, false);
+    addToken(ch, w + 40, y);
   }
 
-  function addToken(ch, x, y2, good) {
-    const node = el('div', { class: `swim-token${good ? ' swim-token-good' : ''}`, text: ch });
+  function addToken(ch, x, y2) {
+    /* One look for every letter. Which one she wants is a thing she reads,
+       not a thing she is told. */
+    const node = el('div', { class: 'swim-token', text: ch });
     place(node, x, y2, 36, 36);
     pond.append(node);
-    tokens.push({ x, y: y2, ch, good, node });
+    tokens.push({ x, y: y2, ch, node });
   }
 
   function randomOther() {
@@ -274,8 +296,14 @@ export default function swim(ctx) {
       if (!hit) continue;
       token.node.remove();
       tokens.splice(i, 1);
-      if (token.good && token.ch === needed()) grabLetter(token.ch);
-      else buddy.say('Not that letter — keep going!');
+      /* Whatever she picks up, if it is the letter she needs it counts —
+         the token does not carry a verdict with it. */
+      if (token.ch === needed()) grabLetter(token.ch);
+      else {
+        petNode.classList.add('swim-spit');
+        setTimeout(() => petNode.classList.remove('swim-spit'), 420);
+        buddy.say(`Not ${token.ch.toUpperCase()} — you want ${needed().toUpperCase()}.`);
+      }
     }
 
     raf = requestAnimationFrame(frame);

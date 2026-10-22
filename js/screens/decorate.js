@@ -57,7 +57,7 @@ export default function decorateScreen(container) {
 
     const petHTML = petSVG({
       coat: info.coat, stage: info.stage, mood: 'happy',
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
     const scene = underwater ? buildPond({ petHTML })
       : outside ? buildGarden({ petHTML })

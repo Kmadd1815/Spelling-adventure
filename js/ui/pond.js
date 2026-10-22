@@ -68,10 +68,15 @@ function place(node, spec) {
   return node;
 }
 
-function piece(itemId, spec) {
+function piece(itemId, spec, onPiece = null, name = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
-  return place(el('div', { class: 'room-piece', html: art }), spec);
+  const node = onPiece
+    ? el('button', { class: 'room-piece', type: 'button', html: art,
+                     'aria-label': name || itemId,
+                     onClick: () => onPiece(itemId, node) })
+    : el('div', { class: 'room-piece', html: art });
+  return place(node, spec);
 }
 
 /**
@@ -80,7 +85,8 @@ function piece(itemId, spec) {
  * @param {object} [opts.petProps]
  * @returns {HTMLElement}
  */
-export function buildPond({ petHTML = '', petProps = {}, season = currentSeason() } = {}) {
+export function buildPond({ petHTML = '', petProps = {}, season = currentSeason(),
+                            onPiece = null } = {}) {
   const worn = items.equipped();
   const pond = el('div', { class: 'room pond' });
 
@@ -97,18 +103,22 @@ export function buildPond({ petHTML = '', petProps = {}, season = currentSeason(
      wobbling along it. It is what tells the eye which way is up. */
   pond.append(el('div', { class: 'pond-surface', style: { height: `${SURFACE}%` } }));
 
-  if (worn.pondFeature) pond.append(piece(worn.pondFeature, PLACES.feature));
+  const named = id => items.byId(id)?.name || '';
+
+  if (worn.pondFeature) {
+    pond.append(piece(worn.pondFeature, PLACES.feature, onPiece, named(worn.pondFeature)));
+  }
 
   (worn.pondPlant || []).forEach((id, i) => {
     if (!id) return;
     const spec = FLOATS.has(id) ? PLACES.lilies : PLACES.plants[i];
-    if (spec) pond.append(piece(id, spec));
+    if (spec) pond.append(piece(id, spec, onPiece, named(id)));
   });
 
   (worn.pondFriend || []).forEach((id, i) => {
     const spec = PLACES.friends[i];
     if (id && spec) {
-      const node = piece(id, spec);
+      const node = piece(id, spec, onPiece, named(id));
       /* They drift. Each one gets its own timing so two of them never
          swing together like a pendulum. */
       if (node) {

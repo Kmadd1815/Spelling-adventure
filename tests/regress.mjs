@@ -88,6 +88,25 @@ await page.click('button:has-text("Next")'); await page.waitForTimeout(200);
 await page.fill('input[placeholder="Pet name"]', 'Bubbles');
 await page.click("button:has-text('Let')"); await page.waitForTimeout(500);
 
+/* ---- the home screen is drawn, not borrowed ---- */
+/* Every tile icon is hand-drawn SVG. An emoji is whatever the tablet's
+   own font happens to draw, in its own style and its own light, and this
+   is the first screen she sees. */
+const tileArt = await page.evaluate(() => {
+  const tiles = [...document.querySelectorAll('.hub-tile')];
+  return {
+    n: tiles.length,
+    drawn: tiles.filter(t => t.querySelector('svg.tile-icon')).length,
+    lettered: tiles.filter(t => {
+      const slot = t.querySelector('.emoji');
+      return slot && slot.textContent.trim().length > 0;
+    }).length,
+  };
+});
+ok(`home tiles carry drawings (${tileArt.drawn}/${tileArt.n})`,
+   tileArt.n >= 10 && tileArt.drawn === tileArt.n);
+ok('no emoji left in a tile', tileArt.lettered === 0);
+
 // ---- 1. daily practice, all correct ----
 await page.click('button:has-text("Today")'); await page.waitForTimeout(900);
 await play();

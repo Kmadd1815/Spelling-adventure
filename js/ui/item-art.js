@@ -118,6 +118,59 @@ function leafy(cx, cy, rx, ry, { lobes = 9, wobble = 0.13, seed = 1 } = {}) {
   return d + 'Z';
 }
 
+/* ---- The parts every garment is made of ---- */
+
+/* Short sleeves over the arms the pet draws: out and down from the
+   shoulder, stopping short so the paws stay in the open. */
+function sleeves(g, main, line, cuff, len = 1) {
+  const one = side => {
+    /* Measured along the arm the pet actually draws — from the shoulder at
+       0.62 of the body's width out towards the paw at 0.92 — and reaching
+       past the garment's own edge, or the garment simply covers it and the
+       animal appears to have no arms at all. */
+    const ax = g.bx + side * g.brx * 0.56, ay = g.by + g.bry * 0.18;
+    const tx = g.bx + side * g.brx * (0.74 + 0.08 * len), ty = g.by + g.bry * (0.32 + 0.10 * len);
+    return `
+      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
+            stroke="${line}" stroke-width="${n(g.bry * 0.30)}" stroke-linecap="round"/>
+      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
+            stroke="${main}" stroke-width="${n(g.bry * 0.23)}" stroke-linecap="round"/>
+      <path d="M ${n(tx - side * g.brx * 0.025)} ${n(ty - g.bry * 0.07)}
+               l ${n(side * g.brx * 0.05)} ${n(g.bry * 0.14)}"
+            stroke="${cuff}" stroke-width="${n(g.bry * 0.07)}" stroke-linecap="round" opacity=".9"/>`;
+  };
+  return one(-1) + one(1);
+}
+
+/* The rolled collar at the neck of a garment. */
+function collar(g, topK, bow, trim, line) {
+  const y = g.by + topK * g.bry, w = across(g.brx, topK);
+  return `
+    <path d="M ${n(g.bx - w)} ${n(y)}
+             Q ${n(g.bx)} ${n(y + bow * g.bry)} ${n(g.bx + w)} ${n(y)}
+             Q ${n(g.bx)} ${n(y + bow * g.bry + g.bry * 0.12)} ${n(g.bx - w)} ${n(y)} Z"
+          fill="${trim}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round" opacity=".95"/>`;
+}
+
+/* A skirt hanging from a waistband and flaring out past the body — the one
+   garment that is NOT a band wrapped on the animal, because a skirt that
+   follows the body is a pair of trousers. `pleats` draws the folds. */
+function skirtPanel(g, waistK, dropK, flare, main, line, pleats = false) {
+  const wy = g.by + waistK * g.bry, ww = across(g.brx, waistK) * 0.96;
+  const hy = g.by + dropK * g.bry, hw = g.brx * flare;
+  let hem = '';
+  for (let i = 0; i < 5; i++) {
+    const a = g.bx - hw + (2 * hw * i) / 5, b = g.bx - hw + (2 * hw * (i + 1)) / 5;
+    hem += `Q ${n((a + b) / 2)} ${n(hy + g.bry * 0.16)} ${n(b)} ${n(hy)} `;
+  }
+  const folds = pleats ? [-0.6, -0.2, 0.2, 0.6].map(t => `
+    <path d="M ${n(g.bx + t * ww)} ${n(wy + g.bry * 0.08)} L ${n(g.bx + t * hw * 1.02)} ${n(hy + g.bry * 0.06)}"
+          stroke="${line}" stroke-width="2" stroke-linecap="round" opacity=".45"/>`).join('') : '';
+  return litPath(`M ${n(g.bx - ww)} ${n(wy)} L ${n(g.bx - hw)} ${n(hy)} ${hem}
+                  L ${n(g.bx + ww)} ${n(wy)} Q ${n(g.bx)} ${n(wy + g.bry * 0.14)} ${n(g.bx - ww)} ${n(wy)} Z`,
+                 main, line, { stroke: line, sw: 2.6, join: 'round' }) + folds;
+}
+
 const HATS = {
   /* A bow with some volume in it: two full loops with a fold in each, a
      knot that sits proud of them, and short ribbon tails. The first one was
@@ -661,23 +714,9 @@ const ACCESSORIES = {
     const topK = -0.52, botK = 0.78, bow = 0.17;
     const band = wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow);
     const collarY = g.by + topK * g.bry, collarW = across(g.brx, topK);
-    /* The sleeve follows the arm the pet draws: out and down from the
-       shoulder, stopping short so the paws stay out in the open. */
-    const sleeve = side => {
-      const ax = g.bx + side * g.brx * 0.56, ay = g.by + g.bry * 0.16;
-      const tx = g.bx + side * g.brx * 0.84, ty = g.by + g.bry * 0.42;
-      return `
-      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
-            stroke="${line}" stroke-width="${n(g.bry * 0.40)}" stroke-linecap="round"/>
-      <path d="M ${n(ax)} ${n(ay)} L ${n(tx)} ${n(ty)}"
-            stroke="${main}" stroke-width="${n(g.bry * 0.32)}" stroke-linecap="round"/>
-      <path d="M ${n(tx - side * g.brx * 0.03)} ${n(ty - g.bry * 0.09)}
-               l ${n(side * g.brx * 0.06)} ${n(g.bry * 0.18)}"
-            stroke="${knit}" stroke-width="${n(g.bry * 0.09)}" stroke-linecap="round"/>`;
-    };
     return `
-      ${sleeve(-1)}${sleeve(1)}
       ${litPath(band, main, line, { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, knit)}
       <path d="${hemLine(g.bx, g.by, g.brx, g.bry, 0.12, bow)}"
             fill="none" stroke="${knit}" stroke-width="${n(g.bry * 0.11)}" opacity=".9"/>
       <path d="${hemLine(g.bx, g.by, g.brx, g.bry, 0.44, bow)}"
@@ -694,6 +733,215 @@ const ACCESSORIES = {
                Q ${n(g.bx)} ${n(collarY + bow * g.bry)} ${n(g.bx + collarW)} ${n(collarY)}
                Q ${n(g.bx)} ${n(collarY + bow * g.bry + g.bry * 0.13)} ${n(g.bx - collarW)} ${n(collarY)} Z"
             fill="${knit}" stroke="${line}" stroke-width="2.2" stroke-linejoin="round" opacity=".95"/>`;
+  },
+
+  /* ===================== Clothes =====================
+
+     All of them are built on wrapBand(): the sides of a garment are the
+     animal's own outline and the hems sag in the middle, so they sit ON
+     her rather than in front of her. A skirt is the one exception — it
+     FLARES past the body, which is the only way a skirt reads as a skirt,
+     so it is drawn as its own shape hanging from a waistband. */
+
+  /* A short-sleeved tee. The simplest of them, and the one the rest are
+     measured against. */
+  tee: (g, c = {}) => {
+    const main = c.main || '#6fb3d9', line = c.line || '#3f7ba0', trim = c.light || '#fff6e8';
+    const topK = -0.56, botK = 0.64, bow = 0.17;
+    return `
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, trim)}
+      ${collar(g, topK, bow, trim, line)}
+      <path d="${hemLine(g.bx, g.by, g.brx, g.bry, botK, bow, 0.99)}"
+            fill="none" stroke="${line}" stroke-width="2.4" opacity=".55"/>
+      ${c.motif ? c.motif(g) : ''}`;
+  },
+
+  /* The same shirt with a hood lolling behind the neck and a pouch at the
+     front. The hood sits behind the HEAD, which is why it is drawn first. */
+  hoodie: (g, c = {}) => {
+    const main = c.main || '#7f8fc4', line = c.line || '#55628f', trim = c.light || '#e6ebf7';
+    const topK = -0.62, botK = 0.54, bow = 0.17;
+    /* The hood lolls behind the neck. It has to be wider than the HEAD, not
+       wider than the body, or the head simply covers it. */
+    const hoodY = g.by + topK * g.bry, hoodW = g.hrx * 1.02;
+    return `
+      <path d="M ${n(g.bx - hoodW)} ${n(hoodY + g.bry * 0.10)}
+               Q ${n(g.bx - hoodW * 0.86)} ${n(hoodY - g.bry * 0.30)} ${n(g.bx)} ${n(hoodY - g.bry * 0.26)}
+               Q ${n(g.bx + hoodW * 0.86)} ${n(hoodY - g.bry * 0.30)} ${n(g.bx + hoodW)} ${n(hoodY + g.bry * 0.10)}
+               Q ${n(g.bx)} ${n(hoodY + g.bry * 0.40)} ${n(g.bx - hoodW)} ${n(hoodY + g.bry * 0.10)} Z"
+            fill="${line}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, trim)}
+      ${/* The pouch across the front, and the drawstrings. */ ''}
+      <path d="M ${n(g.bx - g.brx * 0.42)} ${n(g.by + g.bry * 0.12)}
+               h ${n(g.brx * 0.84)} v ${n(g.bry * 0.26)}
+               q ${n(-g.brx * 0.42)} ${n(g.bry * 0.14)} ${n(-g.brx * 0.84)} 0 z"
+            fill="${line}" opacity=".45"/>
+      <path d="M ${n(g.bx - g.brx * 0.14)} ${n(hoodY + g.bry * 0.18)} v ${n(g.bry * 0.26)}
+               M ${n(g.bx + g.brx * 0.14)} ${n(hoodY + g.bry * 0.18)} v ${n(g.bry * 0.22)}"
+            stroke="${trim}" stroke-width="2.6" stroke-linecap="round"/>
+      ${collar(g, topK, bow, trim, line)}`;
+  },
+
+  /* A dress: a fitted bodice and a skirt that flares away from the waist,
+     with a sash where the two meet. */
+  dress: (g, c = {}) => {
+    const main = c.main || '#f2849f', line = c.line || '#c25f7c',
+          trim = c.light || '#fff6e8', sash = c.sash || '#ffd980';
+    const topK = -0.56, waistK = 0.18, bow = 0.17;
+    return `
+      ${skirtPanel(g, waistK, 0.96, 1.22, main, line)}
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, waistK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, trim, 0.7)}
+      <path d="${hemLine(g.bx, g.by, g.brx, g.bry, waistK, bow, 1.0)}"
+            fill="none" stroke="${sash}" stroke-width="${n(g.bry * 0.13)}" stroke-linecap="round"/>
+      ${collar(g, topK, bow, trim, line)}
+      ${c.motif ? c.motif(g) : ''}`;
+  },
+
+  /* Straps instead of sleeves, and a pattern on the skirt. */
+  sundress: (g, c = {}) => {
+    const main = c.main || '#ffd27f', line = c.line || '#d9a347', trim = c.light || '#fff6e8';
+    const topK = -0.34, waistK = 0.18, bow = 0.17;
+    const strap = side => `
+      <path d="M ${n(g.bx + side * g.brx * 0.44)} ${n(g.by - g.bry * 0.86)}
+               L ${n(g.bx + side * g.brx * 0.30)} ${n(g.by + topK * g.bry)}"
+            stroke="${main}" stroke-width="${n(g.bry * 0.13)}" stroke-linecap="round"/>`;
+    return `
+      ${skirtPanel(g, waistK, 0.98, 1.26, main, line)}
+      ${strap(-1)}${strap(1)}
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, waistK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${[-0.5, 0, 0.5].map(t => {
+        const x = g.bx + t * across(g.brx, 0.5) * 0.9, y = g.by + g.bry * 0.56;
+        return `<circle cx="${n(x)}" cy="${n(y)}" r="${n(g.brx * 0.05)}" fill="${trim}" opacity=".9"/>`;
+      }).join('')}
+      <path d="${hemLine(g.bx, g.by, g.brx, g.bry, waistK, bow, 1.0)}"
+            fill="none" stroke="${trim}" stroke-width="${n(g.bry * 0.10)}" stroke-linecap="round"/>`;
+  },
+
+  /* A tutu: three layers of net standing out from the waist, pale enough
+     to see the animal through. */
+  tutu: (g, c = {}) => {
+    const main = c.main || '#f9c6da', line = c.line || '#dc93b0';
+    const waistY = g.by + g.bry * 0.16;
+    const layer = (spread, drop, op) => {
+      const w = g.brx * spread, y = waistY + g.bry * drop;
+      let hem = '';
+      for (let i = 0; i < 6; i++) {
+        const a = g.bx - w + (2 * w * i) / 6, b2 = g.bx - w + (2 * w * (i + 1)) / 6;
+        hem += `Q ${n((a + b2) / 2)} ${n(y + g.bry * 0.17)} ${n(b2)} ${n(y)} `;
+      }
+      return `<path d="M ${n(g.bx - g.brx * 0.42)} ${n(waistY)}
+                       L ${n(g.bx - w)} ${n(y)} ${hem}
+                       L ${n(g.bx + g.brx * 0.42)} ${n(waistY)} Z"
+                    fill="${main}" fill-opacity="${op}" stroke="${line}"
+                    stroke-width="2" stroke-linejoin="round"/>`;
+    };
+    return `
+      ${layer(1.34, 0.54, 0.72)}
+      ${layer(1.16, 0.40, 0.8)}
+      ${layer(0.96, 0.26, 0.9)}
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, 0.04, 0.26, 0.15), line, line,
+                { stroke: line, sw: 2.2, join: 'round' })}`;
+  },
+
+  /* A pleated skirt, hanging from a waistband. */
+  skirt: (g, c = {}) => {
+    const main = c.main || '#8fbf72', line = c.line || '#5f8a4f', band = c.light || '#fff6e8';
+    const waistK = 0.10;
+    return `
+      ${skirtPanel(g, waistK, 0.92, 1.24, main, line, true)}
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, waistK - 0.14, waistK + 0.06, 0.15), band, line,
+                { stroke: line, sw: 2.4, join: 'round' })}`;
+  },
+
+  /* Dungarees: a bib, two straps over the shoulders, and a button on each. */
+  dungarees: (g, c = {}) => {
+    const main = c.main || '#6f8fc9', line = c.line || '#47619a', button = c.light || '#ffd980';
+    const topK = 0.02, botK = 0.72, bow = 0.17;
+    const bibW = across(g.brx, topK) * 0.56;
+    const strap = side => `
+      <path d="M ${n(g.bx + side * bibW * 0.86)} ${n(g.by + topK * g.bry)}
+               C ${n(g.bx + side * bibW * 1.5)} ${n(g.by - g.bry * 0.46)}
+                 ${n(g.bx + side * g.brx * 0.62)} ${n(g.by - g.bry * 0.72)}
+                 ${n(g.bx + side * g.brx * 0.44)} ${n(g.by - g.bry * 0.92)}"
+            fill="none" stroke="${main}" stroke-width="${n(g.bry * 0.15)}" stroke-linecap="round"/>
+      <circle cx="${n(g.bx + side * bibW * 0.80)}" cy="${n(g.by + topK * g.bry + g.bry * 0.06)}"
+              r="${n(g.brx * 0.055)}" fill="${button}" stroke="${line}" stroke-width="1.6"/>`;
+    return `
+      ${strap(-1)}${strap(1)}
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      <path d="M ${n(g.bx - bibW)} ${n(g.by + topK * g.bry)} h ${n(bibW * 2)}"
+            stroke="${line}" stroke-width="2.4" opacity=".6"/>
+      <path d="M ${n(g.bx)} ${n(g.by + g.bry * 0.26)} v ${n(g.bry * 0.40)}"
+            stroke="${line}" stroke-width="2.2" opacity=".5"/>`;
+  },
+
+  /* Pyjamas, with stars on them and a buttoned front. */
+  pyjamas: (g, c = {}) => {
+    const main = c.main || '#8f7fc4', line = c.line || '#61528f', trim = c.light || '#fff3cc';
+    const topK = -0.56, botK = 0.74, bow = 0.17;
+    const star = (x, y, r) => {
+      let d = '';
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        const rr = i % 2 ? r * 0.45 : r;
+        d += `${i ? 'L' : 'M'} ${n(x + Math.cos(a) * rr)} ${n(y + Math.sin(a) * rr)} `;
+      }
+      return `<path d="${d}Z" fill="${trim}" opacity=".9"/>`;
+    };
+    return `
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, trim, 1.1)}
+      ${[[-0.46, 0.06], [0.42, -0.04], [-0.2, 0.42], [0.3, 0.46], [0.02, -0.26]].map(([tx, ty]) =>
+        star(g.bx + tx * g.brx, g.by + ty * g.bry, g.brx * 0.085)).join('')}
+      <path d="M ${n(g.bx)} ${n(g.by - g.bry * 0.40)} v ${n(g.bry * 1.04)}"
+            stroke="${line}" stroke-width="2.2" opacity=".55"/>
+      ${[-0.24, 0.06, 0.36, 0.66].map(t =>
+        `<circle cx="${n(g.bx)}" cy="${n(g.by + t * g.bry)}" r="${n(g.brx * 0.04)}"
+                 fill="${trim}"/>`).join('')}
+      ${collar(g, topK, bow, trim, line)}`;
+  },
+
+  /* A raincoat: shiny, with a hood up over the head's shoulders and two
+     toggles down the front. */
+  raincoat: (g, c = {}) => {
+    const main = c.main || '#f6c453', line = c.line || '#c9922c', trim = c.light || '#fffdf4';
+    const topK = -0.64, botK = 0.80, bow = 0.17;
+    /* Hood UP. A hood is the head's own shape at a small constant offset,
+       drawn behind it — so what shows is an even rim of coat all the way
+       round, rather than two flaps either side of her face. */
+    const hoodY = g.by + topK * g.bry;
+    const hx = g.hx, hy = g.hy - g.hry * 0.06, rx = g.hrx * 1.3, ry = g.hry * 1.32;
+    return `
+      <path d="M ${n(hx - rx)} ${n(hy + ry * 0.30)}
+               A ${n(rx)} ${n(ry)} 0 1 1 ${n(hx + rx)} ${n(hy + ry * 0.30)}
+               L ${n(g.bx + g.brx * 0.52)} ${n(hoodY + g.bry * 0.26)}
+               Q ${n(g.bx)} ${n(hoodY + g.bry * 0.50)} ${n(g.bx - g.brx * 0.52)} ${n(hoodY + g.bry * 0.26)} Z"
+            fill="${main}" stroke="${line}" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M ${n(hx - rx * 0.92)} ${n(hy + ry * 0.12)}
+               A ${n(rx * 0.92)} ${n(ry * 0.92)} 0 1 1 ${n(hx + rx * 0.92)} ${n(hy + ry * 0.12)}"
+            fill="none" stroke="${line}" stroke-width="2.4" opacity=".45"/>
+      ${litPath(wrapBand(g.bx, g.by, g.brx, g.bry, topK, botK, bow), main, line,
+                { stroke: line, sw: 2.6, join: 'round' })}
+      ${sleeves(g, main, line, trim, 1.15)}
+      <path d="M ${n(g.bx - g.brx * 0.62)} ${n(g.by - g.bry * 0.20)}
+               Q ${n(g.bx - g.brx * 0.30)} ${n(g.by + g.bry * 0.30)} ${n(g.bx - g.brx * 0.40)} ${n(g.by + g.bry * 0.70)}"
+            fill="none" stroke="${trim}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+      <path d="M ${n(g.bx)} ${n(g.by - g.bry * 0.44)} v ${n(g.bry * 1.14)}"
+            stroke="${line}" stroke-width="2.4" opacity=".6"/>
+      ${[-0.1, 0.26, 0.6].map(t => `
+        <rect x="${n(g.bx - g.brx * 0.07)}" y="${n(g.by + t * g.bry)}"
+              width="${n(g.brx * 0.14)}" height="${n(g.bry * 0.09)}" rx="${n(g.bry * 0.04)}"
+              fill="${line}"/>`).join('')}
+      ${collar(g, topK, bow, trim, line)}`;
   },
 
   fairy_wings: g => {
@@ -801,6 +1049,13 @@ export const COLOURWAYS = {
 
   /* Jumpers */
   sweater_sky:    { of: 'sweater', c: { main: '#6fb3d9', line: '#3f7ba0', light: '#fff6e8' } },
+  /* Her clothes, in their colourways. */
+  tee_berry:      { of: 'tee',     c: { main: '#f2849f', line: '#c25f7c', light: '#fff6e8' } },
+  tee_moss:       { of: 'tee',     c: { main: '#7fb96c', line: '#4c7d41', light: '#fff6e8' } },
+  skirt_plum:     { of: 'skirt',   c: { main: '#a07cc4', line: '#70508f', light: '#f6edff' } },
+  hoodie_sun:     { of: 'hoodie',  c: { main: '#f6c453', line: '#c9922c', light: '#fffdf4' } },
+  dress_mint:     { of: 'dress',   c: { main: '#7fcfc6', line: '#44928a', light: '#f2fffc', sash: '#ffd980' } },
+  dress_night:    { of: 'dress',   c: { main: '#4a5680', line: '#333c5c', light: '#e6ebf7', sash: '#c9a3e0' } },
   sweater_moss:   { of: 'sweater', c: { main: '#7fb96c', line: '#4c7d41', light: '#fff6e8' } },
   sweater_butter: { of: 'sweater', c: { main: '#f6c453', line: '#c49331', light: '#7a5a14' } },
 };
@@ -818,6 +1073,18 @@ export const BEHIND_BODY = new Set([
   ...BEHIND_BASE,
   /* Every colourway of something that hangs behind hangs behind too. */
   ...Object.entries(COLOURWAYS).filter(([, w]) => BEHIND_BASE.includes(w.of)).map(([id]) => id),
+]);
+
+/* Worn things that belong ON the body: over it and over the arms, but
+   outside the head group, so they stay where they are when she turns to
+   look at something. Clothes that swing with the head are most of what
+   makes clothes read as a sticker pasted on the front. */
+const ON_BODY_BASE = ['sweater', 'tee', 'hoodie', 'dress', 'sundress', 'tutu',
+                      'skirt', 'dungarees', 'pyjamas', 'raincoat',
+                      'backpack', 'birthday_sash'];
+export const ON_BODY = new Set([
+  ...ON_BODY_BASE,
+  ...Object.entries(COLOURWAYS).filter(([, w]) => ON_BODY_BASE.includes(w.of)).map(([id]) => id),
 ]);
 
 /* ============================ SURFACES ============================

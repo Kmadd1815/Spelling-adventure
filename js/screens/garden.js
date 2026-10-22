@@ -27,6 +27,7 @@ import { pondOpen, gateLine as pondGateLine } from '../core/pond.js';
 import { pathSVG } from '../ui/pond.js';
 import * as letters from '../core/letters.js';
 import { postboxSVG } from '../ui/postbox.js';
+import { decorTap } from '../ui/decortap.js';
 
 export default function gardenScreen(container) {
   /* It wanders out here too — more room than indoors, and no doorway to
@@ -53,7 +54,7 @@ export default function gardenScreen(container) {
 
     const drawPet = m => petSVG({
       coat: info.coat, stage: info.stage, mood: m,
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
 
     const bubble = el('div', { class: 'room-speech',
@@ -61,6 +62,7 @@ export default function gardenScreen(container) {
 
     stopRoaming();
     const scene = buildGarden({
+      onPiece: decorTap({ bubble, getRoam: () => stopRoam }),
       petHTML: drawPet(mood),
       petProps: {
         class: 'room-pet pet-tappable', role: 'button', tabindex: '0',
@@ -176,7 +178,7 @@ export default function gardenScreen(container) {
     if (petNode) {
       setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
       hop(petNode);
     }
@@ -189,7 +191,7 @@ export default function gardenScreen(container) {
       const node = container.querySelector('.room-pet');
       if (node) setPetArt(node, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
     }, 2600);
   }

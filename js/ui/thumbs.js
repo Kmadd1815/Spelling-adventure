@@ -26,6 +26,7 @@ import { decorSVG, surfaceSwatch, SURFACES } from './item-art.js';
    starts at y=44; these crops are in those same units. */
 const CROP = {
   hat:       { x: 20, y: 46, w: 160, h: 124 },
+  outfit:    { x: 10, y: 52, w: 180, h: 152 },
   accessory: { x: 10, y: 52, w: 180, h: 152 },
 };
 
@@ -35,11 +36,13 @@ const CROP = {
  * @param {string} itemId
  * @param {object} [opts]
  * @param {number} [opts.size]
- * @param {'hat'|'accessory'} [opts.category] which slot it is worn in
+ * @param {'hat'|'outfit'|'accessory'} [opts.category] which slot it is worn in
  * @returns {string} an <svg> string
  */
 export function wearingSVG(itemId, { size = 100, category = 'hat' } = {}) {
-  const worn = category === 'accessory' ? { accessory: itemId } : { hat: itemId };
+  const worn = category === 'accessory' ? { accessory: itemId }
+             : category === 'outfit'    ? { outfit: itemId }
+             : { hat: itemId };
   const crop = CROP[category] || CROP.hat;
   /* Still, not breathing: these appear twenty to a screen, and twenty
      animals blinking at her out of a price list is a different feeling
@@ -68,7 +71,7 @@ export function itemSVG(item, opts = {}) {
   if (SURFACES[item.id]) return surfaceSwatch(item.id, opts);
   const drawn = decorSVG(item.id, opts);
   if (drawn) return drawn;
-  if (item.category === 'hat' || item.category === 'accessory') {
+  if (item.category === 'hat' || item.category === 'outfit' || item.category === 'accessory') {
     return wearingSVG(item.id, { ...opts, category: item.category });
   }
   return '';

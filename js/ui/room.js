@@ -146,10 +146,22 @@ function windowPiece(itemId, spec, season) {
   return place(node, spec);
 }
 
-function piece(itemId, spec, extraClass = '') {
+/* A thing she has put out.
+
+   It is a <button> when the screen has given us something to do with a tap,
+   and a plain <div> otherwise — the decorating screen, for instance, has a
+   room in it that nobody is meant to prod. A button rather than a div with
+   a click handler because it is a real control: it needs to be reachable by
+   keyboard and to say its own name out loud. */
+function piece(itemId, spec, extraClass = '', onPiece = null, name = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
-  const node = el('div', { class: `room-piece ${extraClass}`.trim(), html: art });
+  const cls = `room-piece ${extraClass}`.trim();
+  const node = onPiece
+    ? el('button', { class: cls, type: 'button', html: art,
+                     'aria-label': name || itemId,
+                     onClick: () => onPiece(itemId, node) })
+    : el('div', { class: cls, html: art });
   return place(node, spec);
 }
 
@@ -159,10 +171,12 @@ function piece(itemId, spec, extraClass = '') {
  * @param {string} opts.petHTML   the pet's SVG, already drawn
  * @param {object} [opts.petProps] extra props for the pet node (onClick etc.)
  * @param {Function} [opts.onDoor]  called when she taps the door, if given
+ * @param {Function} [opts.onPiece] called with (itemId, node) when she taps
+ *   something she has put out. Without it the pieces are not tappable.
  * @returns {HTMLElement}
  */
 export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(),
-                            onDoor = null } = {}) {
+                            onDoor = null, onPiece = null } = {}) {
   const worn = items.equipped();
 
   const room = el('div', { class: 'room' });
@@ -199,17 +213,21 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
     room.append(d);
   }
 
+  const named = id => items.byId(id)?.name || '';
+  const tappable = (id, spec, extra = '') =>
+    piece(id, spec, extra, onPiece, named(id));
+
   (worn.wallDecor || []).forEach((id, i) => {
     const spec = PLACES.wallDecor[i];
-    if (spec) room.append(piece(id, spec));
+    if (spec) room.append(tappable(id, spec));
   });
 
-  if (worn.bed) room.append(piece(worn.bed, PLACES.bed));
-  if (worn.rug) room.append(piece(worn.rug, PLACES.rug));
+  if (worn.bed) room.append(tappable(worn.bed, PLACES.bed));
+  if (worn.rug) room.append(tappable(worn.rug, PLACES.rug));
 
   (worn.floorDecor || []).forEach((id, i) => {
     const spec = PLACES.floorDecor[i];
-    if (spec) room.append(piece(id, spec));
+    if (spec) room.append(tappable(id, spec));
   });
 
   const pet = el('div', { class: 'room-pet', ...petProps });

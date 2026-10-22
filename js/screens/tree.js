@@ -52,7 +52,7 @@ export default function treeScreen(container) {
 
     const drawPet = m => petSVG({
       coat: info.coat, stage: info.stage, mood: m,
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
 
     const bubble = el('div', { class: 'room-speech', text: greeting(all.length, due) });
@@ -161,7 +161,7 @@ export default function treeScreen(container) {
     if (petNode) {
       setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
       hop(petNode);
     }
@@ -174,7 +174,7 @@ export default function treeScreen(container) {
       const node = container.querySelector('.room-pet');
       if (node) setPetArt(node, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
     }, 2600);
   }

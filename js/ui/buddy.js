@@ -66,7 +66,7 @@ export function createBuddy({ layout = 'side', greeting = null } = {}) {
 
   const draw = mood => petSVG({
     coat: info.coat, stage: info.stage, mood, alive: true,
-    hat: worn.hat, accessory: worn.accessory,
+    hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
   });
 
   const voiceOnly = layout === 'voice';
@@ -124,7 +124,7 @@ export function petSprite(mood = 'happy') {
   const info = pet.pet();
   const worn = items.equipped();
   return petSVG({ coat: info.coat, stage: info.stage, mood, alive: false,
-                  hat: worn.hat, accessory: worn.accessory });
+                  hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory });
 }
 
 /** Swap a mounted sprite's drawing without rebuilding its node. */

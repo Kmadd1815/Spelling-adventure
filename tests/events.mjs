@@ -13,8 +13,21 @@ import { chromium, BASE, SP, ok } from './lib/harness.mjs';
 const errors = [];
 const browser = await chromium.launch();
 
-/* Pretend it is Halloween. The app reads the tablet's own clock, so this is
-   the only honest way to test an event before the day. */
+/* The first context is pinned to a quiet day — no event running — because
+   what it checks is the parent's preview, and a preview only exists when
+   the event is not on. Run this suite during October on the real clock and
+   the "preview" is the live hunt, which banks stars for real. The second
+   context below pins the clock the other way, into Halloween. */
+const QUIET_DAY = '2026-09-22T10:00:00';
+const clockShim = iso => `(() => {
+  const Real = Date;
+  const shift = new Real('${iso}').getTime() - Real.now();
+  class Fake extends Real {
+    constructor(...a) { if (!a.length) super(Real.now() + shift); else super(...a); }
+    static now() { return Real.now() + shift; }
+  }
+  window.Date = Fake;
+})()`;
 const ctx = await browser.newContext({
   viewport: { width: 1180, height: 800 }, deviceScaleFactor: 2,
 });
@@ -23,6 +36,7 @@ await ctx.addInitScript(() => {
   const s = window.speechSynthesis;
   if (s?.speak) { const o = s.speak.bind(s); s.speak = u => { if (u?.text) window.__spoken.push(u.text); try { o(u); } catch {} }; }
 });
+await ctx.addInitScript({ content: clockShim(QUIET_DAY) });
 const page = await ctx.newPage();
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });

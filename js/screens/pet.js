@@ -19,6 +19,7 @@ import { burst, hop } from '../ui/fx.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 import { gardenOpen, gateLine } from '../core/garden.js';
 import * as friend from '../core/friend.js';
+import { decorTap } from '../ui/decortap.js';
 
 export default function petScreen(container) {
   let mood = 'calm';
@@ -44,12 +45,13 @@ export default function petScreen(container) {
 
     const drawPet = m => petSVG({
       coat: info.coat, stage: info.stage, mood: m,
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
 
     stopRoaming();
     const room = buildRoom({
       petHTML: drawPet(mood),
+      onPiece: decorTap({ bubble, getRoam: () => stopRoam }),
       petProps: {
         class: 'room-pet pet-tappable', role: 'button', tabindex: '0',
         'aria-label': `Pet ${info.name}`,
@@ -106,6 +108,7 @@ export default function petScreen(container) {
 
     const wardrobe = el('div', { class: 'stack' },
       shelf('hat', '\u{1F452} Hats', 'Hats she buys or earns will show up here.'),
+      shelf('outfit', '\u{1F457} Clothes', 'Shirts, skirts and dresses will show up here.'),
       shelf('accessory', '\u{1F380} Accessories', 'Accessories will show up here.')
     );
 
@@ -208,7 +211,7 @@ export default function petScreen(container) {
       const worn = items.equipped();
       setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
       hop(petNode);
     }

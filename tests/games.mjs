@@ -297,6 +297,35 @@ for (let step = 0; step < 90; step++) {
 ok('the snake collected letters by steering', snakeGot > 0, `${snakeGot} letters`);
 await page.screenshot({ path: `${SP}/G8-snake-playing.png` });
 
+/* Every game card's picture is drawn rather than borrowed from the
+   operating system. An emoji is the one thing in a design nobody controls:
+   it is a different style, palette and light on every device, and on the
+   tablet this runs on it is a different set again. */
+{
+  const icons = await page.evaluate(async () => {
+    const { GAMES } = await import('/js/core/games.js');
+    const { gameIcon } = await import('/js/ui/icons.js');
+    const missing = [], flat = [];
+    for (const g of GAMES) {
+      const svg = gameIcon(g.id, 44);
+      if (!svg) { missing.push(g.id); continue; }
+      /* Through the light, like everything else that is drawn. */
+      if (!/url\(#|<path|<circle/.test(svg)) flat.push(g.id);
+    }
+    return { count: GAMES.length, missing, flat };
+  });
+  ok(`all ${icons.count} games have a drawn icon`, icons.missing.length === 0,
+     icons.missing.join(','));
+  ok('and none of them is an empty square', icons.flat.length === 0, icons.flat.join(','));
+
+  await page.goto(`${BASE}#/games`);
+  await page.waitForTimeout(900);
+  const emoji = await page.evaluate(() =>
+    [...document.querySelectorAll('.game-emoji')]
+      .filter(n => !n.querySelector('svg')).length);
+  ok('and the cards show the drawing rather than an emoji', emoji === 0, String(emoji));
+}
+
 /* ---------- 6. Swim ---------- */
 await goPlay('swim');
 await page.waitForTimeout(1400);
@@ -313,6 +342,22 @@ const rocks = await page.locator('.swim-rock').count();
 const tokens = await page.locator('.swim-token').count();
 ok('rocks appear', rocks >= 2, `${rocks}`);
 ok('letters appear', tokens >= 1, `${tokens}`);
+
+/* Her own note, and the whole point of the game: the letter she needs used
+   to be gold and the rest grey, so a child could finish a word without
+   reading one of them. If any letter in the pond ever looks different from
+   the others again, this fails. */
+await page.waitForTimeout(2600);
+const look = await page.evaluate(() => {
+  const nodes = [...document.querySelectorAll('.swim-token')];
+  const kinds = new Set(nodes.map(nd => {
+    const st = getComputedStyle(nd);
+    return [st.backgroundColor, st.color, st.boxShadow, st.opacity].join('|');
+  }));
+  return { n: nodes.length, kinds: [...kinds] };
+});
+ok('every letter in the pond looks exactly the same',
+   look.kinds.length <= 1, `${look.n} letters, ${look.kinds.length} different looks`);
 await page.screenshot({ path: `${SP}/G9-swim.png` });
 
 /* ---------- the daily ceiling ---------- */

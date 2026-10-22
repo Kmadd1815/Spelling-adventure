@@ -90,10 +90,16 @@ function place(node, spec, left) {
   return node;
 }
 
-function piece(itemId, spec, left, extraClass = '') {
+function piece(itemId, spec, left, extraClass = '', onPiece = null, name = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
-  return place(el('div', { class: `room-piece ${extraClass}`.trim(), html: art }), spec, left);
+  const cls = `room-piece ${extraClass}`.trim();
+  const node = onPiece
+    ? el('button', { class: cls, type: 'button', html: art,
+                     'aria-label': name || itemId,
+                     onClick: () => onPiece(itemId, node) })
+    : el('div', { class: cls, html: art });
+  return place(node, spec, left);
 }
 
 /* Stars, for the skies that have them.
@@ -138,7 +144,8 @@ function hills() {
  * @param {object} [opts.petProps] extra props for the pet node (onClick etc.)
  * @returns {HTMLElement}
  */
-export function buildGarden({ petHTML = '', petProps = {}, season = currentSeason() } = {}) {
+export function buildGarden({ petHTML = '', petProps = {}, season = currentSeason(),
+                              onPiece = null } = {}) {
   const worn = items.equipped();
   /* The sky is on the scene as well as in it, so the pieces that sit above
      where the cast begins — the distant hills — can be told what time of
@@ -169,14 +176,17 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
     }
   }
 
-  if (worn.tree)  garden.append(piece(worn.tree, PLACES.tree));
+  const named = id => items.byId(id)?.name || '';
+  if (worn.tree)  garden.append(piece(worn.tree, PLACES.tree, undefined, '', onPiece, named(worn.tree)));
 
   (worn.gardenDecor || []).forEach((id, i) => {
     const spec = PLACES.gardenDecor[i];
-    if (spec) garden.append(piece(id, spec));
+    if (spec) garden.append(piece(id, spec, undefined, '', onPiece, named(id)));
   });
 
-  if (worn.water) garden.append(piece(worn.water, PLACES.water));
+  if (worn.water) {
+    garden.append(piece(worn.water, PLACES.water, undefined, '', onPiece, named(worn.water)));
+  }
 
   const pet = el('div', { class: 'room-pet', ...petProps });
   pet.append(petLayers(petHTML));

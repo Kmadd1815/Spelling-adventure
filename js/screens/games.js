@@ -12,6 +12,7 @@ import * as games from '../core/games.js';
 import * as words from '../core/words.js';
 import { settings } from '../core/state.js';
 import { createBuddy } from '../ui/buddy.js';
+import { gameIcon } from '../ui/icons.js';
 
 export default function gamesScreen(container) {
   const buddy = createBuddy({ layout: 'strip', greeting: 'Which one shall we play?' });
@@ -55,11 +56,17 @@ export default function gamesScreen(container) {
       disabled: !playable,
       onClick: () => navigate(`/play?id=${game.id}`),
     },
-      el('span', { class: 'game-emoji', text: game.emoji }),
+      /* Drawn, not an emoji: the emoji is the operating system's picture,
+         and on her tablet it is a different style and a different light
+         from everything else on the screen. */
+      el('span', { class: 'game-emoji', html: gameIcon(game.id, 46) || '' }),
       el('span', { class: 'game-name', text: game.name }),
       el('small', { class: 'game-blurb', text: game.blurb }),
       el('small', { class: 'game-role', text: `\u{1F43E} ${game.buddyRole}` }),
-      gated ? el('small', { class: 'game-note', text: 'After Today\u2019s Practice' })
+      /* Eleven cards all saying the same thing in orange was a wall of
+         noise; the card is already greyed out, and the reason is written
+         once, large, at the top of the screen. */
+      gated ? el('small', { class: 'game-note game-note-quiet', text: 'After Today\u2019s Practice' })
           : !ok ? el('small', { class: 'game-note', text: reason })
           : plays ? el('small', { class: 'game-note',
               text: plays === 1 ? 'Played once today' : `Played ${plays} times today` })

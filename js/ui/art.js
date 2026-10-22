@@ -15,7 +15,7 @@
    a round shape reads as a flat disc no matter how bright the top is. */
 
 import { COATS, coatByKey, STAGES } from '../core/pet.js';
-import { wearableSVG, BEHIND_BODY } from './item-art.js';
+import { wearableSVG, BEHIND_BODY, ON_BODY } from './item-art.js';
 import { litEllipse, litPath, contact, SHADOW } from './shade.js';
 
 const n = v => Math.round(v * 100) / 100;
@@ -210,12 +210,13 @@ function gill(hx, hy, rx, ry, c, side, i, g, pass) {
  * @param {string} [opts.mood] calm | happy | excited | love | munch | sleepy
  * @param {boolean} [opts.alive] idle breathing, blinking and swaying gills
  * @param {string} [opts.hat]       a worn hat's item id
+ * @param {string} [opts.outfit]    worn clothes' item id
  * @param {string} [opts.accessory] a worn accessory's item id
  * @returns {string} an <svg> string
  */
 export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
                          mood = null, alive = true,
-                         hat = null, accessory = null } = {}) {
+                         hat = null, outfit = null, accessory = null } = {}) {
   if (!mood) mood = happy ? 'happy' : 'calm';
   const c = coat;
   const h = stage.headScale;
@@ -238,6 +239,21 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   const hatArt = hat ? wearableSVG(hat, geom) : '';
   const accArt = accessory ? wearableSVG(accessory, geom) : '';
   const accBehind = accessory && BEHIND_BODY.has(accessory);
+  /* THREE PLACES A WORN THING CAN GO, and the difference matters because
+     the head is its own group that turns to look at things.
+
+       behind the body   a cape, wings — anything that hangs out past the
+                         silhouette and would otherwise be covered
+       on the body       clothes, a backpack, a sash: drawn over the body
+                         and the arms, but OUTSIDE the head group, so they
+                         stay put when she looks around. A jumper that
+                         swings with the head is most of why clothes used
+                         to read as stickers pasted on.
+       on the head       hats, glasses, a scarf round the neck: inside the
+                         head group, because they move with the head. */
+  const bodyArt = (outfit ? wearableSVG(outfit, geom) : '') +
+                  (accessory && ON_BODY.has(accessory) ? accArt : '');
+  const headArt = accessory && !accBehind && !ON_BODY.has(accessory) ? accArt : '';
 
   let gillsUnder = '', gillsOver = '';
   for (const side of [-1, 1]) {
@@ -376,6 +392,7 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   ${bounce(bodyCx, bodyCy, bodyRx, bodyRy, c.belly)}
   ${arm(-1)}${arm(1)}
   ${foot(-1)}${foot(1)}
+  ${bodyArt}
 
   <!-- Everything above the neck, in one group so it can turn to look at
        something. It pivots at the neck, where a head actually turns. -->
@@ -403,7 +420,7 @@ export function petSVG({ coat = COATS[0], stage = STAGES[0], happy = false,
   ${nostril(-1)}${nostril(1)}
   ${grin}
 
-  ${accBehind ? '' : accArt}
+  ${headArt}
   ${hatArt}
   </g><!-- /pet-head -->
   </g>

@@ -13,6 +13,10 @@ import { el, mount, button, segmented, confirmDialog, modal } from '../ui/dom.js
 import { toast, confetti } from '../ui/toast.js';
 import { navigate } from '../ui/router.js';
 import { itemSVG } from '../ui/thumbs.js';
+
+/* The slots that are worn rather than put out — so the button says the
+   right verb for the thing she is looking at. */
+const WEARABLE = new Set(['hat', 'outfit', 'accessory']);
 import * as items from '../core/items.js';
 import * as rewards from '../core/rewards.js';
 import { currentSeason } from '../core/season.js';
@@ -134,7 +138,7 @@ export default function shopScreen(container) {
       el('p', { class: 'center muted tiny', text: item.blurb }),
       el('div', { class: 'row', style: { marginTop: '16px' } },
         button('Keep shopping', { cls: 'btn btn-quiet grow', onClick: () => { close(); render(); } }),
-        button(item.category === 'hat' || item.category === 'accessory' ? 'Wear it now' : 'Put it out',
+        button(WEARABLE.has(item.category) ? 'Wear it now' : 'Put it out',
           { cls: 'btn btn-primary grow', onClick: () => { close(); wearNow(item); } })
       ),
     ]);
@@ -158,7 +162,7 @@ export default function shopScreen(container) {
       el('p', { class: 'center tiny', text: on ? 'Out on display right now.' : 'Safe in your collection.' }),
       el('div', { class: 'row', style: { marginTop: '16px' } },
         button('Close', { cls: 'btn btn-quiet grow', onClick: () => close() }),
-        button(on ? 'Put it away' : (item.category === 'hat' || item.category === 'accessory' ? 'Wear it' : 'Put it out'),
+        button(on ? 'Put it away' : (WEARABLE.has(item.category) ? 'Wear it' : 'Put it out'),
           { cls: 'btn btn-primary grow', onClick: () => {
             const r = items.toggleEquip(item.id);
             if (!r.ok && r.reason === 'full') {

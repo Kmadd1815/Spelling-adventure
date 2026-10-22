@@ -295,6 +295,8 @@ body {
 }
 .hub-tile:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.14); }
 .hub-tile .emoji { font-size: 2.2rem; line-height: 1; }
+/* The tiles carry drawn icons now; the span is the slot they sit in. */
+.hub-tile .tile-icon { display: block; margin: 0 auto; }
 .hub-tile small { font-weight: 700; font-size: .78rem; opacity: .92; }
 
 .hub-tile-sm { min-height: 86px; font-size: .92rem; }
@@ -1139,6 +1141,150 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   .ia-rings { opacity: .5; }
 }
 
+/* ---------- Tapping the things she has put out ----------
+
+   Two halves of the same idea. The axolotl strikes a pose (it walks over
+   first — see petlife.js), and the thing itself does something. Every
+   animation here runs once and stops: a room where six things are moving
+   all the time is a room nobody can read a word in. */
+
+/* The poses. They go on .pet-lean, which is the layer the walk already
+   leans, so a pose can tilt the whole animal without fighting the
+   positioning. */
+.pet-pose-nap .pet-lean {
+  animation: poseNap 4.2s ease-in-out;
+  transform-origin: 50% 88%;
+}
+@keyframes poseNap {
+  0%        { transform: rotate(0) translateY(0); }
+  14%, 82%  { transform: rotate(-74deg) translateY(10%); }
+  100%      { transform: rotate(0) translateY(0); }
+}
+/* Eyes shut for the whole nap. An animal that lies down and then carries
+   on blinking at you is not asleep. */
+.pet-pose-nap .pet-eye-open { animation: none; opacity: 0; }
+.pet-pose-nap .pet-eye-shut { animation: none; opacity: 1; }
+
+/* Z z z, drifting up off a sleeping axolotl. */
+.pet-zzz {
+  position: absolute; left: 62%; bottom: 58%;
+  font-weight: 800; color: var(--ink-soft); pointer-events: none;
+  animation: poseZzz 1.5s ease-out infinite;
+}
+@keyframes poseZzz {
+  0%   { opacity: 0; transform: translate(0, 0) scale(.7); }
+  30%  { opacity: .85; }
+  100% { opacity: 0; transform: translate(14px, -26px) scale(1.15); }
+}
+
+.pet-pose-read .pet-lean { animation: poseRead 3.4s ease-in-out; }
+@keyframes poseRead {
+  0%, 100%        { transform: rotate(0); }
+  10%, 30%, 50%, 70% { transform: rotate(-7deg); }
+  20%, 40%, 60%, 80% { transform: rotate(-2deg); }
+}
+
+.pet-pose-water .pet-lean { animation: poseWater 2.8s ease-in-out; transform-origin: 50% 80%; }
+@keyframes poseWater {
+  0%, 100%   { transform: rotate(0); }
+  20%, 60%   { transform: rotate(-16deg); }
+  40%, 80%   { transform: rotate(-6deg); }
+}
+
+.pet-pose-play .pet-lean { animation: posePlay 2.6s ease-out; }
+@keyframes posePlay {
+  0%, 100%            { transform: translateY(0) rotate(0); }
+  12%, 42%, 72%       { transform: translateY(-13%) rotate(4deg); }
+  26%, 56%, 86%       { transform: translateY(0) rotate(-3deg); }
+}
+
+.pet-pose-sip .pet-lean { animation: poseSip 2.8s ease-in-out; }
+@keyframes poseSip {
+  0%, 100%  { transform: rotate(0); }
+  25%, 65%  { transform: rotate(-11deg) translateY(4%); }
+  45%, 85%  { transform: rotate(-4deg); }
+}
+
+.pet-pose-sniff .pet-lean { animation: poseSniff 2.4s ease-in-out; }
+@keyframes poseSniff {
+  0%, 100%       { transform: translateY(0) rotate(0); }
+  20%, 50%, 80%  { transform: translateY(5%) rotate(-9deg); }
+  35%, 65%       { transform: translateY(2%) rotate(-5deg); }
+}
+
+.pet-pose-cuddle .pet-lean { animation: poseCuddle 3s ease-in-out; }
+@keyframes poseCuddle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  25%, 75% { transform: rotate(-9deg) scale(1.04); }
+}
+
+.pet-pose-peer .pet-lean { animation: posePeer 2.6s ease-in-out; }
+@keyframes posePeer {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  30%      { transform: translateX(3%) rotate(5deg); }
+  65%      { transform: translateX(-2%) rotate(-4deg); }
+}
+
+/* And what the thing itself does. One run, then still again. */
+.room-piece { transform-origin: 50% 85%; }
+.dp-nudge   { animation: dpNudge   .7s ease-out; }
+.dp-wiggle  { animation: dpWiggle  .9s ease-out; }
+.dp-squish  { animation: dpSquish  .8s ease-out; }
+.dp-bounce  { animation: dpBounce  1.1s cubic-bezier(.3,.8,.4,1); }
+.dp-sway    { animation: dpSway    1.6s ease-in-out; }
+.dp-bob     { animation: dpBob     1.6s ease-in-out; }
+.dp-flutter { animation: dpFlutter 1.6s ease-in-out; }
+.dp-turn    { animation: dpTurn    1.8s ease-in-out; }
+.dp-tick    { animation: dpTick    1.6s linear; }
+.dp-pulse   { animation: dpPulse   1.3s ease-in-out; }
+.dp-twinkle { animation: dpTwinkle 1.4s ease-in-out; }
+.dp-grow    { animation: dpGrow    1.4s cubic-bezier(.3,1.5,.5,1); }
+.dp-tip     { animation: dpTip     1.2s ease-in-out; }
+/* The blocks go up, hold, and fall into a pile — her idea exactly. */
+.dp-stack   { animation: dpStack   2.4s ease-in-out; }
+
+@keyframes dpNudge  { 0%,100%{transform:rotate(0)} 35%{transform:rotate(-4deg)} 70%{transform:rotate(2deg)} }
+@keyframes dpWiggle { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-7deg)} 45%{transform:rotate(6deg)} 72%{transform:rotate(-3deg)} }
+@keyframes dpSquish { 0%,100%{transform:scale(1,1)} 35%{transform:scale(1.1,.84)} 70%{transform:scale(.97,1.05)} }
+@keyframes dpBounce { 0%,100%{transform:translateY(0) scale(1,1)} 18%{transform:translateY(-42%) scale(.94,1.08)} 42%{transform:translateY(0) scale(1.1,.86)} 64%{transform:translateY(-16%) scale(.98,1.04)} 86%{transform:translateY(0) scale(1.04,.96)} }
+@keyframes dpSway   { 0%,100%{transform:rotate(0)} 25%{transform:rotate(5deg)} 60%{transform:rotate(-4deg)} 85%{transform:rotate(1.5deg)} }
+@keyframes dpBob    { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-9%)} 65%{transform:translateY(3%)} }
+@keyframes dpFlutter{ 0%,100%{transform:skewX(0) translateY(0)} 20%{transform:skewX(-6deg) translateY(-3%)} 45%{transform:skewX(5deg) translateY(2%)} 72%{transform:skewX(-2deg)} }
+@keyframes dpTurn   { 0%,100%{transform:rotate(0)} 50%{transform:rotate(360deg)} }
+@keyframes dpTick   { 0%,100%{transform:rotate(0)} 50%{transform:rotate(14deg)} }
+@keyframes dpPulse  { 0%,100%{filter:brightness(1)} 40%{filter:brightness(1.35)} 70%{filter:brightness(1.1)} }
+@keyframes dpTwinkle{ 0%,100%{opacity:1} 25%{opacity:.45} 50%{opacity:1} 75%{opacity:.6} }
+@keyframes dpGrow   { 0%,100%{transform:scale(1)} 45%{transform:scale(1.12)} }
+@keyframes dpTip    { 0%,100%{transform:rotate(0)} 40%{transform:rotate(-34deg)} 75%{transform:rotate(-10deg)} }
+@keyframes dpStack  {
+  0%        { transform: translateY(0) rotate(0) scaleY(1); }
+  22%       { transform: translateY(-16%) rotate(0) scaleY(1.14); }
+  52%       { transform: translateY(-16%) rotate(0) scaleY(1.14); }
+  66%       { transform: translateY(-8%) rotate(9deg) scaleY(1.05); }
+  82%       { transform: translateY(4%) rotate(-7deg) scaleY(.86); }
+  100%      { transform: translateY(0) rotate(0) scaleY(1); }
+}
+
+/* A piece she can tap is a button, and it must not look like one. */
+button.room-piece {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* Pieces are see-through to the finger by default, so the axolotl can be
+     patted through whatever it is standing behind. One she can tap is the
+     exception, and has to say so. */
+  pointer-events: auto;
+}
+button.room-piece:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-nudge, .dp-wiggle, .dp-squish, .dp-bounce, .dp-sway, .dp-bob, .dp-flutter,
+  .dp-turn, .dp-tick, .dp-pulse, .dp-twinkle, .dp-grow, .dp-tip, .dp-stack,
+  .pet-pose-nap .pet-lean, .pet-pose-read .pet-lean, .pet-pose-water .pet-lean,
+  .pet-pose-play .pet-lean, .pet-pose-sip .pet-lean, .pet-pose-sniff .pet-lean,
+  .pet-pose-cuddle .pet-lean, .pet-pose-peer .pet-lean,
+  .pet-zzz { animation: none; }
+}
+
 /* ---------- Floating reaction effects ---------- */
 
 .fx-layer {
@@ -1610,11 +1756,17 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .game-card-locked { opacity: .55; cursor: default; }
 .game-card-locked:active { transform: none; box-shadow: var(--shadow); }
 
-.game-emoji { font-size: 2.1rem; line-height: 1.1; }
+.game-emoji { font-size: 2.1rem; line-height: 0; display: block; }
+.game-emoji .game-icon { display: block; margin: 0 auto; }
+/* The locked cards all say the same thing, so it is said quietly. */
 .game-name  { font-weight: 900; font-size: 1.05rem; }
 .game-blurb { font-size: .78rem; color: var(--ink-soft); line-height: 1.25; }
 .game-role  { font-size: .72rem; color: var(--ink-faint); margin-top: 2px; }
 .game-note  { font-size: .72rem; color: var(--primary-dark); font-weight: 800; margin-top: 4px; }
+/* Eleven cards all saying "After Today's Practice" in orange was a wall of
+   noise. The card is already greyed out and the reason is written once,
+   large, at the top of the screen, so down here it only has to be legible. */
+.game-note.game-note-quiet { color: var(--ink-soft); font-weight: 600; opacity: .8; }
 
 /* ---------- The shell every game runs in ---------- */
 
@@ -2294,7 +2446,18 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.swim-token-good { background: var(--gold); color: var(--ink); box-shadow: inset 0 0 0 2px var(--primary-dark); }
+/* There is no second kind of token. Every letter in the pond looks exactly
+   the same, because the moment one of them looks different the game is
+   about spotting a colour instead of about spelling a word. */
+
+/* The little "not that one" shake when she takes a letter she did not want.
+   It costs nothing — a wrong letter in this game never has. */
+.swim-spit { animation: swimSpit .42s ease-out; }
+@keyframes swimSpit {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  30%      { transform: translateX(-5px) rotate(-7deg); }
+  65%      { transform: translateX(3px) rotate(4deg); }
+}
 
 .swim-overlay {
   position: absolute; inset: 0;

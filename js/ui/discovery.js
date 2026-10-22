@@ -26,7 +26,7 @@ export function showDiscovery(item) {
     const worn = items.equipped();
     const drawPet = mood => petSVG({
       coat: info.coat, stage: info.stage, mood, alive: true,
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
 
     const figure = el('div', { class: 'find-pet', html: drawPet('excited') });

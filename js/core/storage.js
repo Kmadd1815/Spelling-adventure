@@ -157,6 +157,7 @@ export function defaultState() {
       bed: null,
       rug: null,
       hat: null,
+      outfit: null,
       accessory: null,
       wallDecor: [],    // up to 2
       floorDecor: [],   // up to 3
@@ -208,6 +209,17 @@ function migrate(state) {
   /* A room needs a window: indoors, it is the only place the weather
      shows. Saves made before there was a starter one get it here. */
   if (state.equipped && !state.equipped.window) state.equipped.window = 'window_plain';
+
+  /* Clothes got a slot of their own, so she can wear a dress AND a bow tie.
+     The jumpers moved into it — and an item whose category no longer
+     matches the slot it is stored in is silently dropped when the room is
+     drawn, so anyone already wearing one is moved across rather than
+     quietly undressed. */
+  if (state.equipped && typeof state.equipped.accessory === 'string' &&
+      state.equipped.accessory.startsWith('sweater')) {
+    state.equipped.outfit = state.equipped.accessory;
+    state.equipped.accessory = null;
+  }
 
   /* The mastery rule changed twice: from "three in a row, one a day" to
      "three in a row, every answer counts", and then to "five in a row, and

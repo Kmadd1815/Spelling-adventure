@@ -18,6 +18,8 @@ import { gardenOpen, gateLine } from '../core/garden.js';
 import * as friend from '../core/friend.js';
 import { speak } from '../core/speech.js';
 import { settings } from '../core/state.js';
+import { decorTap } from '../ui/decortap.js';
+import { tileIcon } from '../ui/icons.js';
 
 export default function homeScreen(container) {
   const season = currentSeason();
@@ -79,8 +81,13 @@ export default function homeScreen(container) {
   /* Tapping the door either goes outside or says how far off it is. It is
      never just refused: a shut door with a number on it is something to
      work towards, a shut door without one is a bug. */
+  /* Tapping the things she has put out. The handler asks for the wandering
+     handle when it fires rather than being handed it now, because the room
+     is built before the axolotl starts walking about in it. */
+  let stopRoam = () => {};
   const room = buildRoom({
     petHTML: drawPet('happy'), petProps,
+    onPiece: decorTap({ bubble, getRoam: () => stopRoam }),
     onDoor: () => {
       if (gardenOpen()) { navigate('/garden'); return; }
       bubble.textContent = gateLine();
@@ -167,16 +174,19 @@ export default function homeScreen(container) {
     room
   );
 
-  const tile = (label, sub, emoji, cls, to) =>
+  /* The tiles carry drawn icons rather than emoji, for the same reason the
+     game cards do: an emoji is the operating system's drawing, in its own
+     style and its own light, and this is the first screen she sees. */
+  const tile = (label, sub, icon, cls, to) =>
     el('button', { class: `hub-tile ${cls}`, type: 'button', onClick: () => navigate(to) },
-      el('span', { class: 'emoji', text: emoji }),
+      el('span', { class: 'emoji', html: tileIcon(icon, 40) }),
       el('span', { text: label }),
       sub ? el('small', { text: sub }) : null
     );
 
-  const smallTile = (label, emoji, cls, to) =>
+  const smallTile = (label, icon, cls, to) =>
     el('button', { class: `hub-tile hub-tile-sm ${cls}`, type: 'button', onClick: () => navigate(to) },
-      el('span', { class: 'emoji', text: emoji }),
+      el('span', { class: 'emoji', html: tileIcon(icon, 36) }),
       el('span', { text: label })
     );
 
@@ -260,32 +270,32 @@ export default function homeScreen(container) {
   const testTile = el('button', {
     class: 'hub-tile t-blue', type: 'button', onClick: chooseTest,
   },
-    el('span', { class: 'emoji', text: '\u270F\uFE0F' }),
+    el('span', { class: 'emoji', html: tileIcon('test', 40) }),
     el('span', { text: 'Take a Test' }),
     el('small', { text: 'Show what you know' })
   );
 
   body.append(el('div', { class: 'hub-grid' },
-    tile('Practice', 'Extra words', '\u{1F4DA}', 't-orange', '/practice'),
+    tile('Practice', 'Extra words', 'practice', 't-orange', '/practice'),
     testTile,
-    tile('My Words', 'See your list', '\u{1F5C2}\uFE0F', 't-green', '/words'),
-    tile('My Pet', info.name, '\u{1F43E}', 't-purple', '/pet')
+    tile('My Words', 'See your list', 'words', 't-green', '/words'),
+    tile('My Pet', info.name, 'pet', 't-purple', '/pet')
   ));
 
   body.append(el('div', { class: 'hub-grid hub-grid-3' },
-    smallTile('Games', '\u{1F3AE}', 't-blue', '/games'),
-    smallTile('Shop', '\u{1F6CD}\uFE0F', 't-pink', '/shop'),
-    smallTile('Decorate', '\u{1FA91}', 't-green', '/decorate'),
-    smallTile('Progress', '\u{1F4CA}', 't-gold', '/progress'),
-    smallTile('Collection', '\u{1F4D6}', 't-purple', '/progress?tab=collection'),
-    smallTile('Grown-ups', '\u{1F510}', 't-blue', '/parent')
+    smallTile('Games', 'games', 't-blue', '/games'),
+    smallTile('Shop', 'shop', 't-pink', '/shop'),
+    smallTile('Decorate', 'decorate', 't-green', '/decorate'),
+    smallTile('Progress', 'progress', 't-gold', '/progress'),
+    smallTile('Collection', 'collection', 't-purple', '/progress?tab=collection'),
+    smallTile('Grown-ups', 'grownups', 't-blue', '/parent')
   ));
 
   mount(container, body);
 
   /* And it goes for a wander, with the duckling after it. Both stopped
      when the screen goes away — the router calls what we return here. */
-  const stopRoam = roam(room);
+  stopRoam = roam(room);
   if (friendNode) stopFollow = follow(room);
 
   return () => { stopRoam(); stopFollowing(); };

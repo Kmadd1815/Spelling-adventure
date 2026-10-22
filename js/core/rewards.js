@@ -271,7 +271,16 @@ export function earnedMilestones() {
 export function nextMilestone() {
   const stats = milestoneStats();
   const ids = getState().progress.milestonesEarned;
-  const remaining = MILESTONES.filter(m => !ids.includes(m.id) && m.id.startsWith('master_'));
+  /* The next one is the next one she has NOT REACHED — not merely the next
+     one she has not been given. A save can hold both at once: milestones
+     are added to the app over time, so a child with thirty words mastered
+     can be missing the badge for ten, and the progress screen cheerfully
+     told her "30 of 10 words mastered" under a full green bar. A goal she
+     is already past is not a goal. */
+  const remaining = MILESTONES.filter(m =>
+    m.id.startsWith('master_') &&
+    !ids.includes(m.id) &&
+    Number(m.id.split('_')[1]) > stats.mastered);
   if (!remaining.length) return null;
   const target = remaining[0];
   const goal = Number(target.id.split('_')[1]);

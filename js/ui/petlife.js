@@ -75,8 +75,12 @@ function interests(room) {
  * Let the axolotl wander the room it is standing in.
  *
  * @param {HTMLElement} room  the node buildRoom() returned
- * @returns {Function} call it to stop — screens must, or the timers outlive
- *   the screen and walk an axolotl that is no longer on the page.
+ * @returns {Function & {visit: Function}} call it to stop — screens must, or
+ *   the timers outlive the screen and walk an axolotl that is no longer on
+ *   the page. It also carries `.visit(x, opts)`, which interrupts the
+ *   wandering, walks over to something she has tapped, holds a pose there
+ *   and then picks the wandering back up. A function is an object, so
+ *   hanging it there keeps every existing `stop = roam(room)` working.
  */
 export function roam(room, { band = ROOM_BAND } = {}) {
   const pet = room?.querySelector?.('.room-pet');
@@ -192,14 +196,66 @@ export function roam(room, { band = ROOM_BAND } = {}) {
      width points at nothing in particular. */
   after(120, () => { pointTail(here); after(rand(900, 2600), next); });
 
-  return () => {
+  const stop = () => {
     stopped = true;
     clearTimeout(timer);
-    pet.classList.remove('pet-walking', 'pet-peeking');
+    clearTimeout(poseTimer);
+    pet.classList.remove('pet-walking', 'pet-peeking', ...POSE_CLASSES);
+    pet.querySelector('.pet-zzz')?.remove();
     pet.style.transition = '';
     leanTo(0);
   };
+
+  let poseTimer = null;
+
+  /**
+   * Go and do something at a particular spot.
+   *
+   * It takes over from the wandering rather than running alongside it: the
+   * pending timer is cleared first, because an axolotl that is walking to
+   * the bed and also walking to wherever it had decided to go next ends up
+   * sliding between the two.
+   *
+   * @param {number} x     where to stand, as a percentage across the room
+   * @param {string} pose  one of the pose classes, or '' to just look
+   * @param {number} ms    how long to hold it
+   * @param {Function} [onArrive] called when the pose starts
+   */
+  stop.visit = (x, { pose = '', ms = 2400, onArrive } = {}) => {
+    if (stopped) return;
+    clearTimeout(timer);
+    clearTimeout(poseTimer);
+    pet.classList.remove(...POSE_CLASSES);
+    pet.querySelector('.pet-zzz')?.remove();
+
+    /* As close as the floor allows. Most of what she owns is against a wall
+       and genuinely out of reach, so it stands as near as it can get. */
+    const stand = clamp(x, band[0], band[1]);
+    walkTo(stand, () => {
+      leanTo(0);
+      onArrive?.();
+      if (!pose) return after(rand(900, 1800), next);
+      pet.classList.add(`pet-pose-${pose}`);
+      if (pose === 'nap') {
+        const z = document.createElement('div');
+        z.className = 'pet-zzz';
+        z.textContent = 'z z z';
+        pet.append(z);
+      }
+      poseTimer = setTimeout(() => {
+        pet.classList.remove(`pet-pose-${pose}`);
+        pet.querySelector('.pet-zzz')?.remove();
+        after(rand(600, 1500), next);
+      }, ms);
+    });
+  };
+
+  return stop;
 }
+
+/* Every pose class, so stopping can clear whichever one is on. */
+const POSE_CLASSES = ['nap', 'read', 'water', 'play', 'sip', 'sniff', 'cuddle', 'peer']
+  .map(p => `pet-pose-${p}`);
 
 
 /* ---------- The friend ----------

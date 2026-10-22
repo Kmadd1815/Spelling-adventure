@@ -19,6 +19,7 @@ import * as items from '../core/items.js';
 import * as friendCore from '../core/friend.js';
 import { currentSeason, applySeasonTheme } from '../core/season.js';
 import { pondOpen, pondLine } from '../core/pond.js';
+import { decorTap } from '../ui/decortap.js';
 
 export default function pondScreen(container) {
   /* Reached by a path that will not open otherwise — but a typed URL is a
@@ -43,13 +44,14 @@ export default function pondScreen(container) {
 
     const drawPet = m => petSVG({
       coat: info.coat, stage: info.stage, mood: m,
-      hat: worn.hat, accessory: worn.accessory,
+      hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
     });
 
     const bubble = el('div', { class: 'room-speech', text: pondLine() });
 
     stopEverything();
     const scene = buildPond({
+      onPiece: decorTap({ bubble, getRoam: () => null }),
       season,
       petHTML: drawPet(mood),
       petProps: {
@@ -130,7 +132,7 @@ export default function pondScreen(container) {
     if (petNode) {
       setPetArt(petNode, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
       hop(petNode);
     }
@@ -143,7 +145,7 @@ export default function pondScreen(container) {
       const node = container.querySelector('.room-pet');
       if (node) setPetArt(node, petSVG({
         coat: info.coat, stage: info.stage, mood,
-        hat: worn.hat, accessory: worn.accessory,
+        hat: worn.hat, outfit: worn.outfit, accessory: worn.accessory,
       }));
     }, 2600);
   }

@@ -34,6 +34,10 @@ export const SLOTS = {
   rug:        { max: 1, label: 'Rug',          group: 'furniture' },
   floorDecor: { max: 6, label: 'On the floor', group: 'furniture' },
   hat:        { max: 1, label: 'Hat',          group: 'pet' },
+  /* Clothes are their own slot rather than another accessory, so she can
+     wear a dress AND a bow tie — which is, as far as anyone dressing up has
+     ever been concerned, the entire point. */
+  outfit:     { max: 1, label: 'Clothes',      group: 'pet' },
   accessory:  { max: 1, label: 'Accessory',    group: 'pet' },
 
   /* Outdoors. A bed on the grass would look like a bug rather than a
@@ -65,7 +69,7 @@ export const isMulti = slot => (SLOTS[slot]?.max ?? 1) > 1;
 
 /* Shop tabs, so ten slots do not become ten tabs. */
 export const SHOP_TABS = [
-  { key: 'wear',   label: 'Wear',    emoji: '\u{1F452}', slots: ['hat', 'accessory'] },
+  { key: 'wear',   label: 'Wear',    emoji: '\u{1F452}', slots: ['hat', 'outfit', 'accessory'] },
   { key: 'room',   label: 'Room',    emoji: '\u{1F6AA}', slots: ['wallpaper', 'flooring', 'window', 'door'] },
   { key: 'furn',   label: 'Furniture', emoji: '\u{1FA91}', slots: ['bed', 'rug', 'floorDecor'] },
   { key: 'walls',  label: 'Wall art', emoji: '\u{1F5BC}\uFE0F', slots: ['wallDecor'] },
@@ -219,7 +223,7 @@ export const CATALOG = [
   { id: 'flower_lei',   name: 'Flower Lei',      category: 'accessory', price: 85,  blurb: 'A ring of blossoms.', season: 'summer' },
   { id: 'snorkel',      name: 'Snorkel',         category: 'accessory', price: 115, blurb: 'Completely unnecessary. Wonderful.', season: 'summer' },
   { id: 'backpack',     name: 'Little Backpack', category: 'accessory', price: 140, blurb: 'For carrying snacks.' },
-  { id: 'sweater',      name: 'Stripy Sweater',  category: 'accessory', price: 175, blurb: 'Knitted with love.' },
+  { id: 'sweater',      name: 'Stripy Sweater',  category: 'outfit', price: 175, blurb: 'Knitted with love.' },
   { id: 'fairy_wings',  name: 'Fairy Wings',     category: 'accessory', price: 330, blurb: 'They shimmer.' },
 
   /* ---- More to put out ---- */
@@ -263,9 +267,30 @@ export const CATALOG = [
   { id: 'scarf_forest', name: 'Forest Scarf',    category: 'accessory', price: 75, blurb: 'Green with gold stripes.', season: 'fall' },
   { id: 'scarf_ocean',  name: 'Ocean Scarf',     category: 'accessory', price: 75, blurb: 'Blue with pale stripes.', season: 'winter' },
   { id: 'scarf_candy',  name: 'Candy Scarf',     category: 'accessory', price: 75, blurb: 'Pink with cream stripes.', season: 'winter' },
-  { id: 'sweater_sky',    name: 'Sky Sweater',    category: 'accessory', price: 175, blurb: 'Knitted in blue.' },
-  { id: 'sweater_moss',   name: 'Moss Sweater',   category: 'accessory', price: 175, blurb: 'Knitted in green.' },
-  { id: 'sweater_butter', name: 'Butter Sweater', category: 'accessory', price: 175, blurb: 'Warm yellow, dark stitching.' },
+  { id: 'sweater_sky',    name: 'Sky Sweater',    category: 'outfit', price: 175, blurb: 'Knitted in blue.' },
+  { id: 'sweater_moss',   name: 'Moss Sweater',   category: 'outfit', price: 175, blurb: 'Knitted in green.' },
+  { id: 'sweater_butter', name: 'Butter Sweater', category: 'outfit', price: 175, blurb: 'Warm yellow, dark stitching.' },
+
+  /* ---- Clothes ----
+
+     Her own request: shirts, dresses, skirts. Priced across the range so
+     there is always something small to buy today and something to save up
+     for — a tee after a good week, a party dress after a month. */
+  { id: 'tee',          name: 'Stripy Tee',      category: 'outfit', price: 90,  blurb: 'Comfy, and it goes with everything.' },
+  { id: 'tee_berry',    name: 'Berry Tee',       category: 'outfit', price: 90,  blurb: 'Pink as a summer evening.' },
+  { id: 'tee_moss',     name: 'Moss Tee',        category: 'outfit', price: 90,  blurb: 'Green as the garden.' },
+  { id: 'skirt',        name: 'Pleated Skirt',   category: 'outfit', price: 120, blurb: 'Swishes when she turns around.' },
+  { id: 'skirt_plum',   name: 'Plum Skirt',      category: 'outfit', price: 120, blurb: 'Deep purple pleats.' },
+  { id: 'dungarees',    name: 'Dungarees',       category: 'outfit', price: 160, blurb: 'Pockets for finding things in.' },
+  { id: 'hoodie',       name: 'Cosy Hoodie',     category: 'outfit', price: 190, blurb: 'Hood down, hands in the pouch.' },
+  { id: 'hoodie_sun',   name: 'Sunny Hoodie',    category: 'outfit', price: 190, blurb: 'The yellow one.', season: 'spring' },
+  { id: 'pyjamas',      name: 'Star Pyjamas',    category: 'outfit', price: 200, blurb: 'For a very serious bedtime.' },
+  { id: 'sundress',     name: 'Sundress',        category: 'outfit', price: 230, blurb: 'Straps, spots, and no sleeves at all.', season: 'summer' },
+  { id: 'raincoat',     name: 'Raincoat',        category: 'outfit', price: 260, blurb: 'Shiny, with a hood up.', season: 'fall' },
+  { id: 'tutu',         name: 'Tutu',            category: 'outfit', price: 290, blurb: 'Three layers of net. Essential.' },
+  { id: 'dress',        name: 'Party Dress',     category: 'outfit', price: 340, blurb: 'With a sash at the waist.' },
+  { id: 'dress_mint',   name: 'Mint Dress',      category: 'outfit', price: 340, blurb: 'The cool green one.' },
+  { id: 'dress_night',  name: 'Midnight Dress',  category: 'outfit', price: 420, blurb: 'Dark blue, for the fanciest days.' },
   { id: 'cape_sea',       name: 'Sea Cape',       category: 'accessory', price: 220, blurb: 'Deep blue, swooshes the same.' },
   { id: 'cape_forest',    name: 'Forest Cape',    category: 'accessory', price: 220, blurb: 'Green as the garden.' },
   { id: 'cape_midnight',  name: 'Midnight Cape',  category: 'accessory', price: 240, blurb: 'Almost black, almost blue.' },
