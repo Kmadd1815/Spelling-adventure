@@ -55,6 +55,25 @@ const SEED = ({ room, wall }) => {
   }));
 };
 
+/* Waiting for a thing to happen rather than for a number of milliseconds.
+
+   The walk is 520ms plus 62ms for every per cent of the room it crosses,
+   and a busy machine stretches that; a fixed sleep made this suite fail on
+   a different check each run. Polling keeps the check exactly as strict —
+   the pose still has to arrive, and the walk-first checks above still
+   prove it walked — without making it a race against the clock. */
+const until = async (test, ms = 12000, step = 150) => {
+  const stop = Date.now() + ms;
+  for (;;) {
+    if (await test()) return true;
+    if (Date.now() > stop) return false;
+    await page.waitForTimeout(step);
+  }
+};
+const petClass = () => page.$eval('.room-pet', n => n.className).catch(() => '');
+const waitForPose = name => until(async () => (await petClass()).includes(`pet-pose-${name}`));
+const waitForNoPose = () => until(async () => !/pet-pose/.test(await petClass()));
+
 await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.evaluate(SEED, { room: ROOM, wall: WALL });
 await page.goto(BASE);
@@ -111,7 +130,8 @@ await page.waitForTimeout(900);
   ok('and the axolotl says something about it', said !== before, `${before} -> ${said}`);
 
   /* And it stops. */
-  await page.waitForTimeout(2800);
+  await until(async () => !/dp-stack/.test(
+    await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className)), 6000);
   const after = await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className);
   ok('the blocks settle again afterwards', !/dp-stack/.test(after), after);
 
@@ -138,9 +158,9 @@ await page.waitForTimeout(900);
 
   /* Crossing the room takes a moment on purpose: the pace is the same
      whatever the distance, so the far wall is a journey. */
-  await page.waitForTimeout(4600);
-  const nap = await page.$eval('.room-pet', n => n.className);
-  ok('when it gets there it lies down', /pet-pose-nap/.test(nap), nap);
+  const napped = await waitForPose('nap');
+  const nap = await petClass();
+  ok('when it gets there it lies down', napped, nap);
   ok('with its eyes shut',
      await page.evaluate(() => {
        const open = document.querySelector('.room-pet .pet-eye-open');
@@ -149,9 +169,9 @@ await page.waitForTimeout(900);
   ok('and a z z z over it', await page.locator('.room-pet .pet-zzz').count() === 1);
 
   /* The nap has to end by itself. */
-  await page.waitForTimeout(5400);
-  const woke = await page.$eval('.room-pet', n => n.className);
-  ok('and it wakes up again', !/pet-pose/.test(woke), woke);
+  const awake = await waitForNoPose();
+  const woke = await petClass();
+  ok('and it wakes up again', awake, woke);
   ok('taking the z z z with it', await page.locator('.room-pet .pet-zzz').count() === 0);
 }
 
@@ -190,9 +210,8 @@ await page.waitForTimeout(900);
   ok('the things in the garden are tappable too', out >= 3, String(out));
 
   await page.click('button.room-piece[aria-label="Flower Bed"]');
-  await page.waitForTimeout(4200);
-  const pose = await page.$eval('.room-pet', n => n.className);
-  ok('and the axolotl goes and smells the flowers', /pet-pose-sniff/.test(pose), pose);
+  const sniffed = await waitForPose('sniff');
+  ok('and the axolotl goes and smells the flowers', sniffed, await petClass());
 }
 
 await ctx.close();

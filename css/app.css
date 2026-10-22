@@ -1804,6 +1804,16 @@ button.room-piece:focus-visible { outline: 3px solid var(--primary); outline-off
 
 .speak-btn-sm { width: 62px; height: 62px; font-size: 1.6rem; box-shadow: 0 4px 0 #4f93ba; }
 
+/* The sentence button where a row has no room for the words "In a
+   sentence": the same round button as the speaker, in its own colour, so
+   the two read as a pair of different things rather than one button
+   printed twice. */
+.speak-btn-say {
+  background: linear-gradient(180deg, #a6d6a8, #85c389);
+  box-shadow: 0 4px 0 #63a368;
+}
+.speak-btn-say:active { box-shadow: 0 2px 0 #63a368; }
+
 /* ---------- Painted backdrops ----------
 
    Each game sits on a scene rather than on the app's plain cream, which is

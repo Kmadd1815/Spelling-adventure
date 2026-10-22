@@ -17,8 +17,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
-import * as speech from '../core/speech.js';
-import * as words from '../core/words.js';
+import { sayPrompt, sayAgain } from '../ui/sayagain.js';
 import { gameWords } from '../core/games.js';
 
 const LINES = [
@@ -60,6 +59,7 @@ export default function ticTacToe(ctx) {
   let wordAt = 0;
   let turn = HER;
   let pendingSquare = null;      // the square she is spelling for
+  let pendingWord = null;        // the word that square costs
   let typed = '';
   let busy = false;              // the axolotl is thinking, or feedback is up
   let wordsWon = 0;
@@ -120,13 +120,7 @@ export default function ticTacToe(ctx) {
     spellBox.hidden = false;
     mount(spellBox,
       el('div', { class: 'row', style: { justifyContent: 'center' } },
-        el('button', { class: 'speak-btn speak-btn-sm', type: 'button',
-          'aria-label': 'Hear the word again',
-          onClick: () => speech.promptWord(word, { withSentence: words.shouldSpeakSentence(word) }) },
-          '\u{1F50A}'),
-        button('Slower', { cls: 'btn btn-quiet', emoji: '\u{1F422}',
-          onClick: () => speech.speakWordSlowly(word) })
-      ),
+        sayAgain(word)),
       tiles
     );
   }
@@ -138,26 +132,59 @@ export default function ticTacToe(ctx) {
 
   /* ---------- Her turn ---------- */
 
+  /* Nothing is locked in until she starts spelling.
+
+     It used to lock on the tap: one stray finger and she was committed to
+     a square she did not want, with a word she had to spell to get out of
+     it. Now a tap is just a tap — she can move to another square, or tap
+     the same one again to let it go — right up until she presses her
+     first letter. After that the square is hers to finish, which is the
+     part that makes it a game rather than a browse.
+
+     The word does not change when she moves, or the squares become a way
+     of shopping for an easier word. */
   function claim(i) {
-    if (busy || turn !== HER || board[i] || pendingSquare !== null) return;
+    if (busy || turn !== HER || board[i]) return;
+
+    if (pendingSquare !== null) {
+      if (typed.length) return;             // already spelling — see it through
+      if (i === pendingSquare) { unpick(); return; }
+      pendingSquare = i;
+      drawBoard();
+      return;
+    }
+
     pendingSquare = i;
     typed = '';
-    const word = pool[wordAt % pool.length];
-    wordAt += 1;
+    if (!pendingWord) {
+      pendingWord = pool[wordAt % pool.length];
+      wordAt += 1;
+    }
     drawBoard();
-    setStatus('Spell it to claim that square');
-    showSpellBox(word);
+    setStatus('Spell it to claim it — or tap another square');
+    showSpellBox(pendingWord);
     renderTiles();
-    spellBox.dataset.wordId = word.id;
-    wait(() => speech.promptWord(word, { withSentence: words.shouldSpeakSentence(word) }), 220);
+    wait(() => sayPrompt(pendingWord), 220);
+  }
+
+  /** She changed her mind before spelling anything. */
+  function unpick() {
+    pendingSquare = null;
+    typed = '';
+    hideSpellBox();
+    drawBoard();
+    setStatus('Your turn — tap a square');
   }
 
   function currentWord() {
-    return pool.find(w => w.id === spellBox.dataset.wordId) || null;
+    return pendingWord;
   }
 
   function typeLetter(ch) {
     if (busy || pendingSquare === null || typed.length >= 24) return;
+    /* The first letter is what settles the square, so the offer of
+       another one is taken off the screen as she types it. */
+    if (!typed.length) setStatus('Spell it to claim that square');
     typed += ch;
     renderTiles();
   }
@@ -193,6 +220,7 @@ export default function ticTacToe(ctx) {
 
     const landed = pendingSquare;
     pendingSquare = null;
+    pendingWord = null;
     drawBoard();
     setStatus(right ? 'Yours!' : `It was "${word.text}"`);
 

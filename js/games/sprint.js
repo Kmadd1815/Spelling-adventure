@@ -23,6 +23,7 @@ import { gameHeader } from '../screens/play.js';
 import { buildKeyboard, watchPhysicalKeyboard } from '../ui/keyboard.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
+import { sayAgain } from '../ui/sayagain.js';
 import { gameWords, rampStep } from '../core/games.js';
 
 const SECONDS = 60;
@@ -153,10 +154,11 @@ export default function sprint(ctx) {
     answer.textContent = '';
     answer.className = 'sprint-answer';
     renderTiles();
+    /* The clock is running, so Sprint says the word and stops there: the
+       sentence is a button she can spend her own seconds on. */
     mount(helpRow,
       speech.canSpeak()
-        ? el('button', { class: 'speak-btn speak-btn-sm', type: 'button',
-            'aria-label': 'Hear the word again', onClick: () => speech.speakWord(word) }, '\u{1F50A}')
+        ? sayAgain(word, { slower: false })
         : el('div', { class: 'sprint-said', text: word.text }),
       button('Skip', { cls: 'btn btn-quiet', emoji: '\u{23ED}', onClick: skip })
     );

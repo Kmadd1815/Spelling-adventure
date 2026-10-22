@@ -29,6 +29,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy, petSprite } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
+import { sayAgain } from '../ui/sayagain.js';
 import { gameWords } from '../core/games.js';
 
 const WORDS_PER_ROUND = 3;
@@ -120,8 +121,7 @@ export default function swim(ctx) {
 
   function drawWord() {
     clear(wordStrip);
-    wordStrip.append(el('button', { class: 'icon-btn', type: 'button',
-      'aria-label': 'Hear the word', onClick: () => speech.speakWord(queue[wordIndex]) }, '\u{1F50A}'));
+    wordStrip.append(...sayAgain(queue[wordIndex], { compact: true }));
     target.split('').forEach((ch, i) => {
       wordStrip.append(el('span', { class: i < got ? 'swim-slot swim-slot-on' : 'swim-slot',
         text: i < got ? ch : '·' }));

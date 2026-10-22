@@ -758,6 +758,19 @@ export function shouldSpeakSentence(word) {
   return isHomophone(word);     // 'homophone' — the default
 }
 
+/* In a game, the sentence comes with the word by default.
+
+   Practice and the tests save the sentence for homophones, because there
+   the word is the whole exercise and the sentence is help. A game is
+   different: she is playing, the word goes by once, and a voice saying
+   "their" on its own tells her nothing about which "their" it is. So in a
+   game she gets the sentence too whenever the word has one — unless a
+   grown-up has turned sentences off, which still means off. */
+export function sentenceInGames(word) {
+  if (!word?.sentence) return false;
+  return settings().sentenceMode !== 'never';
+}
+
 /** Words that need a sentence written for them before they are fair to ask. */
 export function homophonesMissingSentences() {
   return allWords().filter(w => isHomophone(w) && !w.sentence.trim());

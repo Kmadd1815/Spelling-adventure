@@ -20,6 +20,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy, petSprite } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
+import { sayPrompt, sayAgain } from '../ui/sayagain.js';
 import { gameWords } from '../core/games.js';
 
 const COLS = 15;
@@ -139,8 +140,7 @@ export default function wordSnake(ctx) {
 
   function drawWord() {
     clear(wordStrip);
-    wordStrip.append(el('button', { class: 'icon-btn', type: 'button',
-      'aria-label': 'Hear the word', onClick: () => speech.speakWord(queue[wordIndex]) }, '\u{1F50A}'));
+    wordStrip.append(...sayAgain(queue[wordIndex], { compact: true }));
     target.split('').forEach((ch, i) => {
       wordStrip.append(el('span', { class: i < got ? 'snake-slot snake-slot-on' : 'snake-slot',
         text: i < got ? ch : '·' }));
@@ -243,9 +243,10 @@ export default function wordSnake(ctx) {
   }
 
   /* Hearing the word is the whole prompt — the letters on the board give
-     nothing away. */
+     nothing away. The sentence comes with it, which costs nothing here:
+     she can hear it while she is still steering. */
   function sayWord() {
-    speech.speakWord(queue[wordIndex]);
+    sayPrompt(queue[wordIndex]);
   }
 
   function finishWord() {

@@ -228,6 +228,71 @@ ok('...but the miss is still recorded', streakKept.incorrect >= 1);
 await goPlay('tictactoe');
 ok('tic tac toe drew nine squares', await page.locator('.ttt-cell').count() === 9);
 ok('the axolotl is the opponent', await page.locator('.ttt-side .buddy-pet svg').count() === 1);
+
+/* ---- a tap on a square is not a commitment ----
+   She used to be stuck with whatever square her finger landed on, and had
+   to spell a word to get out of it. Nothing locks in until the first
+   letter. */
+await page.evaluate(() => { window.__spoken = []; });
+await page.locator('.ttt-cell').nth(0).click();
+await page.waitForTimeout(900);
+const tttWord = (await page.evaluate(() => window.__spoken)).find(x => /^[a-z']+$/i.test(x.trim()));
+ok('picking a square asks for a word', !!tttWord && !await page.locator('.ttt-spell').isHidden());
+
+await page.locator('.ttt-cell').nth(4).click();
+await page.waitForTimeout(400);
+let pending = await page.$$eval('.ttt-cell', ns => ns.map(n => n.classList.contains('ttt-pending')));
+ok('she can move to another square before she spells', pending[4] && !pending[0]);
+
+await page.evaluate(() => { window.__spoken = []; });
+await page.click('.ttt-spell .speak-btn');
+await page.waitForTimeout(500);
+const tttAgain = ((await page.evaluate(() => window.__spoken))[0] || '').trim().toLowerCase();
+ok('...carrying the same word with her', tttAgain === (tttWord || '').toLowerCase(),
+   `${tttAgain} vs ${tttWord}`);
+
+await page.locator('.ttt-cell').nth(4).click();
+await page.waitForTimeout(400);
+ok('...and tapping it again puts it back', await page.locator('.ttt-spell').isHidden());
+
+await page.locator('.ttt-cell').nth(0).click();
+await page.waitForTimeout(500);
+await page.click('.key:text-is("a")');
+await page.locator('.ttt-cell').nth(8).click();
+await page.waitForTimeout(300);
+pending = await page.$$eval('.ttt-cell', ns => ns.map(n => n.classList.contains('ttt-pending')));
+ok('once she starts spelling, that square is the one', pending[0] && !pending[8]);
+await page.click('.key-del');          // back to an empty attempt
+await page.locator('.ttt-cell').nth(0).click();
+await page.waitForTimeout(400);
+ok('...and letting it go again needs the letters gone first',
+   await page.locator('.ttt-spell').isHidden());
+
+/* ---- the word AND the sentence ----
+   A tablet voice saying "their" on its own tells her nothing about which
+   "their" it is, so a game says the sentence too and keeps a button for
+   each: one for the word, one for the sentence. */
+await page.evaluate(() => { window.__spoken = []; });
+await page.locator('.ttt-cell').nth(0).click();
+await page.waitForTimeout(2600);
+const heard = await page.evaluate(() => window.__spoken);
+ok('a game says the sentence with the word',
+   heard.some(x => /\s/.test(x.trim())), JSON.stringify(heard));
+
+await page.evaluate(() => { window.__spoken = []; });
+await page.click('.ttt-spell button[aria-label="Hear it in a sentence"]');
+await page.waitForTimeout(600);
+const sentenceOnly = ((await page.evaluate(() => window.__spoken))[0] || '').trim();
+ok('a button for the sentence on its own', /\s/.test(sentenceOnly), sentenceOnly);
+
+await page.evaluate(() => { window.__spoken = []; });
+await page.click('.ttt-spell .speak-btn');
+await page.waitForTimeout(600);
+const wordOnly = ((await page.evaluate(() => window.__spoken))[0] || '').trim();
+ok('and a button for the word on its own', !!wordOnly && !/\s/.test(wordOnly), wordOnly);
+
+await page.locator('.ttt-cell').nth(0).click();   // put the square back
+await page.waitForTimeout(400);
 for (let turn = 0; turn < 12; turn++) {
   if (await page.locator(RESULTS).count()) break;
   const empties = await page.$$eval('.ttt-cell', ns =>

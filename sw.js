@@ -56,6 +56,7 @@ const SHELL = [
   './js/ui/decortap.js',
   './js/ui/discovery.js',
   './js/ui/keyboard.js',
+  './js/ui/sayagain.js',
   './js/screens/home.js',
   './js/screens/setup.js',
   './js/screens/spell.js',

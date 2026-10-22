@@ -19,6 +19,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
+import { sayPrompt, sayAgain } from '../ui/sayagain.js';
 import { gameWords, rampStep } from '../core/games.js';
 
 const WANT_WORDS = 5;
@@ -175,17 +176,8 @@ export default function wordBuilder(ctx) {
     renderSlots();
     renderTray();
 
-    mount(helpRow,
-      speech.canSpeak()
-        ? el('button', { class: 'speak-btn speak-btn-sm', type: 'button',
-            'aria-label': 'Hear the word', onClick: () => speech.speakWord(word) }, '\u{1F50A}')
-        : null,
-      speech.canSpeak()
-        ? button('Again, slower', { cls: 'btn btn-quiet', emoji: '\u{1F422}',
-            onClick: () => speech.speakWordSlowly(word) })
-        : null
-    );
-    if (speech.canSpeak()) wait(() => speech.speakWord(word), 260);
+    mount(helpRow, sayAgain(word));
+    if (speech.canSpeak()) wait(() => sayPrompt(word), 260);
   }
 
   /* ---------- Moving letters ---------- */

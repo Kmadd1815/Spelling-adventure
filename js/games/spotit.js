@@ -24,6 +24,7 @@ import { el, mount, clear, button } from '../ui/dom.js';
 import { gameHeader } from '../screens/play.js';
 import { createBuddy } from '../ui/buddy.js';
 import * as speech from '../core/speech.js';
+import { sayPrompt, sayAgain } from '../ui/sayagain.js';
 import { gameWords, rampStep } from '../core/games.js';
 
 const WANT_WORDS = 6;
@@ -247,10 +248,7 @@ export default function spotIt(ctx) {
        answer above the two cards. She hears it, and gets its meaning. */
     clear(askNode);
     askNode.append(
-      speech.canSpeak()
-        ? el('button', { class: 'speak-btn speak-btn-sm', type: 'button',
-            'aria-label': 'Hear the word', onClick: () => speech.speakWord(word) }, '\u{1F50A}')
-        : null,
+      ...sayAgain(word, { slower: false, labels: false }),
       el('div', { class: 'spot-ask-text', text:
         (word.definition || '').trim() || 'Which spelling is right?' })
     );
@@ -271,7 +269,7 @@ export default function spotIt(ctx) {
       cards.append(card);
     });
 
-    if (speech.canSpeak()) wait(() => speech.speakWord(word), 240);
+    if (speech.canSpeak()) wait(() => sayPrompt(word), 240);
   }
 
   function choose(card, right) {
