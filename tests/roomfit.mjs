@@ -57,7 +57,14 @@ const INK_BOX = () => {
   window.inkBox = svg => {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const el of svg.querySelectorAll('*')) {
-      if (!el.getBBox || el.closest('defs') || el.classList.contains('ia-shadow')) continue;
+      /* `piece-hit` is the invisible rectangle each tappable piece carries
+         so a finger meets the drawing rather than the empty square around
+         it (see ui/hitarea.js). It is deliberately a little bigger than
+         the art and it is not ink, so measuring where a thing SITS has to
+         ignore it — counted, it made the rug look like it reached halfway
+         across the room. */
+      if (!el.getBBox || el.closest('defs') ||
+          el.classList.contains('ia-shadow') || el.classList.contains('piece-hit')) continue;
       let r; try { r = el.getBBox(); } catch { continue; }
       if (!r.width && !r.height) continue;
       x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y);

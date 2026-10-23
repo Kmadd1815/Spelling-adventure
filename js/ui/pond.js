@@ -21,6 +21,7 @@
 import { el } from './dom.js';
 import { gid } from './shade.js';
 import { petLayers } from './petlife.js';
+import { fitHitArea } from './hitarea.js';
 import { decorSVG, surfaceStyle } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
@@ -76,6 +77,7 @@ function piece(itemId, spec, onPiece = null, name = '') {
                      'aria-label': name || itemId,
                      onClick: () => onPiece(itemId, node) })
     : el('div', { class: 'room-piece', html: art });
+  if (onPiece) fitHitArea(node);
   return place(node, spec);
 }
 

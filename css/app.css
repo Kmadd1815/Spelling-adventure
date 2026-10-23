@@ -1383,11 +1383,29 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 button.room-piece {
   background: none; border: 0; padding: 0; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* Pieces are see-through to the finger by default, so the axolotl can be
-     patted through whatever it is standing behind. One she can tap is the
-     exception, and has to say so. */
-  pointer-events: auto;
+  /* The box stays see-through to the finger — what answers a tap is the
+     DRAWING inside it.
+
+     Every piece is drawn in a square, and most of a square is empty: a
+     rug is a flat ellipse at the bottom of a box as tall as it is wide,
+     and that box reached a long way up the wall. Because the rug is drawn
+     after the bunting, its empty top half sat over the bunting and ate
+     every tap meant for it — she tapped a banner on the wall and the rug
+     answered. Hit-testing the shapes rather than the boxes is what fixes
+     that, and it costs nothing: the click still bubbles up to the button
+     from whatever shape she touched. */
+  pointer-events: none;
 }
+button.room-piece svg path,
+button.room-piece svg ellipse,
+button.room-piece svg circle,
+button.room-piece svg rect,
+button.room-piece svg polygon,
+button.room-piece svg polyline,
+button.room-piece svg line,
+button.room-piece svg text,
+button.room-piece svg use,
+button.room-piece svg image { pointer-events: auto; }
 button.room-piece:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 8px; }
 
 @media (prefers-reduced-motion: reduce) {

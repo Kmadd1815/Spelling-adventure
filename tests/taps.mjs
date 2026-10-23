@@ -71,6 +71,26 @@ const until = async (test, ms = 12000, step = 150) => {
   }
 };
 const petClass = () => page.$eval('.room-pet', n => n.className).catch(() => '');
+
+/* Tap a piece the way a finger does: in the middle of the DRAWING, which
+   since each piece carries a hit area cut to its own art is not always
+   the middle of its box. A square box with a rug along the bottom of it
+   has a lot of nothing in the top half, and nothing is what a tap there
+   should now hit. */
+const tapPiece = async (label, { force = false } = {}) => {
+  const at = await page.evaluate(name => {
+    const nd = document.querySelector(`button.room-piece[aria-label="${name}"]`);
+    if (!nd) return null;
+    const r = (nd.querySelector('.piece-hit') || nd).getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }, label);
+  if (!at) throw new Error(`no piece called ${label}`);
+  if (force) {
+    await page.locator(`button.room-piece[aria-label="${label}"]`).dispatchEvent('click');
+    return;
+  }
+  await page.mouse.click(at.x, at.y);
+};
 const waitForPose = name => until(async () => (await petClass()).includes(`pet-pose-${name}`));
 const waitForNoPose = () => until(async () => !/pet-pose/.test(await petClass()));
 
@@ -130,9 +150,40 @@ await page.waitForTimeout(900);
      await page.locator('button.room-piece[aria-label*="Window"]').count() === 1,
      labels.join(' | '));
 
+  /* Every piece answers for ITSELF.
+
+     Each drawing is made in a square and most of a square is empty, so
+     the empty halves used to stack over each other: the rug's box reached
+     a long way up the wall, and because it is drawn after the bunting it
+     ate every tap meant for it — she tapped the banner and the rug
+     answered. Each piece now carries a hit area cut to its own drawing. */
+  const whoAnswers = await page.evaluate(() => {
+    const out = [];
+    for (const nd of document.querySelectorAll('button.room-piece')) {
+      const pad = nd.querySelector('.piece-hit');
+      const r = (pad || nd).getBoundingClientRect();
+      const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      const owner = hit?.closest?.('.room-piece, .room-pet');
+      out.push({
+        who: nd.getAttribute('aria-label'),
+        sized: !!pad,
+        answers: owner === nd ? 'itself'
+          : owner?.classList.contains('room-pet') ? 'the axolotl'
+          : (owner?.getAttribute?.('aria-label') || owner?.className || 'nothing'),
+      });
+    }
+    return out;
+  });
+  ok('every piece is given a hit area cut to its own drawing',
+     whoAnswers.every(r => r.sized), JSON.stringify(whoAnswers.filter(r => !r.sized)));
+  /* The axolotl standing in front of something is allowed to answer for
+     it — that is a real animal in the way, not an invisible box. */
+  const stolen = whoAnswers.filter(r => r.answers !== 'itself' && r.answers !== 'the axolotl');
+  ok('and nothing answers for anything else', stolen.length === 0, JSON.stringify(stolen));
+
   /* A tap is answered at once. */
   const before = await page.$eval('.room-speech', n2 => n2.textContent);
-  await page.click('button.room-piece[aria-label="Toy Blocks"]');
+  await tapPiece('Toy Blocks');
   await page.waitForTimeout(260);
   const blocks = await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className);
   ok('tapping the blocks sets them going straight away', /dp-stack/.test(blocks), blocks);
@@ -150,14 +201,14 @@ await page.waitForTimeout(900);
      which is a thing a child would simply tap through by tapping
      somewhere else, and not what this check is about. */
   await until(async () => !/pet-walking/.test(await petClass()), 6000);
-  await page.click('button.room-piece[aria-label="Toy Blocks"]', { force: true });
+  await tapPiece('Toy Blocks', { force: true });
   const looked = await until(async () => /pet-peeking/.test(await petClass()), 2000);
   ok('and the axolotl looks over at it', looked, await petClass());
   await until(async () => !/pet-peeking/.test(await petClass()), 4000);
 
   /* Tapping it again works — the class has to come off and go back on, or
      the second tap is silent. */
-  await page.click('button.room-piece[aria-label="Toy Blocks"]');
+  await tapPiece('Toy Blocks');
   await page.waitForTimeout(220);
   ok('and they go again on a second tap',
      /dp-stack/.test(await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className)));
@@ -168,7 +219,7 @@ await page.waitForTimeout(900);
 {
   const where = () => page.$eval('.room-pet', n => parseFloat(n.style.left));
   const start = await where();
-  await page.click('button.room-piece[aria-label="Cozy Bed"]');
+  await tapPiece('Cozy Bed');
   await page.waitForTimeout(400);
   ok('tapping the bed sets the axolotl walking',
      await page.$eval('.room-pet', n => n.className.includes('pet-walking')),
@@ -222,7 +273,7 @@ await page.waitForTimeout(900);
 
 /* ---------- it holds the thing it is using ---------- */
 {
-  await page.click('button.room-piece[aria-label="Book Nook"]');
+  await tapPiece('Book Nook');
   const reading = await waitForPose('read');
   ok('tapping the bookshelf sends it to read', reading, await petClass());
   ok('...and it holds an open book while it does',
@@ -240,7 +291,7 @@ await page.waitForTimeout(900);
   ok('...standing at the bookshelf', atShelf < 20, String(Math.round(atShelf)));
   await until(async () => !/pet-pose/.test(await petClass()));
 
-  await page.click('button.room-piece[aria-label="Potted Plant"]');
+  await tapPiece('Potted Plant');
   const watering = await waitForPose('water');
   ok('tapping the plant sends it to water it', watering, await petClass());
   ok('...with a watering can in its hands',
@@ -261,7 +312,7 @@ await page.waitForTimeout(900);
 
 /* ---------- leaving the screen ---------- */
 {
-  await page.click('button.room-piece[aria-label="Book Nook"]');
+  await tapPiece('Book Nook');
   await page.waitForTimeout(500);
   await page.goto(`${BASE}#/progress`);
   await page.waitForTimeout(900);
@@ -300,7 +351,7 @@ await page.waitForTimeout(900);
   ok('the fence answers a tap, every section of it',
      await page.locator('button.room-piece[aria-label*="Fence"]').count() >= 2);
 
-  await page.click('button.room-piece[aria-label="Flower Bed"]');
+  await tapPiece('Flower Bed');
   const sniffed = await waitForPose('sniff');
   ok('and the axolotl goes and smells the flowers', sniffed, await petClass());
   ok('...with a flower in its hands',
@@ -355,7 +406,7 @@ await page.waitForTimeout(900);
   ok('and none of them is a dead square', pondDead.length === 0, pondDead.join(' | '));
 
   const before = await page.$eval('.room-pet', n => `${n.style.left} ${n.style.bottom}`);
-  await page.click('button.room-piece[aria-label="Big Rock"]');
+  await tapPiece('Big Rock');
   const came = await until(async () => {
     const now = await page.$eval('.room-pet', n => `${n.style.left} ${n.style.bottom}`);
     return now !== before;

@@ -20,6 +20,7 @@
 
 import { el } from './dom.js';
 import { petLayers } from './petlife.js';
+import { fitHitArea } from './hitarea.js';
 import { decorSVG, surfaceStyle, WINDOW_GLASS } from './item-art.js';
 import * as items from '../core/items.js';
 import { currentSeason } from '../core/season.js';
@@ -127,6 +128,7 @@ function windowPiece(itemId, spec, season, onPiece = null, name = '') {
   if (!glass) {
     node.insertAdjacentHTML('beforeend', art);
     node.style.removeProperty('--season-glass');
+    if (onPiece) fitHitArea(node);
     return place(node, spec);
   }
 
@@ -153,6 +155,7 @@ function windowPiece(itemId, spec, season, onPiece = null, name = '') {
 
   node.append(view);
   node.insertAdjacentHTML('beforeend', art);
+  if (onPiece) fitHitArea(node);
   return place(node, spec);
 }
 
@@ -172,6 +175,7 @@ function piece(itemId, spec, extraClass = '', onPiece = null, name = '') {
                      'aria-label': name || itemId,
                      onClick: () => onPiece(itemId, node) })
     : el('div', { class: cls, html: art });
+  if (onPiece) fitHitArea(node);
   return place(node, spec);
 }
 

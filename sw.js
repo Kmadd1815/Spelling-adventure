@@ -56,6 +56,7 @@ const SHELL = [
   './js/ui/fx.js',
   './js/ui/room.js',
   './js/ui/garden.js',
+  './js/ui/hitarea.js',
   './js/ui/weather.js',
   './js/ui/buddy.js',
   './js/ui/decortap.js',
