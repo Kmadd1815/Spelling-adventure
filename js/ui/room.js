@@ -102,14 +102,24 @@ function place(node, spec) {
    window's glass out of the way and leaves every other copy of the same
    drawing — on the shop shelf, in the decorating list — with its glass
    still in. */
-function windowPiece(itemId, spec, season) {
+function windowPiece(itemId, spec, season, onPiece = null, name = '') {
   const art = decorSVG(itemId, { size: 200 });
   if (!art) return null;
 
-  const node = el('div', {
-    class: 'room-piece room-window',
-    style: { '--season-glass': 'transparent' },
-  });
+  /* A window is a thing she chose and paid for, so it answers a tap like
+     everything else she put out: the axolotl comes over and looks at the
+     weather. It was the one piece in the room that did nothing. */
+  const node = onPiece
+    ? el('button', {
+        class: 'room-piece room-window', type: 'button',
+        'aria-label': name || itemId,
+        style: { '--season-glass': 'transparent' },
+        onClick: () => onPiece(itemId, node),
+      })
+    : el('div', {
+        class: 'room-piece room-window',
+        style: { '--season-glass': 'transparent' },
+      });
 
   /* A window whose shape nobody has written down gets plain glass rather
      than a square of sky sitting over its frame. */
@@ -194,7 +204,10 @@ export function buildRoom({ petHTML = '', petProps = {}, season = currentSeason(
   /* Indoors the weather belongs outside, so it arrives with the window and
      nowhere else. She always has one — window_plain is a starter — so there
      is no season she cannot see. */
-  if (worn.window) room.append(windowPiece(worn.window, PLACES.window, season));
+  if (worn.window) {
+    room.append(windowPiece(worn.window, PLACES.window, season, onPiece,
+                            items.byId(worn.window)?.name || ''));
+  }
   /* The door is the way out to the garden, so it is the one piece of
      furniture that does something. Whether it opens is the screen's
      business; the room just makes it tappable when asked. */

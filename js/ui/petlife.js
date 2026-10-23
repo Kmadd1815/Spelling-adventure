@@ -34,6 +34,7 @@
 */
 
 import { el } from './dom.js';
+import { propSVG } from './props.js';
 
 /** The drawing, wrapped in the two boxes the room moves it with. */
 export function petLayers(petHTML) {
@@ -94,6 +95,25 @@ export function roam(room, { band = ROOM_BAND } = {}) {
   const width = parseFloat(pet.style.width) || 34;
   const start = (parseFloat(pet.style.left) || 0) + width / 2;
 
+  /* Where it stands when it is not visiting anything, so it can go back
+     there afterwards. The scenes put the pet at a fixed distance up the
+     floor; a visit moves it to the depth of whatever it went to see. */
+  const homeBottom = parseFloat(pet.style.bottom);
+  /* Read once, before any visit has had a chance to raise it: taken inside
+     visit() instead, a second tap would record the raised value as home
+     and the axolotl would stay in front of everything for good. */
+  const homeZ = pet.style.zIndex;
+
+  /* The wandering band keeps it off the bed and out of the doorway, which
+     is right for strolling about and wrong for going somewhere on purpose:
+     clamped to it, an axolotl asked to go to the bed stopped in the middle
+     of the floor and lay down there. Reaching is a different question from
+     wandering, so it has its own limit — as far across as it can go while
+     the whole animal is still inside the picture. Half of an axolotl
+     hanging off the edge of the room is not an improvement on standing in
+     the wrong place. */
+  const reach = [width / 2, 100 - width / 2];
+
   let here = clamp(start, band[0], band[1]);
   let stopped = false;
   let timer = null;
@@ -123,20 +143,32 @@ export function roam(room, { band = ROOM_BAND } = {}) {
   const standAt = x => { pet.style.left = `${x - width / 2}%`; pointTail(x); };
   const leanTo = deg => { lean.style.transform = `rotate(${deg}deg)`; };
 
-  /** Walk there, then do whatever comes next. */
-  function walkTo(x, then) {
+  /** Walk there, then do whatever comes next.
+   *
+   * `depth` is how far up the floor to stand, as the bottom percentage the
+   * scene placed the thing at. Walking across the room is one movement and
+   * walking up to something is another, and they happen together: left and
+   * bottom are animated over the same stretch of time so it crosses the
+   * floor diagonally rather than sliding sideways and then backwards. */
+  function walkTo(x, then, depth = null) {
     const dx = x - here;
-    if (Math.abs(dx) < 1.5) return then();
+    const dy = depth === null || !Number.isFinite(depth)
+      ? 0 : depth - (parseFloat(pet.style.bottom) || 0);
+    if (Math.abs(dx) < 1.5 && Math.abs(dy) < 1) {
+      if (dy) pet.style.bottom = `${n2(depth)}%`;
+      return then();
+    }
 
     /* Long legs it is not: the pace stays the same whatever the distance,
        so crossing the room takes longer than a shuffle, which is the whole
        reason crossing the room reads as a journey. */
     const ms = Math.round(520 + Math.abs(dx) * 62);
-    pet.style.transition = `left ${ms}ms ease-in-out`;
+    pet.style.transition = `left ${ms}ms ease-in-out, bottom ${ms}ms ease-in-out`;
     pet.classList.add('pet-walking');
     leanTo(dx > 0 ? 3.5 : -3.5);
     here = x;
     standAt(x);
+    if (dy) pet.style.bottom = `${n2(depth)}%`;
     after(ms + 90, () => {
       pet.classList.remove('pet-walking');
       then();
@@ -202,11 +234,40 @@ export function roam(room, { band = ROOM_BAND } = {}) {
     clearTimeout(poseTimer);
     pet.classList.remove('pet-walking', 'pet-peeking', ...POSE_CLASSES);
     pet.querySelector('.pet-zzz')?.remove();
+    pet.querySelector('.pet-prop')?.remove();
     pet.style.transition = '';
     leanTo(0);
   };
 
   let poseTimer = null;
+
+  /**
+   * Look over at something without going to it.
+   *
+   * The things that cannot be visited — a clock on the wall, bunting, a
+   * ball that bounces away on its own — used to leave the axolotl facing
+   * the other way, carrying on with its stroll while the room moved
+   * behind it. A tap should always get the animal's attention even when
+   * it does not get the animal.
+   */
+  stop.glance = x => {
+    if (stopped) return;
+    /* Not in the middle of doing something else at something else. */
+    if (POSE_CLASSES.some(c => pet.classList.contains(c))) return;
+
+    /* The head turn works whatever it is up to; the body only leans when
+       it is standing still, because a lean on top of a walk fights the
+       lean the walk is already doing. Either way there IS a reaction —
+       that is the whole point of a glance. */
+    const walking = pet.classList.contains('pet-walking');
+    if (!walking) leanTo(clamp((x - here) * 0.6, -9, 9));
+    pet.classList.add('pet-peeking');
+    setTimeout(() => {
+      if (stopped) return;
+      pet.classList.remove('pet-peeking');
+      if (!pet.classList.contains('pet-walking')) leanTo(0);
+    }, 1400);
+  };
 
   /**
    * Go and do something at a particular spot.
@@ -217,25 +278,60 @@ export function roam(room, { band = ROOM_BAND } = {}) {
    * sliding between the two.
    *
    * @param {number} x     where to stand, as a percentage across the room
-   * @param {string} pose  one of the pose classes, or '' to just look
-   * @param {number} ms    how long to hold it
-   * @param {Function} [onArrive] called when the pose starts
+   * @param {object} opts
+   * @param {string} [opts.pose]   one of the pose classes, or '' to just look
+   * @param {number} [opts.ms]     how long to hold it
+   * @param {number} [opts.bottom] how far up the floor the thing is, so it
+   *   can stand at the same depth instead of down at the front of the room
+   * @param {Function} [opts.onArrive] called when the pose starts
    */
-  stop.visit = (x, { pose = '', ms = 2400, onArrive } = {}) => {
+  stop.visit = (x, { pose = '', ms = 2400, bottom = null, height = 0, onArrive } = {}) => {
     if (stopped) return;
     clearTimeout(timer);
     clearTimeout(poseTimer);
     pet.classList.remove(...POSE_CLASSES);
     pet.querySelector('.pet-zzz')?.remove();
+    pet.querySelector('.pet-prop')?.remove();
 
-    /* As close as the floor allows. Most of what she owns is against a wall
-       and genuinely out of reach, so it stands as near as it can get. */
-    const stand = clamp(x, band[0], band[1]);
+    /* It goes to the thing itself now, not to the nearest spot its
+       wandering was allowed to stand in. */
+    const stand = clamp(x, reach[0], reach[1]);
+
+    /* And to the right depth. A bed against the back wall is further up
+       the floor than the axolotl's usual spot, and lying down at the front
+       of the room was the whole problem: it napped nowhere near the bed.
+
+       Some poses happen ON the thing rather than beside it, and those are
+       lifted by a share of the thing's own height — a mattress is about a
+       third of the way up a bed whatever size the screen is, which is why
+       this is a fraction of the measured piece and not a number of
+       percent that only looks right on a tablet. */
+    const lift = (LIFT[pose] || 0) * (height || 0);
+    const depth = Number.isFinite(bottom) ? clamp(bottom + lift, 0, 55) : null;
+
+    /* In front of the thing it has gone to, whatever that thing's own
+       place in the stacking order is. The watering can came out behind
+       the plant the first time, which looked like an axolotl doing
+       nothing beside a plant that had quietly started raining. */
+    pet.style.zIndex = '12';
+
     walkTo(stand, () => {
       leanTo(0);
       onArrive?.();
-      if (!pose) return after(rand(900, 1800), next);
+      const goHome = () => {
+        pet.style.zIndex = homeZ;
+        if (Number.isFinite(homeBottom) && depth !== null) {
+          pet.style.transition = 'left 700ms ease-in-out, bottom 700ms ease-in-out';
+          pet.style.bottom = `${n2(homeBottom)}%`;
+        }
+        after(rand(600, 1500), next);
+      };
+      if (!pose) return after(rand(900, 1800), goHome);
       pet.classList.add(`pet-pose-${pose}`);
+      /* Whatever it needs in its hands: an open book, a watering can, a
+         teacup. A pose with nothing in it is a child miming. */
+      const prop = propNode(pose, x < stand ? 'left' : 'right');
+      if (prop) (lean || pet).append(prop);
       if (pose === 'nap') {
         const z = document.createElement('div');
         z.className = 'pet-zzz';
@@ -245,12 +341,28 @@ export function roam(room, { band = ROOM_BAND } = {}) {
       poseTimer = setTimeout(() => {
         pet.classList.remove(`pet-pose-${pose}`);
         pet.querySelector('.pet-zzz')?.remove();
-        after(rand(600, 1500), next);
+        pet.querySelector('.pet-prop')?.remove();
+        goHome();
       }, ms);
-    });
+    }, depth);
   };
 
   return stop;
+}
+
+/* How far up the thing the axolotl sits, as a share of the thing's height.
+   A nap is on top of the bed; a cup of tea is lifted a little by the table
+   it is on; everything else happens on the floor beside it. */
+const LIFT = { nap: 0.3, sip: 0.08, cuddle: 0.05 };
+
+/** The thing it holds while it is doing something, if that pose has one. */
+function propNode(pose, side = 'right') {
+  const art = propSVG(pose);
+  if (!art) return null;
+  return el('div', {
+    class: `pet-prop pet-prop-${pose} pet-prop-${side}`,
+    html: art, 'aria-hidden': 'true',
+  });
 }
 
 /* Every pose class, so stopping can clear whichever one is on. */
@@ -406,6 +518,7 @@ export function swim(scene, { xBand = [12, 76], yBand = [12, 56] } = {}) {
   };
 
   const bubble = scene.parentElement?.querySelector?.('.room-speech') || null;
+  const homeZ = pet.style.zIndex;
 
   function pointTail(x) {
     if (!bubble) return;
@@ -475,13 +588,69 @@ export function swim(scene, { xBand = [12, 76], yBand = [12, 56] } = {}) {
   pet.classList.add('pet-swimming');
   after(140, () => { pointTail(hereX); after(rand(500, 1500), next); });
 
-  return () => {
+  const stop = () => {
     stopped = true;
     timers.forEach(clearTimeout);
     timers.clear();
-    pet.classList.remove('pet-swimming');
+    pet.classList.remove('pet-swimming', ...POSE_CLASSES);
+    pet.querySelector('.pet-zzz')?.remove();
+    pet.querySelector('.pet-prop')?.remove();
+    pet.style.zIndex = '';
     pet.style.transition = '';
     lean.style.transition = '';
     lean.style.transform = 'rotate(0deg)';
   };
+
+  /** Look over at it from wherever it is floating. */
+  stop.glance = x => {
+    if (stopped) return;
+    if (POSE_CLASSES.some(c => pet.classList.contains(c))) return;
+    lean.style.transition = 'transform .5s ease-in-out';
+    lean.style.transform = `rotate(${n2(clamp((x - hereX) * 0.4, -12, 12))}deg)`;
+    after(1300, () => { if (!stopped) lean.style.transform = 'rotate(0deg)'; });
+  };
+
+  /* The pond gets visits too.
+
+     It used to be the one place where tapping something she owned brought
+     nobody over: the axolotl carried on with its own swim while the lily
+     pads wobbled by themselves. Underwater there is no floor to walk
+     along, so it simply swims to the thing — across and up or down at
+     once — and hangs there doing its bit. */
+  stop.visit = (x, { pose = '', ms = 2400, bottom = null, height = 0, onArrive } = {}) => {
+    if (stopped) return;
+    timers.forEach(clearTimeout);
+    timers.clear();
+    pet.classList.remove(...POSE_CLASSES);
+    pet.querySelector('.pet-zzz')?.remove();
+    pet.querySelector('.pet-prop')?.remove();
+
+    const toX = clamp(x, width / 2, 100 - width / 2);
+    /* Beside it, at about the height of the thing itself rather than at
+       its base: things in water are looked at from alongside. */
+    const toY = Number.isFinite(bottom)
+      ? clamp(bottom + (height || 0) * 0.35, yBand[0] - 6, yBand[1])
+      : hereY;
+
+    pet.style.zIndex = '12';
+
+    glideTo(toX, toY, () => {
+      onArrive?.();
+      const done = () => {
+        pet.style.zIndex = homeZ;
+        after(rand(600, 1500), next);
+      };
+      if (!pose) return after(rand(900, 1800), done);
+      pet.classList.add(`pet-pose-${pose}`);
+      const prop = propNode(pose, x < toX ? 'left' : 'right');
+      if (prop) (lean || pet).append(prop);
+      after(ms, () => {
+        pet.classList.remove(`pet-pose-${pose}`);
+        pet.querySelector('.pet-prop')?.remove();
+        done();
+      });
+    });
+  };
+
+  return stop;
 }

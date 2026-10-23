@@ -7,5 +7,5 @@
    Bump the minor number for a change she would notice, the patch number
    for a fix. */
 
-export const APP_VERSION = '1.51.0';
+export const APP_VERSION = '1.52.0';
 export const BUILD_DATE  = '2026-10-22';

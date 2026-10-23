@@ -120,6 +120,16 @@ await page.waitForTimeout(900);
   ok('and each one says its own name out loud',
      labels.every(l => l && l.length > 2 && !/_/.test(l)), labels.join(' | '));
 
+  /* Nothing she has put out may be a dead square. The window was: it is a
+     thing she chose and paid for and it answered a tap with nothing. */
+  const dead = await page.evaluate(() => [...document.querySelectorAll('.room-piece')]
+    .filter(n => n.tagName !== 'BUTTON' && !n.classList.contains('room-door'))
+    .map(n => n.className));
+  ok('and nothing in the room is a dead square', dead.length === 0, dead.join(' | '));
+  ok('the window answers a tap too',
+     await page.locator('button.room-piece[aria-label*="Window"]').count() === 1,
+     labels.join(' | '));
+
   /* A tap is answered at once. */
   const before = await page.$eval('.room-speech', n2 => n2.textContent);
   await page.click('button.room-piece[aria-label="Toy Blocks"]');
@@ -134,6 +144,16 @@ await page.waitForTimeout(900);
     await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className)), 6000);
   const after = await page.$eval('button.room-piece[aria-label="Toy Blocks"]', n2 => n2.className);
   ok('the blocks settle again afterwards', !/dp-stack/.test(after), after);
+
+  /* Even a thing it cannot walk to gets a look. Forced, because by now
+     the axolotl may legitimately be standing in front of the blocks —
+     which is a thing a child would simply tap through by tapping
+     somewhere else, and not what this check is about. */
+  await until(async () => !/pet-walking/.test(await petClass()), 6000);
+  await page.click('button.room-piece[aria-label="Toy Blocks"]', { force: true });
+  const looked = await until(async () => /pet-peeking/.test(await petClass()), 2000);
+  ok('and the axolotl looks over at it', looked, await petClass());
+  await until(async () => !/pet-peeking/.test(await petClass()), 4000);
 
   /* Tapping it again works — the class has to come off and go back on, or
      the second tap is silent. */
@@ -161,6 +181,31 @@ await page.waitForTimeout(900);
   const napped = await waitForPose('nap');
   const nap = await petClass();
   ok('when it gets there it lies down', napped, nap);
+
+  /* And it lies down AT THE BED. This is the check that was missing: the
+     wandering band stopped the axolotl in the middle of the floor, so it
+     walked off towards the bed and then napped in the middle of the room,
+     which is what she saw and reported. */
+  const atBed = await page.evaluate(() => {
+    const scene = document.querySelector('.room');
+    const bed = document.querySelector('button.room-piece[aria-label="Cozy Bed"]');
+    const pet = document.querySelector('.room-pet');
+    const r = scene.getBoundingClientRect();
+    const b = bed.getBoundingClientRect();
+    const q = pet.getBoundingClientRect();
+    const mid = n => (n.x + n.width / 2 - r.x) / r.width * 100;
+    return {
+      dx: Math.abs(mid(q) - mid(b)),
+      petBottom: (r.bottom - q.bottom) / r.height * 100,
+      bedBottom: (r.bottom - b.bottom) / r.height * 100,
+      overlaps: !(q.right < b.left || q.left > b.right || q.bottom < b.top || q.top > b.bottom),
+    };
+  });
+  console.log('   bed: ' + JSON.stringify(atBed));
+  ok('and it is lying on the bed, not in the middle of the floor',
+     atBed.overlaps && atBed.dx < 18, JSON.stringify(atBed));
+  ok('...up the floor where the bed is, not down at the front',
+     atBed.petBottom > atBed.bedBottom - 2, JSON.stringify(atBed));
   ok('with its eyes shut',
      await page.evaluate(() => {
        const open = document.querySelector('.room-pet .pet-eye-open');
@@ -173,6 +218,45 @@ await page.waitForTimeout(900);
   const woke = await petClass();
   ok('and it wakes up again', awake, woke);
   ok('taking the z z z with it', await page.locator('.room-pet .pet-zzz').count() === 0);
+}
+
+/* ---------- it holds the thing it is using ---------- */
+{
+  await page.click('button.room-piece[aria-label="Book Nook"]');
+  const reading = await waitForPose('read');
+  ok('tapping the bookshelf sends it to read', reading, await petClass());
+  ok('...and it holds an open book while it does',
+     await page.locator('.room-pet .pet-prop-read svg').count() === 1);
+
+  const atShelf = await page.evaluate(() => {
+    const scene = document.querySelector('.room');
+    const shelf = document.querySelector('button.room-piece[aria-label="Book Nook"]');
+    const pet = document.querySelector('.room-pet');
+    const r = scene.getBoundingClientRect();
+    const mid = n => { const q = n.getBoundingClientRect();
+      return (q.x + q.width / 2 - r.x) / r.width * 100; };
+    return Math.abs(mid(pet) - mid(shelf));
+  });
+  ok('...standing at the bookshelf', atShelf < 20, String(Math.round(atShelf)));
+  await until(async () => !/pet-pose/.test(await petClass()));
+
+  await page.click('button.room-piece[aria-label="Potted Plant"]');
+  const watering = await waitForPose('water');
+  ok('tapping the plant sends it to water it', watering, await petClass());
+  ok('...with a watering can in its hands',
+     await page.locator('.room-pet .pet-prop-water svg').count() === 1);
+  /* And the can has to be in front of the plant rather than behind it. */
+  const inFront = await page.evaluate(() => {
+    const pet = document.querySelector('.room-pet');
+    const plant = document.querySelector('button.room-piece[aria-label="Potted Plant"]');
+    return Number(getComputedStyle(pet).zIndex) > Number(getComputedStyle(plant).zIndex);
+  });
+  ok('...held in front of the plant, not behind it', inFront);
+  await until(async () => !/pet-pose/.test(await petClass()));
+
+  /* Whatever it was holding goes away with the pose. */
+  ok('and it puts the prop down afterwards',
+     await page.locator('.room-pet .pet-prop').count() === 0);
 }
 
 /* ---------- leaving the screen ---------- */
@@ -209,9 +293,75 @@ await page.waitForTimeout(900);
   const out = await page.locator('button.room-piece').count();
   ok('the things in the garden are tappable too', out >= 3, String(out));
 
+  const gardenDead = await page.evaluate(() => [...document.querySelectorAll('.room-piece')]
+    .filter(n => n.tagName !== 'BUTTON').map(n => n.className));
+  ok('and nothing out there is a dead square either',
+     gardenDead.length === 0, gardenDead.join(' | '));
+  ok('the fence answers a tap, every section of it',
+     await page.locator('button.room-piece[aria-label*="Fence"]').count() >= 2);
+
   await page.click('button.room-piece[aria-label="Flower Bed"]');
   const sniffed = await waitForPose('sniff');
   ok('and the axolotl goes and smells the flowers', sniffed, await petClass());
+  ok('...with a flower in its hands',
+     await page.locator('.room-pet .pet-prop-sniff svg').count() === 1);
+
+  const atFlowers = await page.evaluate(() => {
+    const scene = document.querySelector('.room');
+    const bed = document.querySelector('button.room-piece[aria-label="Flower Bed"]');
+    const pet = document.querySelector('.room-pet');
+    const r = scene.getBoundingClientRect();
+    const mid = n => { const q = n.getBoundingClientRect();
+      return (q.x + q.width / 2 - r.x) / r.width * 100; };
+    return Math.abs(mid(pet) - mid(bed));
+  });
+  ok('...standing at the flowers, not out in the middle of the lawn',
+     atFlowers < 22, String(Math.round(atFlowers)));
+  await until(async () => !/pet-pose/.test(await petClass()));
+}
+
+/* ---------- and under the water ----------
+
+   The pond was the one place where tapping something she owned brought
+   nobody over: the axolotl carried on with its own swim while the lily
+   pads wobbled by themselves. */
+{
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('spelling-adventure:v1'));
+    const now = Date.now(), D = 86400000;
+    /* The way down opens at eighty mastered words. */
+    for (let i = save.words.length; i < 95; i++) {
+      save.words.push({ ...save.words[0], id: 'p' + i, text: 'pond' + i, masteredAt: now - D });
+    }
+    save.equipped.pondWater = 'water_sunny';
+    save.equipped.pondFloor = 'bed_sand';
+    save.equipped.pondFeature = 'pond_rock';
+    save.equipped.pondPlant = ['pond_reeds', 'pond_lilies'];
+    for (const id of ['water_sunny', 'bed_sand', 'pond_rock', 'pond_reeds', 'pond_lilies']) {
+      save.collection.items.push({ id, itemId: id, source: 'shop', earnedAt: now });
+    }
+    localStorage.setItem('spelling-adventure:v1', JSON.stringify(save));
+  });
+  await page.goto(BASE);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(500);
+  await page.goto(`${BASE}#/pond`);
+  await page.waitForTimeout(1600);
+
+  const wet = await page.locator('button.room-piece').count();
+  ok('the things in the pond are tappable as well', wet >= 2, String(wet));
+  const pondDead = await page.evaluate(() => [...document.querySelectorAll('.room-piece')]
+    .filter(n => n.tagName !== 'BUTTON').map(n => n.className));
+  ok('and none of them is a dead square', pondDead.length === 0, pondDead.join(' | '));
+
+  const before = await page.$eval('.room-pet', n => `${n.style.left} ${n.style.bottom}`);
+  await page.click('button.room-piece[aria-label="Big Rock"]');
+  const came = await until(async () => {
+    const now = await page.$eval('.room-pet', n => `${n.style.left} ${n.style.bottom}`);
+    return now !== before;
+  }, 8000);
+  ok('tapping one brings the axolotl over to it', came,
+     await page.$eval('.room-pet', n => `${n.style.left} ${n.style.bottom}`));
 }
 
 await ctx.close();

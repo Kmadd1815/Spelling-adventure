@@ -64,13 +64,40 @@ export function decorTap({ bubble = null, getRoam = null, onSay = null } = {}) {
 
     const roamHandle = getRoam?.();
     if (play.kind === 'visit' && roamHandle?.visit) {
-      /* Where the thing is, across the room. */
+      /* Where the thing is: across the room, and how far up the floor.
+         The second one is what was missing — without it the axolotl
+         walked to the right place and then lay down at the front of the
+         room, a whole bed away from the bed. Things pinned to the wall
+         have a top instead of a bottom, and those it just looks up at
+         from the floor. */
       const left = parseFloat(node?.style.left);
       const width = parseFloat(node?.style.width) || 0;
       const x = Number.isFinite(left) ? left + width / 2 : 50;
       const pose = POSES[play.pose] ? play.pose : '';
+
+      /* How far up the floor it sits, and how tall it is — both as
+         percentages of the scene, measured rather than assumed, because a
+         piece's width is a percentage of the scene's WIDTH and its height
+         comes out of the drawing. A piece pinned to the wall has a top
+         instead of a bottom and gets no depth at all: the axolotl stays on
+         the floor and looks up at it. */
+      let bottom = null, height = 0;
+      if (Number.isFinite(parseFloat(node?.style.bottom))) {
+        const scene = node.closest('.room');
+        const r = scene?.getBoundingClientRect();
+        const q = node.getBoundingClientRect();
+        if (r?.height) {
+          bottom = (r.bottom - q.bottom) / r.height * 100;
+          height = q.height / r.height * 100;
+        } else {
+          bottom = parseFloat(node.style.bottom);
+        }
+      }
+
       roamHandle.visit(x, {
         pose,
+        bottom,
+        height,
         ms: POSES[pose]?.ms ?? 2400,
         /* The thing moves and the line is said when the axolotl gets
            there, so the whole business reads as one event. */
@@ -86,6 +113,14 @@ export function decorTap({ bubble = null, getRoam = null, onSay = null } = {}) {
       }
       return;
     }
+
+    /* Not something it can go and use — but it still looks over at it.
+       A tap always gets the animal's attention even when it does not get
+       the animal. */
+    const where = Number.isFinite(parseFloat(node?.style.left))
+      ? parseFloat(node.style.left) + (parseFloat(node.style.width) || 0) / 2
+      : null;
+    if (where !== null) roamHandle?.glance?.(where);
 
     move();
     line();

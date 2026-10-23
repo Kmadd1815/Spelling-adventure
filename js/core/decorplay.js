@@ -81,6 +81,14 @@ const PLAYS = {
   birthday_cake: V('sniff', ['Is it for me? It is for me.'], 'dp-pulse'),
   pumpkin_pie: V('sniff', ['Mmmmm. Pie.'], 'dp-wiggle'),
 
+  /* The window, which is how the weather gets in. */
+  window_plain:   V('peer', ['It is doing something out there.'], 'dp-wiggle'),
+  window_round:   V('peer', ['A round window for a round axolotl.'], 'dp-wiggle'),
+  window_cottage: V('peer', ['I can see the whole garden!'], 'dp-wiggle'),
+  window_arch:    V('peer', ['Look how far you can see.'], 'dp-wiggle'),
+  window_flower:  V('peer', ['Flowers on the inside AND the outside.'], 'dp-grow'),
+  window_star:    V('peer', ['I am waiting for the first star.'], 'dp-twinkle'),
+
   /* Outdoors. */
   bird_bath:   V('peer', ['The bird lets me watch.'], ''),
   flower_bed:  V('sniff', ['These are my favourite.'], 'dp-grow'),
@@ -99,6 +107,13 @@ const PLAYS = {
 /* ---------- The things that just do something ---------- */
 
 const FIDGETS = {
+  /* The fence. A visit would send the axolotl to the very back of the
+     garden and leave it standing in a hedge, so the fence waves instead
+     and gets looked at from wherever it is. */
+  fence_picket: F('dp-sway', ['My fence!', 'Nobody gets past this.']),
+  fence_hedge:  F('dp-sway', ['Rustle rustle.', 'Something lives in there.']),
+  fence_stone:  F('dp-nudge', ['Good solid wall, this.']),
+
   toy_blocks:  F('dp-stack',   ['Up they go!', 'Oh no. Down they go.']),
   toy_ball:    F('dp-bounce',  ['Bouncy!', 'Get it get it get it!']),
   bunting:     F('dp-flutter', ['It is windy in here.', 'Flappy!']),

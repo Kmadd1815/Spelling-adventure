@@ -169,14 +169,19 @@ export function buildGarden({ petHTML = '', petProps = {}, season = currentSeaso
      point of the place. */
   garden.append(weatherLayer(season));
 
+  const named = id => items.byId(id)?.name || '';
+
+  /* The fence answers a tap too — every section of it, because a child who
+     taps the left-hand end of her fence and gets nothing has learned that
+     the fence does nothing. */
   if (worn.fence) {
     const f = PLACES.fenceSpan;
     for (let i = 0; i < f.count; i++) {
-      garden.append(piece(worn.fence, f, i * (100 / f.count), 'garden-fence'));
+      garden.append(piece(worn.fence, f, i * (100 / f.count), 'garden-fence',
+                          onPiece, named(worn.fence)));
     }
   }
 
-  const named = id => items.byId(id)?.name || '';
   if (worn.tree)  garden.append(piece(worn.tree, PLACES.tree, undefined, '', onPiece, named(worn.tree)));
 
   (worn.gardenDecor || []).forEach((id, i) => {

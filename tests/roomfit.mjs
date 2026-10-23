@@ -214,11 +214,19 @@ const walk = await page.evaluate(async () => {
   const pet = document.querySelector('.room-pet');
   const started = pet.style.left;
   /* Nudge it along by hand rather than waiting for it to decide to move:
-     the schedule is deliberately unhurried and a test is not. */
+     the schedule is deliberately unhurried and a test is not.
+
+     Then WATCH for the move rather than sleeping through a fixed window.
+     Standing still for a bit is one of the things the wandering is
+     allowed to choose, so a four-second nap in the middle of the room is
+     correct behaviour that a four-second test reads as a dead axolotl. */
   const { roam } = await import('/js/ui/petlife.js');
   const stop = roam(document.querySelector('.room'));
-  await new Promise(r => setTimeout(r, 4200));
-  const moved = pet.style.left;
+  let moved = started;
+  for (let i = 0; i < 80 && moved === started; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    moved = pet.style.left;
+  }
   stop();
   return { started, moved, lean: !!pet.querySelector('.pet-lean'),
            body: !!pet.querySelector('.pet-body'),

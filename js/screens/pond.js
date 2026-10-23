@@ -51,7 +51,7 @@ export default function pondScreen(container) {
 
     stopEverything();
     const scene = buildPond({
-      onPiece: decorTap({ bubble, getRoam: () => null }),
+      onPiece: decorTap({ bubble, getRoam: () => stopSwim }),
       season,
       petHTML: drawPet(mood),
       petProps: {

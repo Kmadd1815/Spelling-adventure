@@ -933,6 +933,20 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
 .room-pet { line-height: 0; }
 .room-pet svg { width: 100%; height: auto; display: block; }
 
+/* The axolotl's box is a square with a great deal of empty air in it, and
+   that air used to swallow taps meant for whatever was behind it. Now
+   that the animal walks right up to the things she taps, it stands over
+   them often enough to matter: a tap lands on the axolotl only where the
+   axolotl is actually drawn, and goes through to the bookshelf behind it
+   everywhere else. The click handler stays on the box — the events bubble
+   up to it from the shapes. */
+.room-pet { pointer-events: none; }
+.room-pet .pet-stage path,
+.room-pet .pet-stage ellipse,
+.room-pet .pet-stage circle,
+.room-pet .pet-stage rect,
+.room-pet .pet-stage polygon { pointer-events: auto; }
+
 /* A hero-sized room sits above the buttons; the decorating screen gets a
    taller one so she can see what she is doing. */
 .hub-hero-room { padding: 0; min-height: 0; background: none; overflow: visible; }
@@ -1213,15 +1227,57 @@ input[type="range"] { width: 100%; height: 44px; accent-color: var(--primary); }
   animation: poseNap 4.2s ease-in-out;
   transform-origin: 50% 88%;
 }
+/* The translate is read in the ROTATED frame, so translateY on an animal
+   lying on its side moves it along the bed rather than down through it:
+   this is what shifts it off the headboard and onto the mattress. */
 @keyframes poseNap {
   0%        { transform: rotate(0) translateY(0); }
-  14%, 82%  { transform: rotate(-74deg) translateY(10%); }
+  14%, 82%  { transform: rotate(-74deg) translateY(48%); }
   100%      { transform: rotate(0) translateY(0); }
 }
 /* Eyes shut for the whole nap. An animal that lies down and then carries
    on blinking at you is not asleep. */
 .pet-pose-nap .pet-eye-open { animation: none; opacity: 0; }
 .pet-pose-nap .pet-eye-shut { animation: none; opacity: 1; }
+
+/* What it is holding.
+
+   Inside .pet-lean, so a tipped axolotl tips its watering can with it, and
+   sized against the pet's own box so it stays in proportion at any screen
+   size. Each pose puts it where that pose's hands are. */
+.pet-prop {
+  position: absolute;
+  width: 34%;
+  bottom: 14%;
+  left: 54%;
+  pointer-events: none;
+  z-index: 2;
+  animation: propIn .3s ease-out;
+}
+.pet-prop svg { display: block; width: 100%; height: auto; }
+@keyframes propIn {
+  from { opacity: 0; transform: translateY(14%) scale(.8); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* An open book is held up in front of the chest, a can out to the side at
+   the height of the plant, a cup near the mouth. */
+.pet-prop-read   { width: 40%; left: 30%; bottom: 20%; }
+.pet-prop-water  { width: 32%; left: 62%; bottom: 10%; }
+.pet-prop-sip    { width: 26%; left: 58%; bottom: 24%; }
+.pet-prop-sniff  { width: 26%; left: 56%; bottom: 26%; }
+.pet-prop-play   { width: 26%; left: 60%; bottom: 6%; }
+.pet-prop-peer   { width: 30%; left: 58%; bottom: 22%; }
+.pet-prop-cuddle { width: 24%; left: 57%; bottom: 28%; }
+
+/* Held on the side the thing is on. An axolotl watering a plant that is
+   over to its left should not be pouring off to the right. */
+.pet-prop-left.pet-prop-water  { left: 8%; }
+.pet-prop-left.pet-prop-sniff  { left: 18%; }
+.pet-prop-left.pet-prop-peer   { left: 12%; }
+.pet-prop-left.pet-prop-play   { left: 14%; }
+.pet-prop-left.pet-prop-water svg,
+.pet-prop-left.pet-prop-peer svg { transform: scaleX(-1); }
 
 /* Z z z, drifting up off a sleeping axolotl. */
 .pet-zzz {
@@ -1340,7 +1396,7 @@ button.room-piece:focus-visible { outline: 3px solid var(--primary); outline-off
   .pet-pose-nap .pet-lean, .pet-pose-read .pet-lean, .pet-pose-water .pet-lean,
   .pet-pose-play .pet-lean, .pet-pose-sip .pet-lean, .pet-pose-sniff .pet-lean,
   .pet-pose-cuddle .pet-lean, .pet-pose-peer .pet-lean,
-  .pet-zzz { animation: none; }
+  .pet-zzz, .pet-prop { animation: none; }
 }
 
 /* ---------- Floating reaction effects ---------- */
